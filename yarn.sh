@@ -1,0 +1,2 @@
+#!/bin/sh
+node .yarn/releases/yarn-4.7.0.cjs "$@" 
