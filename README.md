@@ -14,100 +14,142 @@ relatedTemplates:
   - postgres-kysely
 ---
 
-# Postgres + Drizzle Next.js Starter
-
-Simple Next.js template that uses a Postgres database and [Drizzle](https://github.com/drizzle-team/drizzle-orm) as the ORM.
-
-## Demo
-
-https://postgres-drizzle.vercel.app/
-
-## How to Use
-
-You can choose from one of the following two methods to use this repository:
-
-### One-Click Deploy
-
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fstorage%2Fpostgres-drizzle&project-name=postgres-drizzle&repository-name=postgres-drizzle&demo-title=Vercel%20Postgres%20%2B%20Drizzle%20Next.js%20Starter&demo-description=Simple%20Next.js%20template%20that%20uses%20Vercel%20Postgres%20as%20the%20database%20and%20Drizzle%20as%20the%20ORM.&demo-url=https%3A%2F%2Fpostgres-drizzle.vercel.app%2F&demo-image=https%3A%2F%2Fpostgres-drizzle.vercel.app%2Fopengraph-image.png&products=%5B%7B%22type%22%3A%22integration%22%2C%22group%22%3A%22postgres%22%7D%5D)
-
-### Clone and Deploy
-
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [pnpm](https://pnpm.io/installation) to bootstrap the example:
-
-```bash
-pnpm create next-app --example https://github.com/vercel/examples/tree/main/storage/postgres-drizzle
-```
-
-Next, run Next.js in development mode:
-
-```bash
-pnpm dev
-```
-
-Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples) ([Documentation](https://nextjs.org/docs/deployment)).
-
 # AESPT Project
 
-This project uses PostgreSQL with Drizzle ORM for database management.
+A modern Next.js application with PostgreSQL database and Drizzle ORM for database management.
 
-## Setup
+## Features
+
+- **Next.js**: React framework for building web applications
+- **PostgreSQL**: Powerful, open-source relational database
+- **Drizzle ORM**: TypeScript ORM for SQL databases with a focus on type safety
+- **Zod Validation**: Runtime type validation for your data
+- **Docker**: Containerized PostgreSQL database for development
+- **Tailwind CSS**: Utility-first CSS framework
+
+## Project Setup
 
 1. Clone the repository
-2. Install dependencies:
-   ```bash
-   yarn install
-   ```
-3. Copy the environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-4. Start the PostgreSQL database using Docker:
-   ```bash
-   yarn docker:up
-   ```
-5. Generate database migrations:
-   ```bash
-   yarn db:generate
-   ```
-6. Run database migrations:
-   ```bash
-   yarn db:migrate
-   ```
-7. Start the development server:
-   ```bash
-   yarn dev
-   ```
+```bash
+git clone https://github.com/akhilofficial4031/aespt.git
+cd aespt
+```
 
-## Database Management
+2. Install dependencies
+```bash
+yarn install
+```
 
-- **Start PostgreSQL**: `yarn docker:up`
-- **Stop PostgreSQL**: `yarn docker:down`
-- **Generate Migrations**: `yarn db:generate`
-- **Run Migrations**: `yarn db:migrate`
-- **Open Drizzle Studio**: `yarn db:studio`
+3. Copy the environment variables
+```bash
+cp .env.example .env
+```
 
-## PostgreSQL Access
+## Database Setup
 
-- **Database URL**: `postgres://postgres:postgres@localhost:5432/aespt_db`
-- **PgAdmin**: Access at `http://localhost:5050`
+This project uses PostgreSQL with Docker for easy setup and Drizzle ORM for database interactions.
+
+### Starting the Database
+
+1. Start the PostgreSQL database using Docker:
+```bash
+yarn docker:up
+```
+
+This will start:
+- PostgreSQL database on port 5432
+- PgAdmin (PostgreSQL admin tool) on port 5050
+
+### Database Configuration
+
+The database connection is configured in `.env` with these default settings:
+```
+POSTGRES_URL=postgres://postgres:postgres@localhost:5432/aespt_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DATABASE=aespt_db
+```
+
+### Database Schema & Migrations
+
+The database schema is organized in the `lib/models` directory, with each table in its own file:
+- `users.ts`: User accounts
+- `customers.ts`: Customer information
+- `products.ts`: Product catalog
+- `invoices.ts`: Invoice records
+- `invoice_items.ts`: Line items for invoices
+- `vat_master.ts`: VAT rate reference data
+- `gst_master.ts`: GST rate reference data
+
+To create and update your database:
+
+1. Generate migrations from your schema:
+```bash
+yarn db:generate
+```
+
+2. Apply migrations and seed initial data:
+```bash
+yarn db:migrate
+```
+
+3. (Optional) Browse your database with Drizzle Studio:
+```bash
+yarn db:studio
+```
+
+### Reset Database
+
+If you need to reset your database to a clean state:
+```bash
+yarn db:reset
+```
+
+### Database Access
+
+- **PostgreSQL**: Connect directly at `postgres://postgres:postgres@localhost:5432/aespt_db`
+- **PgAdmin**: Access through your browser at `http://localhost:5050`
   - Email: `admin@admin.com`
   - Password: `admin`
 
-## Schema Structure
+## Development Workflow
 
-The database schema is defined in the `lib/drizzle.ts` file, with Zod validation schemas in the `lib/schemas` directory.
+1. Start the development server:
+```bash
+yarn dev
+```
 
-Each table has its own schema file:
-- `userSchema.ts`: User table schema and validation
-- `productSchema.ts`: Product table schema and validation
-- `categorySchema.ts`: Category table schema and validation
-- `orderSchema.ts`: Order table schema and validation
-- `orderItemSchema.ts`: Order item table schema and validation
+2. Run linting:
+```bash
+yarn lint
+```
 
-All schemas include common fields:
-- `createdBy`: Who created the record
-- `updatedBy`: Who last updated the record
-- `createdAt`: When the record was created
-- `updatedAt`: When the record was last updated
+3. Format code:
+```bash
+yarn format
+```
+
+## Data Validation
+
+The project uses Zod for schema validation. Schema files are in `lib/schemas/` directory:
+- `baseSchema.ts`: Common fields for all entities
+- `userSchema.ts`: User data validation
+- `customerSchema.ts`: Customer data validation
+- `productSchema.ts`: Product data validation
+- And more...
+
+## Available Commands
+
+- **yarn dev**: Start the development server
+- **yarn build**: Build for production
+- **yarn start**: Run the production build
+- **yarn lint**: Check code for errors
+- **yarn lint:fix**: Fix linting errors
+- **yarn format**: Format code with Prettier
+- **yarn db:generate**: Generate database migrations
+- **yarn db:push**: Push schema changes directly to database
+- **yarn db:migrate**: Run migrations and seed initial data
+- **yarn db:reset**: Reset database to clean state
+- **yarn db:studio**: Open Drizzle Studio
+- **yarn docker:up**: Start Docker containers
+- **yarn docker:down**: Stop Docker containers
