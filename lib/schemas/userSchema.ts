@@ -4,12 +4,9 @@ import { BaseSchema, BaseCreateSchema } from './baseSchema';
 // Zod schema for user validation
 export const UserSchema = BaseSchema.extend({
   id: z.number().optional(),
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
   email: z.string().email({ message: "Invalid email address" }),
-  phone: z.string().min(10).max(20).optional(),
-  image: z.string().optional(),
-  forgotPasswordToken: z.string().optional().nullable(),
-  password_hash: z.string().max(255).optional(),
+  password_hash: z.string().max(255),
   password_reset_token: z.string().max(255).optional().nullable(),
   token_expiration: z.date().optional().nullable(),
 });
@@ -18,10 +15,10 @@ export const UserSchema = BaseSchema.extend({
 export const CreateUserSchema = BaseCreateSchema.extend(
   UserSchema.omit({ 
     id: true, 
-    createdAt: true, 
-    updatedAt: true,
-    createdBy: true,
-    updatedBy: true
+    created_at: true, 
+    updated_at: true,
+    created_by: true,
+    updated_by: true
   }).shape
 );
 

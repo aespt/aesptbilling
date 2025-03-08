@@ -7,20 +7,16 @@ export const ProductSchema = BaseSchema.extend({
   name: z.string().min(2, { message: "Product name must be at least 2 characters" }),
   description: z.string().optional(),
   price: z.number().positive({ message: "Price must be positive" }),
-  sku: z.string().optional(),
-  inventory: z.number().int().nonnegative().optional(),
-  category: z.string().optional(),
-  isActive: z.boolean().default(true),
 });
 
 // Zod schema for creating a new product
 export const CreateProductSchema = BaseCreateSchema.extend(
   ProductSchema.omit({ 
     id: true, 
-    createdAt: true, 
-    updatedAt: true,
-    createdBy: true,
-    updatedBy: true
+    created_at: true, 
+    updated_at: true,
+    created_by: true,
+    updated_by: true
   }).shape
 );
 

@@ -28,10 +28,10 @@ export const OrderSchema = BaseSchema.extend({
 export const CreateOrderSchema = BaseCreateSchema.extend(
   OrderSchema.omit({ 
     id: true, 
-    createdAt: true, 
-    updatedAt: true,
-    createdBy: true,
-    updatedBy: true
+    created_at: true, 
+    updated_at: true,
+    created_by: true,
+    updated_by: true
   }).shape
 );
 

@@ -1,4 +1,5 @@
-import { db, UsersTable } from '../lib/drizzle';
+import { db } from '../lib/drizzle';
+import { UsersTable } from '../lib/models/users';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
@@ -32,11 +33,11 @@ async function main() {
       
       // Insert admin user
       await db.insert(UsersTable).values({
-        name: 'Admin User',
+        username: 'admin',
         email: 'admin@example.com',
-        phone: '1234567890',
-        createdBy: 'system',
-        updatedBy: 'system'
+        password_hash: '$2b$10$EpRnTzVlqHNP0.fUbXUwSOyuiXe/QLSUG6xNekdHgTGmrpHEfIoxm', // password is 'password'
+        created_at: new Date(),
+        updated_at: new Date()
       }).execute();
       
       console.log('✅ Initial data seeded successfully');

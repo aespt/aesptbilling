@@ -16,10 +16,10 @@ export const OrderItemSchema = BaseSchema.extend({
 export const CreateOrderItemSchema = BaseCreateSchema.extend(
   OrderItemSchema.omit({ 
     id: true, 
-    createdAt: true, 
-    updatedAt: true,
-    createdBy: true,
-    updatedBy: true
+    created_at: true, 
+    updated_at: true,
+    created_by: true,
+    updated_by: true
   }).shape
 );
 
