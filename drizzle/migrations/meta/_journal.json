@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1741421049465,
-      "tag": "0000_light_roland_deschain",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1741421214273,
-      "tag": "0001_nostalgic_nemesis",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1741444545966,
-      "tag": "0002_military_leo",
+      "when": 1741445516145,
+      "tag": "0000_peaceful_karnak",
       "breakpoints": true
     }
   ]
