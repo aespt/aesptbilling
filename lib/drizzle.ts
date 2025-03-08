@@ -2,8 +2,16 @@ import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { pgTable, serial, text, timestamp, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import * as dotenv from 'dotenv';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+// Load environment variables
+dotenv.config();
+
+// Connection string with explicit credentials
+const connectionString = 'postgres://postgres:postgres@localhost:5432/aespt_db';
+
+// For local development, don't use SSL
+const sql = postgres(connectionString, { ssl: false });
 
 export const UsersTable = pgTable(
   'users',
@@ -14,6 +22,9 @@ export const UsersTable = pgTable(
     phone: varchar('phone', { length: 20 }),
     image: text('image'),
     forgotPasswordToken: text('forgot_password_token'),
+    password_hash: text('password_hash'),
+    password_reset_token: text('password_reset_token'),
+    token_expiration: timestamp('token_expiration'),
     createdBy: text('created_by'),
     updatedBy: text('updated_by'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

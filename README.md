@@ -47,3 +47,67 @@ pnpm dev
 ```
 
 Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples) ([Documentation](https://nextjs.org/docs/deployment)).
+
+# AESPT Project
+
+This project uses PostgreSQL with Drizzle ORM for database management.
+
+## Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   yarn install
+   ```
+3. Copy the environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+4. Start the PostgreSQL database using Docker:
+   ```bash
+   yarn docker:up
+   ```
+5. Generate database migrations:
+   ```bash
+   yarn db:generate
+   ```
+6. Run database migrations:
+   ```bash
+   yarn db:migrate
+   ```
+7. Start the development server:
+   ```bash
+   yarn dev
+   ```
+
+## Database Management
+
+- **Start PostgreSQL**: `yarn docker:up`
+- **Stop PostgreSQL**: `yarn docker:down`
+- **Generate Migrations**: `yarn db:generate`
+- **Run Migrations**: `yarn db:migrate`
+- **Open Drizzle Studio**: `yarn db:studio`
+
+## PostgreSQL Access
+
+- **Database URL**: `postgres://postgres:postgres@localhost:5432/aespt_db`
+- **PgAdmin**: Access at `http://localhost:5050`
+  - Email: `admin@admin.com`
+  - Password: `admin`
+
+## Schema Structure
+
+The database schema is defined in the `lib/drizzle.ts` file, with Zod validation schemas in the `lib/schemas` directory.
+
+Each table has its own schema file:
+- `userSchema.ts`: User table schema and validation
+- `productSchema.ts`: Product table schema and validation
+- `categorySchema.ts`: Category table schema and validation
+- `orderSchema.ts`: Order table schema and validation
+- `orderItemSchema.ts`: Order item table schema and validation
+
+All schemas include common fields:
+- `createdBy`: Who created the record
+- `updatedBy`: Who last updated the record
+- `createdAt`: When the record was created
+- `updatedAt`: When the record was last updated
