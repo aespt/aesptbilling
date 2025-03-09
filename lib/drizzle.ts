@@ -43,6 +43,12 @@ export type NewVatMaster = InferInsertModel<typeof models.VatMasterTable>;
 export type GstMaster = InferSelectModel<typeof models.GstMasterTable>;
 export type NewGstMaster = InferInsertModel<typeof models.GstMasterTable>;
 
+export type Supplier = InferSelectModel<typeof models.SuppliersTable>;
+export type NewSupplier = InferInsertModel<typeof models.SuppliersTable>;
+
+export type Salesman = InferSelectModel<typeof models.SalesmenTable>;
+export type NewSalesman = InferInsertModel<typeof models.SalesmenTable>;
+
 // Export Zod schemas from the schemas directory
 export * from './schemas/baseSchema';
 export * from './schemas/userSchema';
@@ -52,3 +58,5 @@ export * from './schemas/invoiceSchema';
 export * from './schemas/invoiceItemSchema';
 export * from './schemas/vatMasterSchema';
 export * from './schemas/gstMasterSchema';
+export * from './schemas/supplierSchema';
+export * from './schemas/salesmanSchema';
