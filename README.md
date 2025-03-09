@@ -98,6 +98,68 @@ yarn db:migrate
 yarn db:studio
 ```
 
+### Managing Database Schema Changes
+
+When you need to make changes to your database schema, follow these steps:
+
+#### Altering a Table Column
+
+1. **Modify the model definition** in the appropriate file in `lib/models/`.
+   ```typescript
+   // Example: Adding a new column to the customers table
+   export const CustomersTable = pgTable(
+     'customers',
+     {
+       // Existing columns...
+       // Add new column:
+       company_name: varchar('company_name', { length: 255 }),
+     },
+   );
+   ```
+
+2. **Generate a migration**:
+   ```bash
+   yarn db:generate
+   ```
+
+3. **Review the generated migration file** in `drizzle/migrations/` to ensure it will make the intended changes.
+
+4. **Apply the migration**:
+   ```bash
+   yarn db:migrate
+   ```
+
+5. **Update any Zod schemas** in `lib/schemas/` to match your model changes:
+   ```typescript
+   // Example: Update the CustomerSchema in lib/schemas/customerSchema.ts
+   export const CustomerSchema = BaseSchema.extend({
+     // Existing fields...
+     company_name: z.string().optional(),
+   });
+   ```
+
+#### Considerations for Database Changes
+
+- **Nullable vs. Not Null**: When adding a NOT NULL column to an existing table, you must either provide a default value or ensure the table is empty.
+  
+- **Data Type Changes**: Be cautious when changing column types as it may result in data loss or conversion errors.
+  
+- **Renaming Columns**: Drizzle might interpret renaming as dropping and adding a new column, which would lose data. Use the `renameColumn` helper:
+  ```typescript
+  // Example migration pseudo-code
+  alter('customers', (table) => {
+    return [
+      renameColumn(table, 'old_name', 'new_name'),
+    ];
+  })
+  ```
+
+- **Foreign Key Constraints**: When adding foreign keys, ensure the referenced data exists, or the migration will fail.
+
+- **Testing Migrations**: Always test migrations on a development database before applying to production.
+
+- **Backup**: Always back up your production database before applying migrations.
+
 ### Reset Database
 
 If you need to reset your database to a clean state:
