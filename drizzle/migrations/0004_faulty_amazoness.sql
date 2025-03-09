@@ -1,0 +1,1 @@
+ALTER TABLE "products" ALTER COLUMN "part_no" DROP NOT NULL;

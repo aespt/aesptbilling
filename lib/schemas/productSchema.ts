@@ -4,9 +4,11 @@ import { BaseSchema, BaseCreateSchema } from './baseSchema';
 // Zod schema for product validation
 export const ProductSchema = BaseSchema.extend({
   id: z.number().optional(),
+  part_no: z.string(),
   name: z.string().min(2, { message: "Product name must be at least 2 characters" }),
   description: z.string().optional(),
   price: z.number().positive({ message: "Price must be positive" }),
+  count: z.number().optional(),
 });
 
 // Zod schema for creating a new product

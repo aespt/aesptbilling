@@ -8,6 +8,41 @@
       "when": 1741445516145,
       "tag": "0000_peaceful_karnak",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1741497401201,
+      "tag": "0003_acoustic_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1741497590753,
+      "tag": "0004_faulty_amazoness",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1741497913963,
+      "tag": "0005_spicy_the_fallen",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1741498114595,
+      "tag": "0006_secret_zodiak",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1741509846535,
+      "tag": "0007_slim_human_robot",
+      "breakpoints": true
     }
   ]
 }
