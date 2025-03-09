@@ -1,6 +1,6 @@
 {
   "name": "postgres-drizzle",
-  "repository": "https://github.com/vercel/examples.git",
+  "repository": "https://github.com/akhilofficial4031/aespt.git",
   "license": "MIT",
   "version": "0.0.0",
   "private": true,
@@ -14,7 +14,9 @@
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push:pg",
     "db:migrate": "tsx scripts/init-db.ts",
+    "db:reset": "tsx scripts/reset-db.ts",
     "db:studio": "drizzle-kit studio",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"
