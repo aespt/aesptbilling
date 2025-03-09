@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { ProductsTable } from '@/lib/models/products';
-import { UsersTable } from '@/lib/models/users';
+import { SalesmenTable } from '@/lib/models/salesmen';
 import { CustomersTable } from '@/lib/models/customers';
 import { SuppliersTable } from '@/lib/models/suppliers';
 import { count } from 'drizzle-orm';
@@ -11,12 +11,12 @@ export async function GET() {
     // Query counts from all tables in parallel for better performance
     const [
       productsCount,
-      usersCount,
+      salesmenCount,
       customersCount,
       suppliersCount
     ] = await Promise.all([
       db.select({ count: count() }).from(ProductsTable),
-      db.select({ count: count() }).from(UsersTable),
+      db.select({ count: count() }).from(SalesmenTable),
       db.select({ count: count() }).from(CustomersTable),
       db.select({ count: count() }).from(SuppliersTable)
     ]);
@@ -30,10 +30,10 @@ export async function GET() {
         icon: 'inventory'
       },
       {
-        id: 'users',
-        title: 'Users',
-        count: usersCount[0].count,
-        icon: 'people'
+        id: 'salesmen',
+        title: 'Salesmen',
+        count: salesmenCount[0].count,
+        icon: 'salesman'
       },
       {
         id: 'customers',

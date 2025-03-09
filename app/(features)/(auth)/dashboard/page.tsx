@@ -165,8 +165,8 @@ export default function Dashboard() {
     switch (iconName) {
       case 'inventory':
         return FiBox;
-      case 'people':
-        return FiUsers;
+      case 'salesman':
+        return FiUserCheck;
       case 'business':
         return FiUsers;
       case 'local_shipping':

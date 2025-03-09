@@ -32,6 +32,12 @@ export interface Supplier extends BaseModel {
   contact_number: string;
 }
 
+// Salesman interface
+export interface Salesman extends BaseModel {
+  name: string;
+  contact_number: string;
+}
+
 // User interface
 export interface User extends BaseModel {
   username: string;

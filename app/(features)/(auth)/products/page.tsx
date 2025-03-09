@@ -17,7 +17,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -208,7 +207,7 @@ export default function ProductsPage() {
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <CircularProgress />
+            <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
           </div>
         ) : error ? (
           <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-center">

@@ -6,7 +6,7 @@ export const CustomerSchema = BaseSchema.extend({
   id: z.number().optional(),
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Invalid email address" }),
-  phone: z.string().min(10).max(20).optional(),
+  phone: z.string().min(10).max(20),
   address: z.string().optional(),
 });
 
