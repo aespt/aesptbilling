@@ -15,7 +15,6 @@ import {
   FiMenu,
   FiX,
 } from "react-icons/fi";
-import { motion } from "framer-motion";
 
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: FiHome },
@@ -53,47 +52,36 @@ export default function Sidebar() {
       )}
 
       {/* Sidebar */}
-      <motion.aside
-        initial={{ x: -300 }}
-        animate={{
-          x: 0,
-          width: isCollapsed ? 80 : 280,
-        }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+      <aside
+        style={{ width: isCollapsed ? '80px' : '280px' }}
         className={`fixed top-0 left-0 z-40 h-screen bg-white shadow-lg flex flex-col
                    ${
                      isMobileOpen
                        ? "translate-x-0"
                        : "-translate-x-full md:translate-x-0"
-                   } 
-                   transition-transform duration-300 ease-in-out`}
+                   }`}
       >
         {/* Logo */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center"
-            >
-              <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent">
+            <div className="flex items-center pb-[4px]">
+              <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent ">
                 AESPT
               </span>
-              <span className="ml-2 text-sm text-gray-500">Admin</span>
-            </motion.div>
+              <span className="ml-2 text-sm text-gray-500 ">Admin</span>
+            </div>
           )}
-          <button
+          {/* <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hidden md:block"
           >
             <FiChevronRight
               size={20}
-              className={`transform transition-transform duration-300 ${
+              className={`transform ${
                 isCollapsed ? "rotate-180" : ""
               }`}
             />
-          </button>
+          </button> */}
         </div>
 
         {/* Menu items */}
@@ -104,10 +92,8 @@ export default function Sidebar() {
               return (
                 <li key={item.path}>
                   <Link href={item.path}>
-                    <motion.div
-                      whileHover={{ x: 5 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`flex items-center px-3 py-3 rounded-md cursor-pointer transition-colors
+                    <div
+                      className={`flex items-center px-3 py-3 rounded-md cursor-pointer
                                 ${
                                   isActive
                                     ? "bg-gradient-to-r from-red-500 to-blue-500 text-white"
@@ -118,7 +104,7 @@ export default function Sidebar() {
                       {!isCollapsed && (
                         <span className="ml-3 font-medium">{item.name}</span>
                       )}
-                    </motion.div>
+                    </div>
                   </Link>
                 </li>
               );
@@ -135,7 +121,7 @@ export default function Sidebar() {
             </div>
           )}
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Content margin - Fixed to avoid hydration errors with dynamic classes */}
       <div className={isCollapsed ? "md:ml-20" : "md:ml-72"} />
