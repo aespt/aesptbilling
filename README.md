@@ -10,6 +10,7 @@ A modern Next.js application with PostgreSQL database and Drizzle ORM for databa
 - **Zod Validation**: Runtime type validation for your data
 - **Docker**: Containerized PostgreSQL database for development
 - **Tailwind CSS**: Utility-first CSS framework
+- **PWA Support**: Progressive Web App capabilities for offline use and mobile installation
 
 ## Project Setup
 
@@ -157,6 +158,37 @@ yarn db:reset
 - **PgAdmin**: Access through your browser at `http://localhost:5050`
   - Email: `admin@admin.com`
   - Password: `admin`
+
+## Progressive Web App (PWA) Support
+
+This application is configured as a Progressive Web App (PWA), which enables:
+
+- **Offline Access**: Basic functionality works without an internet connection
+- **Install on Device**: Can be added to home screen on mobile devices or desktop
+- **App-like Experience**: Runs in a standalone window without browser UI
+
+### PWA Configuration
+
+The PWA functionality is implemented with:
+
+- **Web App Manifest**: Located at `/public/manifest.json`
+- **Service Worker**: Handles caching and offline functionality
+- **Next-PWA**: Integration with Next.js for seamless PWA experience
+
+### Testing PWA Features
+
+1. Build and start the production version:
+```bash
+yarn build
+yarn start
+```
+
+2. Open in a supported browser (Chrome/Edge recommended)
+3. Use browser developer tools > Application > Service Workers to verify registration
+4. Test offline functionality by disconnecting from the internet
+5. Install to device by:
+   - Mobile: Tap "Add to Home Screen" prompt or use browser menu
+   - Desktop: Look for install icon in address bar or browser menu
 
 ## Development Workflow
 

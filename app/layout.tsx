@@ -3,8 +3,20 @@ import { Inter } from 'next/font/google';
 
 export const metadata = {
   metadataBase: new URL('https://postgres-drizzle.vercel.app'),
-  title: 'Postgres Demo with Drizzle',
-  description: 'A simple Next.js app with a Postgres database and Drizzle as the ORM',
+  title: 'AESPT - PostgreSQL with Drizzle',
+  description: 'A modern Next.js application with PostgreSQL database and Drizzle ORM',
+  manifest: '/manifest.json',
+  themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'AESPT Application',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 const inter = Inter({
@@ -16,6 +28,11 @@ const inter = Inter({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
       <body className={inter.variable}>{children}</body>
     </html>
   );
