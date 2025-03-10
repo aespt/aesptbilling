@@ -6,7 +6,7 @@ export const CustomersTable = pgTable(
     id: serial('id').primaryKey(),
     name: varchar('name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).notNull(),
-    phone: varchar('phone', { length: 20 }),
+    phone: varchar('phone', { length: 20 }).notNull(),
     address: text('address'),
     created_by: varchar('created_by', { length: 100 }),
     updated_by: varchar('updated_by', { length: 100 }),
