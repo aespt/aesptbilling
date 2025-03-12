@@ -18,9 +18,11 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const isAuthenticated = token ? await verifyToken(token) : null;
   
+  console.log('Middleware executing, isAuthenticated:', isAuthenticated);
+  
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    return NextResponse.redirect(new URL('/(features)/(unauth)/login', request.url));
+    return NextResponse.redirect(new URL('/login', request.url))
   }
   
   // Continue with the request if authenticated
@@ -29,5 +31,5 @@ export async function middleware(request: NextRequest) {
 
 // This middleware applies to all routes in the (auth) directory
 export const config = {
-  matcher: ['/(features)/(auth)/:path*']
+  matcher: ['/dashboard/:path*', '/(features)/(auth)/:path*']
 }; 

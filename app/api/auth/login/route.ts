@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Extract validated data
-    const { email, password, rememberMe = false } = validationResult.data;
+    const { email, password } = validationResult.data;
     
     // Attempt login
     const loginResult = await loginUser(email, password);
@@ -37,14 +37,12 @@ export async function POST(request: NextRequest) {
     response.cookies.set({
       name: AUTH_COOKIE_NAME,
       value: loginResult.accessToken,
-      ...getAccessTokenCookieConfig(rememberMe)
     });
     
     // Set refresh token cookie
     response.cookies.set({
       name: REFRESH_COOKIE_NAME,
       value: loginResult.refreshToken,
-      ...getRefreshTokenCookieConfig(rememberMe)
     });
     
     return response;

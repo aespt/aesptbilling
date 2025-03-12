@@ -10,13 +10,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   
   const { login, loading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password, rememberMe);
+    await login(email, password);
   };
 
   return (
@@ -44,7 +43,6 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">AESPT</h1>
-          <p className="text-blue-200 text-sm">Database Management System</p>
         </motion.div>
       </div>
 
@@ -109,18 +107,6 @@ export default function LoginPage() {
               
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center">
-                  <input
-                    id="remember_me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-blue-300 rounded"
-                  />
-                  <label htmlFor="remember_me" className="ml-2 block text-blue-200">
-                    Remember me
-                  </label>
-                </div>
                 <Link
                   href="/(features)/(unauth)/forgot-password"
                   className="text-blue-300 hover:text-white transition-colors"
@@ -154,29 +140,8 @@ export default function LoginPage() {
           </form>
         </div>
         
-        {/* Footer */}
-        <div className="px-8 py-4 bg-white bg-opacity-5 border-t border-blue-900 border-opacity-30">
-          <p className="text-sm text-center text-blue-200">
-            Don't have an account?{" "}
-            <Link
-              href="/(features)/(unauth)/register"
-              className="text-blue-300 hover:text-white font-medium transition-colors"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
       </motion.div>
       
-      {/* Hint Text - for demo purposes */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.5 }}
-        className="text-center mt-6 text-xs text-blue-200 opacity-70"
-      >
-        <p>Demo credentials: admin@example.com / password</p>
-      </motion.div>
     </div>
   );
 } 

@@ -1,6 +1,6 @@
 import { db } from '../drizzle';
 import { UsersTable } from '../models/users';
-import { verifyPassword } from '../utils/password';
+import { hashPassword, verifyPassword } from '../utils/password';
 import { eq } from 'drizzle-orm';
 import { generateToken, generateRefreshToken } from '../utils/jwt';
 import { type TokenPayload } from '../schemas/authSchema';
@@ -27,6 +27,7 @@ export interface LoginResult {
  */
 export async function loginUser(email: string, password: string): Promise<LoginResult> {
   try {
+
     // Find the user by email
     const users = await db
       .select()

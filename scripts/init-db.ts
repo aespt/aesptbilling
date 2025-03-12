@@ -58,7 +58,7 @@ async function main() {
       await db.insert(UsersTable).values({
         username: 'admin',
         email: 'admin@example.com',
-        password_hash: '$2b$10$EpRnTzVlqHNP0.fUbXUwSOyuiXe/QLSUG6xNekdHgTGmrpHEfIoxm', // password is 'password'
+        password_hash: '$2b$10$KHi1f67cSdJwoV4wU5AJaeJJp8EPUxvE4v3pHmX/pg2OpdGLqJfZi', // password is 'admin123'
         created_by: 'system',
         updated_by: 'system',
         created_at: new Date(),

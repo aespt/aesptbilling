@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setUser(data.user);
-      router.push('/(features)/(auth)/dashboard');
+      router.push('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
