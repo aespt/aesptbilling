@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       setUser(null);
-      router.push('/(features)/(unauth)/login');
+      router.push('/login');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {

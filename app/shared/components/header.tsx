@@ -9,17 +9,12 @@ import {
   FiUser,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Mock user data - in a real app, this would come from authentication
-  const user = {
-    name: "John Doe",
-    designation: "Admin Manager",
-    avatar: "/avatar-placeholder.png", // This would be a real avatar path
-  };
+  const { user, logout } = useAuth();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -36,6 +31,13 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Handle logout click
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await logout();
+    setIsDropdownOpen(false);
+  };
 
   return (
     <header className="fixed top-0 right-0 left-0 md:left-[280px] z-30 bg-white border-b border-gray-200 transition-all duration-300">
@@ -60,11 +62,11 @@ export default function Header() {
               className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-blue-500 flex items-center justify-center text-white font-medium">
-                {user.name.charAt(0)}
+                {user?.username ? user.username.charAt(0) : '?'}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-700">{user.name}</p>
-                <p className="text-xs text-gray-500">{user.designation}</p>
+                <p className="text-sm font-medium text-gray-700">{user?.username || 'Guest'}</p>
+                <p className="text-xs text-gray-500">{user?.email || ''}</p>
               </div>
               <FiChevronDown
                 size={16}
@@ -101,6 +103,7 @@ export default function Header() {
                   <div className="border-t border-gray-200 my-1"></div>
                   <a
                     href="#"
+                    onClick={handleLogout}
                     className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                   >
                     <FiLogOut className="mr-3" />
