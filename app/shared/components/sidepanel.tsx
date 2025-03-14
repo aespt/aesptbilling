@@ -49,7 +49,7 @@ export default function Sidepanel({
           {/* Sidepanel */}
           <motion.div
             initial={{ x: '100%' }}
-            animate={{ x: '100%' }}
+            animate={{ x: '0' }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 20 }}
             className={`fixed right-0 top-0 h-full bg-white shadow-lg z-50 ${sizeClasses[size]}`}

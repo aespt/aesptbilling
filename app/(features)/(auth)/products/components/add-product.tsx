@@ -16,6 +16,10 @@ const productFormSchema = z.object({
     (val) => (val === '' ? 0 : Number(val)),
     z.number().min(0.01, "Price must be greater than zero")
   ),
+  mrp: z.preprocess(
+    (val) => (val === '' ? 0 : Number(val)),
+    z.number().min(0.01, "MRP must be greater than zero")
+  ),
   count: z.preprocess(
     (val) => (val === '' ? 0 : Number(val)),
     z.number().int("Quantity must be a whole number").nonnegative("Quantity cannot be negative")
@@ -55,6 +59,7 @@ export default function AddProduct({
       partName: '',
       description: '',
       price: 0,
+      mrp: 0,
       count: 0
     },
     mode: 'onChange' // Validate on change for immediate feedback
@@ -68,11 +73,16 @@ export default function AddProduct({
         ? productToEdit.price 
         : parseFloat(productToEdit.price as any);
 
+      const numericMrp = typeof productToEdit.mrp === 'number' 
+        ? productToEdit.mrp 
+        : parseFloat(productToEdit.mrp as any);
+
       reset({
         partNo: productToEdit.partNo,
         partName: productToEdit.name,
         description: productToEdit.description || '',
         price: isNaN(numericPrice) ? 0 : numericPrice,
+        mrp: isNaN(numericMrp) ? 0 : numericMrp,
         count: productToEdit.count || 0
       });
     }
@@ -90,6 +100,7 @@ export default function AddProduct({
         name: data.partName,
         description: data.description || '',
         price: data.price,
+        mrp: data.mrp,
         count: data.count
       };
       
@@ -139,6 +150,7 @@ export default function AddProduct({
           partName: '',
           description: '',
           price: 0,
+          mrp: 0,
           count: 0
         });
         
@@ -166,7 +178,7 @@ export default function AddProduct({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col pb-3" noValidate>
       {/* Content wrapper */}
       <div className="flex-1 overflow-y-auto">
         {/* Header */}
@@ -244,33 +256,58 @@ export default function AddProduct({
             <ErrorMessage message={errors.description?.message} />
           </div>
           
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Price</label>
-            <Controller
-              name="price"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  fullWidth
-                  type="number"
-                  placeholder="Enter price"
-                  variant="outlined"
-                  size="small"
-                  inputProps={{ step: 0.01 }}
-                  error={!!errors.price}
-                  value={field.value === 0 && !isSubmitted ? '' : field.value}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? '' : parseFloat(e.target.value);
-                    field.onChange(value);
-                  }}
-                />
-              )}
-            />
-            <ErrorMessage message={errors.price?.message} />
-          </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Price</label>
+              <Controller
+                name="price"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    type="number"
+                    placeholder="Enter price"
+                    variant="outlined"
+                    size="small"
+                    inputProps={{ step: 0.01 }}
+                    error={!!errors.price}
+                    value={field.value === 0 && !isSubmitted ? '' : field.value}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseFloat(e.target.value);
+                      field.onChange(value);
+                    }}
+                  />
+                )}
+              />
+              <ErrorMessage message={errors.price?.message} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">MRP</label>
+              <Controller
+                name="mrp"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    type="number"
+                    placeholder="Enter MRP"
+                    variant="outlined"
+                    size="small"
+                    inputProps={{ step: 0.01 }}
+                    error={!!errors.mrp}
+                    value={field.value === 0 && !isSubmitted ? '' : field.value}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseFloat(e.target.value);
+                      field.onChange(value);
+                    }}
+                  />
+                )}
+              />
+              <ErrorMessage message={errors.mrp?.message} />
+            </div>
           
-          <div className="space-y-1">
+          <div className="space-y-1 hidden">
             <label className="text-sm font-medium text-gray-700">Quantity</label>
             <Controller
               name="count"

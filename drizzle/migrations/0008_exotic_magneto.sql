@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "mrp" numeric(10, 2);
