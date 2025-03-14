@@ -108,7 +108,7 @@ export default function LoginPage() {
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between text-sm">
                 <Link
-                  href="/(features)/(unauth)/forgot-password"
+                  href="/forgot-password"
                   className="text-blue-300 hover:text-white transition-colors"
                 >
                   Forgot password?

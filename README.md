@@ -231,3 +231,41 @@ The project uses Zod for schema validation. Schema files are in `lib/schemas/` d
 - **yarn db:studio**: Open Drizzle Studio
 - **yarn docker:up**: Start Docker containers
 - **yarn docker:down**: Stop Docker containers
+
+## Password Reset Feature
+
+The application includes a password reset feature that allows users to reset their password if they forget it. Here's how it works:
+
+1. User clicks "Forgot password?" on the login page
+2. User enters their email address
+3. A reset link with a secure token is sent to their email
+4. User clicks the link and is taken to a password reset page
+5. User enters a new password and submits the form
+6. The password is updated and the user can log in with the new password
+
+### Setting up Gmail for Password Reset Emails
+
+To use Gmail for sending password reset emails, you need to:
+
+1. Update the `.env` file with your Gmail credentials:
+```
+EMAIL_USER=your-gmail-address@gmail.com
+EMAIL_PASSWORD=your-app-password
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+2. For `EMAIL_PASSWORD`, you need to use an "App Password" rather than your regular Gmail password:
+   - Go to your Google Account settings: https://myaccount.google.com/
+   - Enable 2-Step Verification if you haven't already
+   - Go to "Security" > "App passwords"
+   - Select "Mail" as the app and "Other" as the device (name it "AESPT")
+   - Copy the generated 16-character password and use it as your `EMAIL_PASSWORD`
+
+3. Make sure `NEXT_PUBLIC_APP_URL` is set to your application's URL (use `http://localhost:3000` for local development)
+
+### Security Notes
+
+- Password reset tokens expire after 7 days
+- Tokens can only be used once
+- Passwords are securely hashed using bcrypt before storing in the database
+- The API returns the same response whether an email exists or not to prevent email enumeration attacks

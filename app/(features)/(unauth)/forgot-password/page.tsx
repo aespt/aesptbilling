@@ -17,17 +17,25 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call our API to send a reset email
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
       
-      // In a real app, you would call your backend to send a reset email
-      if (email.includes('@')) {
-        setSuccess(true);
-      } else {
-        setError("Please enter a valid email address");
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset email');
       }
+      
+      setSuccess(true);
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      console.error('Error sending reset email:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -158,7 +166,7 @@ export default function ForgotPasswordPage() {
         <div className="px-8 py-4 bg-white bg-opacity-5 border-t border-blue-900 border-opacity-30">
           <p className="text-sm text-center">
             <Link
-              href="/(features)/(unauth)/login"
+              href="/login"
               className="inline-flex items-center text-blue-300 hover:text-white font-medium transition-colors"
             >
               <FiArrowLeft className="mr-2" />
