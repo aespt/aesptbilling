@@ -13,6 +13,7 @@ export interface Product extends BaseModel {
   name: string;
   description: string | null;
   price: number | string; // Allow both number and string for flexibility
+  mrp: number | string;
   count: number | null;
 }
 
