@@ -6,7 +6,6 @@ import { Product } from "@/lib/types";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FormButton, ErrorMessage } from '@/app/shared/components/form-utils';
 
 // Define the validation schema using Zod
 const productFormSchema = z.object({
@@ -31,9 +30,9 @@ const productFormSchema = z.object({
 type ProductFormData = z.infer<typeof productFormSchema>;
 
 interface AddProductProps {
-  onProductAdded: (product: Product) => void;
-  onProductUpdated: (product: Product) => void;
-  productToEdit?: Product;
+  onProductAdded?: (productName: string) => void;
+  onProductUpdated?: (productName: string) => void;
+  productToEdit?: Product | null;
   onClose: () => void;
 }
 
@@ -44,14 +43,15 @@ export default function AddProduct({
   onClose
 }: AddProductProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const isEditMode = !!productToEdit;
 
-  // Initialize form with react-hook-form and zod validation
+  // Initialize React Hook Form
   const { 
     control, 
     handleSubmit, 
-    reset,
-    formState: { errors } 
+    reset, 
+    formState: { errors, isSubmitted } 
   } = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -61,97 +61,141 @@ export default function AddProduct({
       price: 0,
       mrp: 0,
       count: 0
-    }
+    },
+    mode: 'onChange' // Validate on change for immediate feedback
   });
 
-  // Set form values if editing an existing product
+  // Load product data if in edit mode
   useEffect(() => {
     if (productToEdit) {
+      // Convert price to number if it's not already
+      const numericPrice = typeof productToEdit.price === 'number' 
+        ? productToEdit.price 
+        : parseFloat(productToEdit.price as any);
+
+      const numericMrp = typeof productToEdit.mrp === 'number' 
+        ? productToEdit.mrp 
+        : parseFloat(productToEdit.mrp as any);
+
       reset({
         partNo: productToEdit.partNo,
         partName: productToEdit.name,
         description: productToEdit.description || '',
-        price: productToEdit.price,
-        mrp: productToEdit.mrp,
-        count: productToEdit.count
+        price: isNaN(numericPrice) ? 0 : numericPrice,
+        mrp: isNaN(numericMrp) ? 0 : numericMrp,
+        count: productToEdit.count || 0
       });
     }
   }, [productToEdit, reset]);
 
-  // Handle form submission
+  // Form submission handler
   const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true);
-    setIsSubmitted(true);
+    setServerError(null);
     
     try {
-      if (productToEdit) {
-        // Update existing product
-        const response = await fetch(`/api/products/${productToEdit.id}`, {
+      // Convert form data to match the API expectations
+      const productData = {
+        part_no: data.partNo,
+        name: data.partName,
+        description: data.description || '',
+        price: data.price,
+        mrp: data.mrp,
+        count: data.count
+      };
+      
+      // If in edit mode, add the ID and use PUT method
+      if (isEditMode && productToEdit) {
+        const updateData = {
+          id: productToEdit.id,
+          ...productData
+        };
+        
+        // Call the API to update the product
+        const response = await fetch('/api/products', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            partNo: data.partNo,
-            name: data.partName,
-            description: data.description,
-            price: data.price,
-            mrp: data.mrp,
-            count: data.count
-          }),
+          body: JSON.stringify(updateData),
         });
         
         if (!response.ok) {
-          throw new Error('Failed to update product');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update product');
         }
         
-        const updatedProduct = await response.json();
-        onProductUpdated(updatedProduct);
+        // Call the callback if provided
+        if (onProductUpdated) {
+          onProductUpdated(data.partName);
+        }
       } else {
-        // Create new product
+        // Call the API to create a new product
         const response = await fetch('/api/products', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            partNo: data.partNo,
-            name: data.partName,
-            description: data.description,
-            price: data.price,
-            mrp: data.mrp,
-            count: data.count
-          }),
+          body: JSON.stringify(productData),
         });
         
         if (!response.ok) {
-          throw new Error('Failed to create product');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create product');
         }
         
-        const newProduct = await response.json();
-        onProductAdded(newProduct);
+        // Reset form for new product
+        reset({
+          partNo: '',
+          partName: '',
+          description: '',
+          price: 0,
+          mrp: 0,
+          count: 0
+        });
+        
+        // Call the callback if provided
+        if (onProductAdded) {
+          onProductAdded(data.partName);
+        }
       }
-      
-      // Close the panel after successful submission
-      onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error);
+      setServerError(error.message || 'An error occurred while saving the product');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Custom error message component for consistent styling
+  const ErrorMessage = ({ message }: { message?: string }) => {
+    if (!message) return null;
+    return (
+      <p className="mt-1 text-sm text-red-600">
+        {message}
+      </p>
+    );
+  };
+
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900">
-          {productToEdit ? 'Edit Product' : 'Add New Product'}
-        </h2>
-      </div>
-      
-      {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto">
+    <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col pb-3" noValidate>
+      {/* Content wrapper */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Header */}
+        <div className="p-6 border-b">
+          <h1 className="text-2xl font-bold text-black/70">
+            {isEditMode ? 'Edit Product' : 'Add Product'}
+          </h1>
+        </div>
+
+        {/* Server error message */}
+        {serverError && (
+          <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
+            {serverError}
+          </div>
+        )}
+
+        {/* Form fields */}
         <div className="p-6 space-y-6">
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Part Number</label>
@@ -166,7 +210,6 @@ export default function AddProduct({
                   variant="outlined"
                   size="small"
                   error={!!errors.partNo}
-                  disabled={isSubmitting}
                 />
               )}
             />
@@ -186,7 +229,6 @@ export default function AddProduct({
                   variant="outlined"
                   size="small"
                   error={!!errors.partName}
-                  disabled={isSubmitting}
                 />
               )}
             />
@@ -208,14 +250,12 @@ export default function AddProduct({
                   multiline
                   rows={4}
                   error={!!errors.description}
-                  disabled={isSubmitting}
                 />
               )}
             />
             <ErrorMessage message={errors.description?.message} />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">Price</label>
               <Controller
@@ -231,7 +271,6 @@ export default function AddProduct({
                     size="small"
                     inputProps={{ step: 0.01 }}
                     error={!!errors.price}
-                    disabled={isSubmitting}
                     value={field.value === 0 && !isSubmitted ? '' : field.value}
                     onChange={(e) => {
                       const value = e.target.value === '' ? '' : parseFloat(e.target.value);
@@ -242,7 +281,6 @@ export default function AddProduct({
               />
               <ErrorMessage message={errors.price?.message} />
             </div>
-            
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">MRP</label>
               <Controller
@@ -258,7 +296,6 @@ export default function AddProduct({
                     size="small"
                     inputProps={{ step: 0.01 }}
                     error={!!errors.mrp}
-                    disabled={isSubmitting}
                     value={field.value === 0 && !isSubmitted ? '' : field.value}
                     onChange={(e) => {
                       const value = e.target.value === '' ? '' : parseFloat(e.target.value);
@@ -269,7 +306,6 @@ export default function AddProduct({
               />
               <ErrorMessage message={errors.mrp?.message} />
             </div>
-          </div>
           
           <div className="space-y-1 hidden">
             <label className="text-sm font-medium text-gray-700">Quantity</label>
@@ -285,7 +321,6 @@ export default function AddProduct({
                   variant="outlined"
                   size="small"
                   error={!!errors.count}
-                  disabled={isSubmitting}
                   value={field.value === 0 && !isSubmitted ? '' : field.value}
                   onChange={(e) => {
                     const value = e.target.value === '' ? '' : parseInt(e.target.value, 10);
@@ -297,29 +332,28 @@ export default function AddProduct({
             <ErrorMessage message={errors.count?.message} />
           </div>
         </div>
-      </form>
-      
-      {/* Footer with buttons */}
-      <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-        <FormButton
-          variant="outlined"
-          color="inherit"
-          onClick={onClose}
-          disabled={isSubmitting}
-          small
-        >
-          Cancel
-        </FormButton>
-        <FormButton
-          variant="contained"
-          color="primary"
-          onClick={handleSubmit(onSubmit)}
-          disabled={isSubmitting}
-          small
-        >
-          {productToEdit ? 'Update' : 'Save'}
-        </FormButton>
       </div>
-    </div>
+
+      {/* Buttons - Fixed at bottom */}
+      <div className="sticky bottom-0 p-6 border-t bg-white mt-auto">
+        <div className="flex gap-4">
+          <button
+            type="button"
+            className="cursor-pointer flex-1 px-4 py-2.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="cursor-pointer flex-1 px-4 py-2.5 rounded-md overflow-hidden bg-gradient-to-r from-red-500 to-blue-500 text-white hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:hover:scale-100"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : isEditMode ? 'Update' : 'Submit'}
+          </button>
+        </div>
+      </div>
+    </form>
   );
 }

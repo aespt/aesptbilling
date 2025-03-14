@@ -6,7 +6,6 @@ import { Customer } from "@/lib/types";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FormButton, ErrorMessage } from '@/app/shared/components/form-utils';
 
 // Define the validation schema using Zod
 const customerFormSchema = z.object({
@@ -21,9 +20,9 @@ const customerFormSchema = z.object({
 type CustomerFormData = z.infer<typeof customerFormSchema>;
 
 interface AddCustomerProps {
-  onCustomerAdded: (customer: Customer) => void;
-  onCustomerUpdated: (customer: Customer) => void;
-  customerToEdit?: Customer;
+  onCustomerAdded?: (customerName: string) => void;
+  onCustomerUpdated?: (customerName: string) => void;
+  customerToEdit?: Customer | null;
   onClose: () => void;
 }
 
@@ -34,14 +33,15 @@ export default function AddCustomer({
   onClose
 }: AddCustomerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const isEditMode = !!customerToEdit;
 
-  // Initialize form with react-hook-form and zod validation
+  // Initialize React Hook Form
   const { 
     control, 
     handleSubmit, 
-    reset,
-    formState: { errors } 
+    reset, 
+    formState: { errors, isSubmitted } 
   } = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
@@ -49,10 +49,11 @@ export default function AddCustomer({
       email: '',
       phone: '',
       address: ''
-    }
+    },
+    mode: 'onChange' // Validate on change for immediate feedback
   });
 
-  // Set form values if editing an existing customer
+  // Load customer data if in edit mode
   useEffect(() => {
     if (customerToEdit) {
       reset({
@@ -64,28 +65,44 @@ export default function AddCustomer({
     }
   }, [customerToEdit, reset]);
 
-  // Handle form submission
+  // Form submission handler
   const onSubmit = async (data: CustomerFormData) => {
     setIsSubmitting(true);
-    setIsSubmitted(true);
+    setServerError(null);
     
     try {
-      if (customerToEdit) {
-        // Update existing customer
-        const response = await fetch(`/api/customers/${customerToEdit.id}`, {
+      // Convert form data to match the API expectations
+      const customerData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone || '',
+        address: data.address || ''
+      };
+      
+      // If in edit mode, add the ID and use PUT method
+      if (isEditMode && customerToEdit) {
+        const updateData = {
+          id: customerToEdit.id,
+          ...customerData
+        };
+        
+        const response = await fetch('/api/customers', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(updateData),
         });
         
         if (!response.ok) {
-          throw new Error('Failed to update customer');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update customer');
         }
         
-        const updatedCustomer = await response.json();
-        onCustomerUpdated(updatedCustomer);
+        // Call the callback function if provided
+        if (onCustomerUpdated) {
+          onCustomerUpdated(data.name);
+        }
       } else {
         // Create new customer
         const response = await fetch('/api/customers', {
@@ -93,37 +110,60 @@ export default function AddCustomer({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(customerData),
         });
         
         if (!response.ok) {
-          throw new Error('Failed to create customer');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create customer');
         }
         
-        const newCustomer = await response.json();
-        onCustomerAdded(newCustomer);
+        // Call the callback function if provided
+        if (onCustomerAdded) {
+          onCustomerAdded(data.name);
+        }
       }
       
-      // Close the panel after successful submission
-      onClose();
-    } catch (error) {
-      console.error('Error saving customer:', error);
+      // Reset the form
+      reset();
+      
+    } catch (error: any) {
+      console.error('Error submitting customer:', error);
+      setServerError(error.message || 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Component for displaying error messages
+  const ErrorMessage = ({ message }: { message?: string }) => {
+    if (!message) return null;
+    return (
+      <p className="mt-1 text-sm text-red-600">
+        {message}
+      </p>
+    );
+  };
+
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900">
-          {customerToEdit ? 'Edit Customer' : 'Add New Customer'}
-        </h2>
-      </div>
-      
-      {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto">
+    <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col" noValidate>
+      {/* Content wrapper */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Header */}
+        <div className="p-6 border-b">
+          <h1 className="text-2xl font-bold text-black/70">
+            {isEditMode ? 'Edit Customer' : 'Add Customer'}
+          </h1>
+        </div>
+
+        {/* Server error message */}
+        {serverError && (
+          <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
+            {serverError}
+          </div>
+        )}
+        
+        {/* Form fields */}
         <div className="p-6 space-y-6">
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Customer Name</label>
@@ -203,27 +243,28 @@ export default function AddCustomer({
             <ErrorMessage message={errors.address?.message} />
           </div>
         </div>
-      </form>
-      
-      {/* Footer with buttons */}
-      <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-        <FormButton
-          variant="outlined"
-          color="inherit"
-          onClick={onClose}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </FormButton>
-        <FormButton
-          variant="contained"
-          color="primary"
-          onClick={handleSubmit(onSubmit)}
-          disabled={isSubmitting}
-        >
-          {customerToEdit ? 'Update' : 'Save'}
-        </FormButton>
       </div>
-    </div>
+
+      {/* Buttons - Fixed at bottom */}
+      <div className="sticky bottom-0 p-6 border-t bg-white mt-auto">
+        <div className="flex gap-4">
+          <button
+            type="button"
+            className="cursor-pointer flex-1 px-4 py-2.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="cursor-pointer flex-1 px-4 py-2.5 rounded-md overflow-hidden bg-gradient-to-r from-red-500 to-blue-500 text-white hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:hover:scale-100"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : isEditMode ? 'Update' : 'Submit'}
+          </button>
+        </div>
+      </div>
+    </form>
   );
 } 
