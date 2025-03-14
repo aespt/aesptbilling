@@ -143,15 +143,15 @@ export default function SalesmenPage() {
   };
 
   // Handle salesman added event
-  const handleSalesmanAdded = (salesmanName: string) => {
+  const handleSalesmanAdded = (salesman: Salesman) => {
     fetchSalesmen();
-    showSnackbar(`${salesmanName} has been added successfully`, 'success');
+    showSnackbar(`${salesman.name} has been added successfully`, 'success');
   };
 
   // Handle salesman updated event
-  const handleSalesmanUpdated = (salesmanName: string) => {
+  const handleSalesmanUpdated = (salesman: Salesman) => {
     fetchSalesmen();
-    showSnackbar(`${salesmanName} has been updated successfully`, 'success');
+    showSnackbar(`${salesman.name} has been updated successfully`, 'success');
   };
 
   return (
@@ -224,10 +224,10 @@ export default function SalesmenPage() {
           onClose={() => setIsSidepanelOpen(false)}
         >
           <AddSalesman
-            onClose={() => setIsSidepanelOpen(false)}
             onSalesmanAdded={handleSalesmanAdded}
             onSalesmanUpdated={handleSalesmanUpdated}
-            salesmanToEdit={selectedSalesman}
+            salesmanToEdit={selectedSalesman || undefined}
+            onClose={() => setIsSidepanelOpen(false)}
           />
         </Sidepanel>
         

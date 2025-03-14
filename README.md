@@ -15,17 +15,20 @@ A modern Next.js application with PostgreSQL database and Drizzle ORM for databa
 ## Project Setup
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/akhilofficial4031/aespt.git
 cd aespt
 ```
 
 2. Install dependencies
+
 ```bash
 yarn install
 ```
 
 3. Copy the environment variables
+
 ```bash
 cp .env.example .env
 ```
@@ -37,17 +40,20 @@ This project uses PostgreSQL with Docker for easy setup and Drizzle ORM for data
 ### Starting the Database
 
 1. Start the PostgreSQL database using Docker:
+
 ```bash
 yarn docker:up
 ```
 
 This will start:
+
 - PostgreSQL database on port 5432
 - PgAdmin (PostgreSQL admin tool) on port 5050
 
 ### Database Configuration
 
 The database connection is configured in `.env` with these default settings:
+
 ```
 POSTGRES_URL=postgres://postgres:postgres@localhost:5432/aespt_db
 POSTGRES_USER=postgres
@@ -58,6 +64,7 @@ POSTGRES_DATABASE=aespt_db
 ### Database Schema & Migrations
 
 The database schema is organized in the `lib/models` directory, with each table in its own file:
+
 - `users.ts`: User accounts
 - `customers.ts`: Customer information
 - `products.ts`: Product catalog
@@ -69,16 +76,19 @@ The database schema is organized in the `lib/models` directory, with each table 
 To create and update your database:
 
 1. Generate migrations from your schema:
+
 ```bash
 yarn db:generate
 ```
 
 2. Apply migrations and seed initial data:
+
 ```bash
 yarn db:migrate
 ```
 
 3. (Optional) Browse your database with Drizzle Studio:
+
 ```bash
 yarn db:studio
 ```
@@ -90,19 +100,18 @@ When you need to make changes to your database schema, follow these steps:
 #### Altering a Table Column
 
 1. **Modify the model definition** in the appropriate file in `lib/models/`.
+
    ```typescript
    // Example: Adding a new column to the customers table
-   export const CustomersTable = pgTable(
-     'customers',
-     {
-       // Existing columns...
-       // Add new column:
-       company_name: varchar('company_name', { length: 255 }),
-     },
-   );
+   export const CustomersTable = pgTable('customers', {
+     // Existing columns...
+     // Add new column:
+     company_name: varchar('company_name', { length: 255 }),
+   });
    ```
 
 2. **Generate a migration**:
+
    ```bash
    yarn db:generate
    ```
@@ -110,6 +119,7 @@ When you need to make changes to your database schema, follow these steps:
 3. **Review the generated migration file** in `drizzle/migrations/` to ensure it will make the intended changes.
 
 4. **Apply the migration**:
+
    ```bash
    yarn db:migrate
    ```
@@ -126,17 +136,14 @@ When you need to make changes to your database schema, follow these steps:
 #### Considerations for Database Changes
 
 - **Nullable vs. Not Null**: When adding a NOT NULL column to an existing table, you must either provide a default value or ensure the table is empty.
-  
 - **Data Type Changes**: Be cautious when changing column types as it may result in data loss or conversion errors.
-  
 - **Renaming Columns**: Drizzle might interpret renaming as dropping and adding a new column, which would lose data. Use the `renameColumn` helper:
+
   ```typescript
   // Example migration pseudo-code
-  alter('customers', (table) => {
-    return [
-      renameColumn(table, 'old_name', 'new_name'),
-    ];
-  })
+  alter('customers', table => {
+    return [renameColumn(table, 'old_name', 'new_name')];
+  });
   ```
 
 - **Foreign Key Constraints**: When adding foreign keys, ensure the referenced data exists, or the migration will fail.
@@ -148,6 +155,7 @@ When you need to make changes to your database schema, follow these steps:
 ### Reset Database
 
 If you need to reset your database to a clean state:
+
 ```bash
 yarn db:reset
 ```
@@ -178,6 +186,7 @@ The PWA functionality is implemented with:
 ### Testing PWA Features
 
 1. Build and start the production version:
+
 ```bash
 yarn build
 yarn start
@@ -193,16 +202,19 @@ yarn start
 ## Development Workflow
 
 1. Start the development server:
+
 ```bash
 yarn dev
 ```
 
 2. Run linting:
+
 ```bash
 yarn lint
 ```
 
 3. Format code:
+
 ```bash
 yarn format
 ```
@@ -210,6 +222,7 @@ yarn format
 ## Data Validation
 
 The project uses Zod for schema validation. Schema files are in `lib/schemas/` directory:
+
 - `baseSchema.ts`: Common fields for all entities
 - `userSchema.ts`: User data validation
 - `customerSchema.ts`: Customer data validation
@@ -248,6 +261,7 @@ The application includes a password reset feature that allows users to reset the
 To use Gmail for sending password reset emails, you need to:
 
 1. Update the `.env` file with your Gmail credentials:
+
 ```
 EMAIL_USER=your-gmail-address@gmail.com
 EMAIL_PASSWORD=your-app-password
@@ -255,6 +269,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 2. For `EMAIL_PASSWORD`, you need to use an "App Password" rather than your regular Gmail password:
+
    - Go to your Google Account settings: https://myaccount.google.com/
    - Enable 2-Step Verification if you haven't already
    - Go to "Security" > "App passwords"
@@ -269,3 +284,13 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - Tokens can only be used once
 - Passwords are securely hashed using bcrypt before storing in the database
 - The API returns the same response whether an email exists or not to prevent email enumeration attacks
+
+## Form Styling System
+
+The application uses a standardized form styling system to ensure consistency across all pages. This system includes:
+
+- Consistent styling for all MUI form components
+- Standardized spacing, colors, and typography
+- Utility components for form buttons and error messages
+
+For more information, see the [Form Styling Guide](docs/form-styling-guide.md).

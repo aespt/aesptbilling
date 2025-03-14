@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/hooks/useAuth';
+import MuiThemeProvider from './shared/components/mui-theme-provider';
 
 export const metadata = {
   metadataBase: new URL('https://postgres-drizzle.vercel.app'),
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.variable}>
         <AuthProvider>
-          {children}
+          <MuiThemeProvider>
+            {children}
+          </MuiThemeProvider>
         </AuthProvider>
       </body>
     </html>

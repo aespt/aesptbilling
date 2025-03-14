@@ -265,73 +265,43 @@ export default function AddSalesPage() {
   };
 
   // Handle customer added
-  const handleCustomerAdded = (customerName: string) => {
-    // Refresh customers list
-    fetch('/api/dropdown/customers')
-      .then(response => response.json())
-      .then(data => {
-        setCustomers(data.customers);
-        // Find and select the newly added customer
-        const newCustomer = data.customers.find((c: Customer) => c.name === customerName);
-        if (newCustomer) {
-          setSelectedCustomer(newCustomer);
-          setFormData({
-            ...formData,
-            customer_id: newCustomer.id,
-          });
-        }
-      })
-      .catch(error => console.error('Error refreshing customers:', error));
+  const handleCustomerAdded = (customer: any) => {
+    // Find and select the newly added customer
+    setSelectedCustomer(customer);
+    setFormData({
+      ...formData,
+      customer_id: customer.id,
+    });
     
     setIsCustomerPanelOpen(false);
-    showSnackbar(`Customer "${customerName}" added successfully`, 'success');
+    showSnackbar(`Customer "${customer.name}" added successfully`, 'success');
   };
 
   // Handle product added
-  const handleProductAdded = (productName: string) => {
-    // Refresh products list
-    fetch('/api/dropdown/products')
-      .then(response => response.json())
-      .then(data => {
-        setProducts(data.products);
-        // Find and select the newly added product
-        const newProduct = data.products.find((p: Product) => p.name === productName);
-        if (newProduct) {
-          setSelectedProduct(newProduct);
-          setFormData({
-            ...formData,
-            product_id: newProduct.id,
-            mrp: newProduct.mrp,
-          });
-        }
-      })
-      .catch(error => console.error('Error refreshing products:', error));
+  const handleProductAdded = (product: any) => {
+    // Find and select the newly added product
+    setSelectedProduct(product);
+    setFormData({
+      ...formData,
+      product_id: product.id,
+      mrp: typeof product.mrp === 'string' ? parseFloat(product.mrp) : product.mrp,
+    });
     
     setIsProductPanelOpen(false);
-    showSnackbar(`Product "${productName}" added successfully`, 'success');
+    showSnackbar(`Product "${product.name}" added successfully`, 'success');
   };
 
   // Handle salesman added
-  const handleSalesmanAdded = (salesmanName: string) => {
-    // Refresh salesmen list
-    fetch('/api/dropdown/salesmen')
-      .then(response => response.json())
-      .then(data => {
-        setSalesmen(data.salesmen);
-        // Find and select the newly added salesman
-        const newSalesman = data.salesmen.find((s: Salesman) => s.name === salesmanName);
-        if (newSalesman) {
-          setSelectedSalesman(newSalesman);
-          setFormData({
-            ...formData,
-            salesman_id: newSalesman.id,
-          });
-        }
-      })
-      .catch(error => console.error('Error refreshing salesmen:', error));
+  const handleSalesmanAdded = (salesman: any) => {
+    // Find and select the newly added salesman
+    setSelectedSalesman(salesman);
+    setFormData({
+      ...formData,
+      salesman_id: salesman.id,
+    });
     
     setIsSalesmanPanelOpen(false);
-    showSnackbar(`Salesman "${salesmanName}" added successfully`, 'success');
+    showSnackbar(`Salesman "${salesman.name}" added successfully`, 'success');
   };
 
   return (
@@ -587,6 +557,7 @@ export default function AddSalesPage() {
       >
         <AddCustomer
           onCustomerAdded={handleCustomerAdded}
+          onCustomerUpdated={handleCustomerAdded}
           onClose={() => setIsCustomerPanelOpen(false)}
         />
       </Sidepanel>
@@ -597,6 +568,7 @@ export default function AddSalesPage() {
       >
         <AddProduct
           onProductAdded={handleProductAdded}
+          onProductUpdated={handleProductAdded}
           onClose={() => setIsProductPanelOpen(false)}
         />
       </Sidepanel>
@@ -607,6 +579,7 @@ export default function AddSalesPage() {
       >
         <AddSalesman
           onSalesmanAdded={handleSalesmanAdded}
+          onSalesmanUpdated={handleSalesmanAdded}
           onClose={() => setIsSalesmanPanelOpen(false)}
         />
       </Sidepanel>
