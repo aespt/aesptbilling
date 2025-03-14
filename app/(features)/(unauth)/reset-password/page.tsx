@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
       
       // Redirect to login page after 3 seconds
       setTimeout(() => {
-        router.push('/(features)/(unauth)/login');
+        router.push('/login');
       }, 3000);
       
     } catch (err) {
