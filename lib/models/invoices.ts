@@ -10,6 +10,8 @@ export const InvoicesTable = pgTable(
   {
     id: serial('id').primaryKey(),
     invoice_number: varchar('invoice_number', { length: 50 }).notNull().unique(),
+    order_number: varchar('order_number', { length: 50 }),
+    invoice_date: timestamp('invoice_date').defaultNow().notNull(),
     user_id: integer('user_id').notNull().references(() => UsersTable.id),
     customer_id: integer('customer_id').notNull().references(() => CustomersTable.id),
     salesperson_name: varchar('salesperson_name', { length: 255 }).notNull(),

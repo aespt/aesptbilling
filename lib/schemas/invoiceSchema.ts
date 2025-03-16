@@ -8,6 +8,8 @@ export const TaxTypeEnum = z.enum(['VAT', 'GST', 'NONE']);
 export const InvoiceSchema = BaseSchema.extend({
   id: z.number().optional(),
   invoice_number: z.string().min(1, { message: "Invoice number is required" }),
+  order_number: z.string().optional(),
+  invoice_date: z.date().default(() => new Date()),
   user_id: z.number(),
   customer_id: z.number(),
   salesperson_name: z.string().min(1, { message: "Salesperson name is required" }),
