@@ -19,7 +19,8 @@
     "db:reset": "tsx scripts/reset-db.ts",
     "db:studio": "drizzle-kit studio",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "db:seed": "tsx scripts/seed-db.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
