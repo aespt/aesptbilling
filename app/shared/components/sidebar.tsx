@@ -11,6 +11,7 @@ import {
   FiUserCheck,
   FiShoppingCart,
   FiShoppingBag,
+  FiSettings,
   FiChevronRight,
   FiMenu,
   FiX,
@@ -24,6 +25,7 @@ const menuItems = [
   { name: "Salesmen", path: "/salesmen", icon: FiUserCheck },
   { name: "Sales", path: "/sales", icon: FiShoppingCart },
   { name: "Purchases", path: "/purchases", icon: FiShoppingBag },
+  { name: "Settings", path: "/settings", icon: FiSettings },
 ];
 
 export default function Sidebar() {
@@ -88,7 +90,9 @@ export default function Sidebar() {
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-3">
             {menuItems.map((item) => {
-              const isActive = pathname === item.path;
+              const isActive = pathname === item.path || 
+                // Handle nested routes for settings
+                (item.path === '/settings' && pathname.startsWith('/settings'));
               return (
                 <li key={item.path}>
                   <Link href={item.path}>

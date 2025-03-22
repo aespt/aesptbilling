@@ -176,6 +176,8 @@ export default function AddCustomer({
                   variant="outlined"
                   fullWidth
                   error={!!errors.name}
+                  size="small"
+                  placeholder="Enter customer name"
                   disabled={isSubmitting}
                   className="bg-white"
                 />
@@ -195,6 +197,8 @@ export default function AddCustomer({
                   variant="outlined"
                   fullWidth
                   error={!!errors.email}
+                  size="small"
+                  placeholder="Enter email address"
                   disabled={isSubmitting}
                   className="bg-white"
                 />
@@ -214,6 +218,8 @@ export default function AddCustomer({
                   variant="outlined"
                   fullWidth
                   error={!!errors.phone}
+                  size="small"
+                  placeholder="Enter phone number"
                   disabled={isSubmitting}
                   className="bg-white"
                 />
@@ -234,6 +240,8 @@ export default function AddCustomer({
                   fullWidth
                   multiline
                   rows={3}
+                  size="small"
+                  placeholder="Enter address"
                   error={!!errors.address}
                   disabled={isSubmitting}
                   className="bg-white"

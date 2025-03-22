@@ -175,6 +175,8 @@ export default function AddSupplier({
                 <TextField
                   {...field}
                   variant="outlined"
+                  size="small"
+                  placeholder="Enter tax registration number"
                   fullWidth
                   error={!!errors.taxRegistrationNumber}
                   disabled={isSubmitting}
@@ -194,7 +196,9 @@ export default function AddSupplier({
                 <TextField
                   {...field}
                   variant="outlined"
+                  size="small"
                   fullWidth
+                  placeholder="Enter supplier name"
                   error={!!errors.name}
                   disabled={isSubmitting}
                   className="bg-white"
@@ -213,7 +217,9 @@ export default function AddSupplier({
                 <TextField
                   {...field}
                   variant="outlined"
+                  size="small"
                   fullWidth
+                  placeholder="Enter address"
                   multiline
                   rows={3}
                   error={!!errors.address}
@@ -234,7 +240,9 @@ export default function AddSupplier({
                 <TextField
                   {...field}
                   variant="outlined"
+                  size="small"
                   fullWidth
+                  placeholder="Enter contact number"
                   error={!!errors.contactNumber}
                   disabled={isSubmitting}
                   className="bg-white"

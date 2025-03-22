@@ -144,6 +144,8 @@ export default function AddSalesman({
                   {...field}
                   variant="outlined"
                   fullWidth
+                  size="small"
+                  placeholder="Enter salesman name"
                   error={!!errors.name}
                   disabled={isSubmitting}
                   className="bg-white"
@@ -163,6 +165,8 @@ export default function AddSalesman({
                   {...field}
                   variant="outlined"
                   fullWidth
+                  size="small"
+                  placeholder="Enter contact number"
                   error={!!errors.contact_number}
                   disabled={isSubmitting}
                   className="bg-white"
