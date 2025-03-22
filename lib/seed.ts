@@ -6,7 +6,10 @@ import { SalesmenTable } from './models/salesmen';
 import { SuppliersTable } from './models/suppliers';
 import { VatMasterTable } from './models/vat_master';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL!, { 
+  ssl: { rejectUnauthorized: false },
+  timeout: 60 // increase timeout even more
+});
 
 export async function seed() {
   // Seed products

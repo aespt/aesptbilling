@@ -15,6 +15,7 @@ import {
   FiChevronRight,
   FiMenu,
   FiX,
+  FiFile,
 } from "react-icons/fi";
 
 const menuItems = [
@@ -23,7 +24,8 @@ const menuItems = [
   { name: "Suppliers", path: "/suppliers", icon: FiTruck },
   { name: "Customers", path: "/customers", icon: FiUsers },
   { name: "Salesmen", path: "/salesmen", icon: FiUserCheck },
-  { name: "Sales", path: "/sales", icon: FiShoppingCart },
+  { name: "Sales", path: "/invoices/create", icon: FiShoppingCart },
+  { name: "Sales History", path: "/invoices", icon: FiFile },
   { name: "Purchases", path: "/purchases", icon: FiShoppingBag },
   { name: "Settings", path: "/settings", icon: FiSettings },
 ];
