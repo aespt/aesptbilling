@@ -123,7 +123,6 @@ export async function POST(request: NextRequest) {
       // Insert the invoice
       const [newInvoice] = await tx.insert(InvoicesTable).values({
         invoice_number: validatedInvoice.invoice_number,
-        order_number: validatedInvoice.order_number,
         invoice_date: validatedInvoice.invoice_date ? new Date(validatedInvoice.invoice_date) : new Date(),
         user_id: validatedInvoice.user_id,
         customer_id: validatedInvoice.customer_id,
@@ -154,7 +153,6 @@ export async function POST(request: NextRequest) {
           product_id: validatedItem.product_id,
           quantity: validatedItem.quantity,
           unit_price: validatedItem.unit_price.toString(),
-          discount: validatedItem.discount ? validatedItem.discount.toString() : '0',
           total_price: validatedItem.total_price.toString(),
           created_by: validatedItem.created_by,
           updated_by: validatedItem.updated_by,

@@ -57,6 +57,13 @@
       "when": 1741795878131,
       "tag": "0009_sweet_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1742724504702,
+      "tag": "0010_normal_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

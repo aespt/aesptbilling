@@ -14,7 +14,6 @@ export const InvoiceItemsTable = pgTable(
       .references(() => ProductsTable.id),
     quantity: integer('quantity').notNull(),
     unit_price: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
-    discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
     total_price: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
     created_by: varchar('created_by', { length: 100 }),
     updated_by: varchar('updated_by', { length: 100 }),

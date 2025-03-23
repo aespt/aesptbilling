@@ -9,7 +9,6 @@ export const OrderItemSchema = BaseSchema.extend({
   quantity: z.number().int().positive(),
   unitPrice: z.number().positive(),
   totalPrice: z.number().positive(),
-  discount: z.number().nonnegative().default(0),
 });
 
 // Zod schema for creating a new order item

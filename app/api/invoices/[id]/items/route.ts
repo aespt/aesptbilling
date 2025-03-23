@@ -147,7 +147,6 @@ export async function POST(
       product_id: validatedItem.product_id,
       quantity: validatedItem.quantity,
       unit_price: validatedItem.unit_price.toString(),
-      discount: validatedItem.discount ? validatedItem.discount.toString() : '0',
       total_price: validatedItem.total_price.toString(),
       created_by: validatedItem.created_by,
       updated_by: validatedItem.updated_by,

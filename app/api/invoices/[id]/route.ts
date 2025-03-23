@@ -155,9 +155,7 @@ export async function PUT(
       updateData.invoice_number = validatedData.invoice_number;
     }
     
-    if (validatedData.order_number !== undefined) {
-      updateData.order_number = validatedData.order_number;
-    }
+   
     
     if (validatedData.invoice_date !== undefined) {
       updateData.invoice_date = new Date(validatedData.invoice_date);

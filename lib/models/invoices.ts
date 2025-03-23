@@ -10,7 +10,6 @@ export const InvoicesTable = pgTable(
   {
     id: serial('id').primaryKey(),
     invoice_number: varchar('invoice_number', { length: 50 }).notNull().unique(),
-    order_number: varchar('order_number', { length: 50 }),
     invoice_date: timestamp('invoice_date').defaultNow().notNull(),
     user_id: integer('user_id').notNull().references(() => UsersTable.id),
     customer_id: integer('customer_id').notNull().references(() => CustomersTable.id),
@@ -18,6 +17,7 @@ export const InvoicesTable = pgTable(
     tax_type: taxTypeEnum('tax_type').default('NONE'),
     tax_rate: decimal('tax_rate', { precision: 5, scale: 2 }).default('0'),
     sub_total: decimal('sub_total', { precision: 10, scale: 2 }).notNull(),
+    discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
     total: decimal('total', { precision: 10, scale: 2 }).notNull(),
     created_by: varchar('created_by', { length: 100 }),
     updated_by: varchar('updated_by', { length: 100 }),

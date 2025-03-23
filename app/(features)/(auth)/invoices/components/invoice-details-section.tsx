@@ -301,14 +301,7 @@ export default function InvoiceDetailsSection({
           />
         </div>
         
-        <div>
-          <FormField
-            label="Order Number"
-            name="order_number"
-            value={formData.order_number || ''}
-            onChange={handleInputChange}
-          />
-        </div>
+       
         
         
         <div>

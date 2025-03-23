@@ -8,7 +8,6 @@ export const InvoiceItemSchema = BaseSchema.extend({
   product_id: z.number(),
   quantity: z.number().int().positive(),
   unit_price: z.number().positive(),
-  discount: z.number().nonnegative().default(0),
   total_price: z.number().positive(),
 });
 
