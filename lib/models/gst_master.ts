@@ -5,9 +5,10 @@ export const GstMasterTable = pgTable(
   {
     id: serial('id').primaryKey(),
     country: varchar('country', { length: 100 }).default('India').notNull(),
-    gst_percentage: decimal('gst_percentage', { precision: 5, scale: 2 }).notNull(),
+    cgst_percentage: decimal('cgst_percentage', { precision: 5, scale: 2 }).notNull(),
+    sgst_percentage: decimal('sgst_percentage', { precision: 5, scale: 2 }).notNull(),
     description: text('description'),
-    effective_from: timestamp('effective_from').notNull(),
+    effective_from: timestamp('effective_from'),
     effective_to: timestamp('effective_to'),
     created_by: varchar('created_by', { length: 100 }),
     updated_by: varchar('updated_by', { length: 100 }),

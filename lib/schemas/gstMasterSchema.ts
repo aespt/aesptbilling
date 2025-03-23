@@ -5,9 +5,10 @@ import { BaseSchema, BaseCreateSchema } from './baseSchema';
 export const GstMasterSchema = BaseSchema.extend({
   id: z.number().optional(),
   country: z.string().default('India'),
-  gst_percentage: z.number().nonnegative(),
+  cgst_percentage: z.number().nonnegative(),
+  sgst_percentage: z.number().nonnegative(),
   description: z.string().optional(),
-  effective_from: z.date(),
+  effective_from: z.date().optional(),
   effective_to: z.date().optional(),
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, Tab, Box, TextField, Typography, Paper, Button, Chip, IconButton } from "@mui/material";
 import PageHeader from "@/app/shared/components/page-header";
 import PrimaryButton from "@/app/shared/components/primary-button";
@@ -9,6 +9,8 @@ import { FiHome, FiMapPin, FiCheck, FiStar, FiEdit } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { cardVariants, badgeVariants } from "@/app/shared/animations/card-animations";
 import AddAddress from "./components/add-address";
+import Snackbar from "@/app/shared/components/snackbar";
+import useSnackbar from "@/app/shared/hooks/useSnackbar";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -16,6 +18,7 @@ interface TabPanelProps {
   value: number;
 }
 
+// UI representation of address
 interface Address {
   id: number;
   type: string;
@@ -25,6 +28,22 @@ interface Address {
   country: string;
   postalCode: string;
   isPrimary: boolean;
+}
+
+// API representation of address
+interface ApiAddress {
+  id: number;
+  type: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postal_code: string;
+  is_primary: boolean;
+  created_by?: string;
+  updated_by?: string;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 function TabPanel(props: TabPanelProps) {
@@ -50,63 +69,220 @@ export default function SettingsPage() {
   const [indiaCgst, setIndiaCgst] = useState("");
   const [indiaSgst, setIndiaSgst] = useState("");
   
+  // Loading states
+  const [isVatLoading, setIsVatLoading] = useState(false);
+  const [isGstLoading, setIsGstLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isAddressesLoading, setIsAddressesLoading] = useState(true);
+  
+  // Use our custom snackbar hook
+  const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
+  
   // Address panel state
   const [isAddressPanelOpen, setIsAddressPanelOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   
-  // Sample address data
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      id: 1,
-      type: "Office",
-      street: "123 Business Park, Sheikh Zayed Road",
-      city: "Dubai",
-      state: "",
-      country: "UAE",
-      postalCode: "12345",
-      isPrimary: true
-    },
-    {
-      id: 2,
-      type: "Warehouse",
-      street: "456 Industrial Zone, Al Quoz",
-      city: "Dubai",
-      state: "",
-      country: "UAE",
-      postalCode: "54321",
-      isPrimary: false
-    },
-    {
-      id: 3,
-      type: "Branch Office",
-      street: "789 IT Park, Electronic City",
-      city: "Bangalore",
-      state: "Karnataka",
-      country: "India",
-      postalCode: "560100",
-      isPrimary: false
-    }
-  ]);
+  // Address data
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressToEdit, setAddressToEdit] = useState<Address | null>(null);
+  const [isAddressDrawerOpen, setIsAddressDrawerOpen] = useState(false);
+  const [isPrimarySettingLoading, setIsPrimarySettingLoading] = useState<number | null>(null);
+
+  // Fetch VAT and GST data on component mount
+  useEffect(() => {
+    const fetchTaxData = async () => {
+      setIsDataLoading(true);
+      try {
+        // Fetch VAT data
+        const vatResponse = await fetch('/api/vat-rates');
+        if (vatResponse.ok) {
+          const vatData = await vatResponse.json();
+          if (vatData.vatRates && vatData.vatRates.length > 0) {
+            setUaeVat(vatData.vatRates[0].vat_percentage);
+          }
+        }
+        
+        // Fetch GST data
+        const gstResponse = await fetch('/api/gst-rates');
+        if (gstResponse.ok) {
+          const gstData = await gstResponse.json();
+          if (gstData.gstRates && gstData.gstRates.length > 0) {
+            setIndiaCgst(gstData.gstRates[0].cgst_percentage);
+            setIndiaSgst(gstData.gstRates[0].sgst_percentage);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching tax data:', error);
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+
+    fetchTaxData();
+  }, []);
+
+  // Fetch addresses on component mount and when tab changes to addresses
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      if (tabValue !== 1) return;
+      
+      setIsAddressesLoading(true);
+      try {
+        const response = await fetch('/api/addresses');
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Convert API format to component format
+          const formattedAddresses = data.addresses.map((address: any) => ({
+            id: address.id,
+            type: address.type,
+            street: address.street,
+            city: address.city,
+            state: address.state || '',
+            country: address.country,
+            postalCode: address.postal_code,
+            isPrimary: address.is_primary
+          }));
+          
+          setAddresses(formattedAddresses);
+        } else {
+          showSnackbar('Failed to load addresses', 'error');
+        }
+      } catch (error) {
+        console.error('Error fetching addresses:', error);
+        showSnackbar('Error loading addresses', 'error');
+      } finally {
+        setIsAddressesLoading(false);
+      }
+    };
+
+    fetchAddresses();
+  }, [tabValue]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmitVat = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Save tax settings logic here
-    console.log({
-      uaeVat,
-      indiaCgst,
-      indiaSgst
-    });
+    setIsVatLoading(true);
+    
+    try {
+      const response = await fetch('/api/vat-rates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vat_percentage: parseFloat(uaeVat)
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('VAT updated successfully:', result);
+        showSnackbar('VAT settings saved successfully', 'success');
+      } else {
+        console.error('Failed to update VAT');
+        showSnackbar('Failed to save VAT settings', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating VAT:', error);
+      showSnackbar('Error saving VAT settings', 'error');
+    } finally {
+      setIsVatLoading(false);
+    }
+  };
+  
+  const handleSubmitGst = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsGstLoading(true);
+    
+    try {
+      const response = await fetch('/api/gst-rates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cgst_percentage: parseFloat(indiaCgst),
+          sgst_percentage: parseFloat(indiaSgst)
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('GST updated successfully:', result);
+        showSnackbar('GST settings saved successfully', 'success');
+      } else {
+        console.error('Failed to update GST');
+        showSnackbar('Failed to save GST settings', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating GST:', error);
+      showSnackbar('Error saving GST settings', 'error');
+    } finally {
+      setIsGstLoading(false);
+    }
   };
 
-  const setAsPrimary = (id: number) => {
-    setAddresses(addresses.map(address => ({
-      ...address,
-      isPrimary: address.id === id
-    })));
+  const setAsPrimary = async (id: number) => {
+    try {
+      setIsPrimarySettingLoading(id);
+      
+      // Get the address to update
+      const addressToUpdate = addresses.find(address => address.id === id);
+      if (!addressToUpdate) return;
+      
+      // Update the address on the server
+      const response = await fetch(`/api/addresses/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_primary: true
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update address');
+      }
+      
+      // Get the previously primary address
+      const previousPrimaryAddress = addresses.find(address => address.isPrimary);
+      
+      // If there was a primary address and it's different from the one we're updating
+      if (previousPrimaryAddress && previousPrimaryAddress.id !== id) {
+        // Update the previous primary address on the server to not be primary
+        const updatePreviousResponse = await fetch(`/api/addresses/${previousPrimaryAddress.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            is_primary: false
+          }),
+        });
+        
+        if (!updatePreviousResponse.ok) {
+          console.warn('Failed to update previous primary address, but continuing');
+        }
+      }
+      
+      // Update the local state
+      setAddresses(addresses.map(address => ({
+        ...address,
+        isPrimary: address.id === id
+      })));
+      
+      showSnackbar('Primary address updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating primary address:', error);
+      showSnackbar('Failed to update primary address', 'error');
+    } finally {
+      setIsPrimarySettingLoading(null);
+    }
   };
   
   const openAddAddressPanel = () => {
@@ -121,6 +297,7 @@ export default function SettingsPage() {
   
   const handleAddressAdded = (newAddress: Address) => {
     setAddresses(prev => [...prev, newAddress]);
+    showSnackbar('Address added successfully', 'success');
   };
   
   const handleAddressUpdated = (updatedAddress: Address) => {
@@ -129,6 +306,7 @@ export default function SettingsPage() {
         address.id === updatedAddress.id ? updatedAddress : address
       )
     );
+    showSnackbar('Address updated successfully', 'success');
   };
 
   return (
@@ -153,10 +331,14 @@ export default function SettingsPage() {
         </Box>
 
         <TabPanel value={tabValue} index={0}>
-          <form onSubmit={handleSubmit} className="px-6 pb-6">
-            <div className="space-y-6">
+          {isDataLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+            </div>
+          ) : (
+            <div className="px-6 pb-6 space-y-6">
               {/* UAE Section */}
-              <div className="p-4 bg-gray-100 rounded-lg">
+              <form onSubmit={handleSubmitVat} className="p-4 bg-gray-100 rounded-lg">
                 <Typography variant="h6" className="mb-4 font-medium text-gray-800">
                   UAE
                 </Typography>
@@ -175,10 +357,25 @@ export default function SettingsPage() {
                     className="bg-white"
                   />
                 </div>
-              </div>
+                <div className="flex justify-end mt-4">
+                  <Button 
+                    variant="contained" 
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4"
+                    disabled={isVatLoading}
+                  >
+                    {isVatLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                        <span>Saving...</span>
+                      </div>
+                    ) : 'Save VAT Settings'}
+                  </Button>
+                </div>
+              </form>
 
               {/* India Section */}
-              <div className="p-4 bg-gray-100 rounded-lg">
+              <form onSubmit={handleSubmitGst} className="p-4 bg-gray-100 rounded-lg">
                 <Typography variant="h6" className="mb-4 font-medium text-gray-800">
                   India
                 </Typography>
@@ -210,16 +407,24 @@ export default function SettingsPage() {
                     className="bg-white"
                   />
                 </div>
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <PrimaryButton 
-                  label="Save Settings" 
-                  type="submit"
-                />
-              </div>
+                <div className="flex justify-end mt-4">
+                  <Button 
+                    variant="contained" 
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4"
+                    disabled={isGstLoading}
+                  >
+                    {isGstLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                        <span>Saving...</span>
+                      </div>
+                    ) : 'Save GST Settings'}
+                  </Button>
+                </div>
+              </form>
             </div>
-          </form>
+          )}
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
@@ -238,88 +443,119 @@ export default function SettingsPage() {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {addresses.map((address) => (
-                <motion.div
-                  key={address.id}
-                  initial={address.isPrimary ? "primary" : "notPrimary"}
-                  animate={address.isPrimary ? "primary" : "notPrimary"}
-                  variants={cardVariants}
-                  transition={{ duration: 0.3 }}
-                  className="rounded-lgb"
-                  layout
-                >
-                  <Paper 
-                    className={`p-4 rounded-lg border h-full ${address.isPrimary ? 'bg-blue-100 border-blue-500' : 'bg-white'}`}
-                    elevation={0}
+            {isAddressesLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+              </div>
+            ) : addresses.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Typography variant="body1" className="text-gray-600">
+                  No addresses found. Click "Add New Address" to create one.
+                </Typography>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {addresses.map((address) => (
+                  <motion.div
+                    key={address.id}
+                    initial={address.isPrimary ? "primary" : "notPrimary"}
+                    animate={address.isPrimary ? "primary" : "notPrimary"}
+                    variants={cardVariants}
+                    transition={{ duration: 0.3 }}
+                    className="rounded-lgb"
+                    layout
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center">
-                        <FiHome className="text-gray-600 mr-2" />
-                        <Typography variant="subtitle1" className="font-medium">
-                          {address.type}
+                    <Paper 
+                      className={`p-4 rounded-lg border h-full ${address.isPrimary ? 'bg-blue-100 border-blue-500' : 'bg-white'}`}
+                      elevation={0}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center">
+                          <FiHome className="text-gray-600 mr-2" />
+                          <Typography variant="subtitle1" className="font-medium">
+                            {address.type}
+                          </Typography>
+                        </div>
+                        <div className="flex items-center">
+                          <IconButton 
+                            size="small"
+                            className="text-gray-500 mr-1"
+                            aria-label="Edit address"
+                            onClick={() => openEditAddressPanel(address)}
+                          >
+                            <FiEdit size={16} />
+                          </IconButton>
+                          <AnimatePresence>
+                            {address.isPrimary && (
+                              <motion.div
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                variants={badgeVariants}
+                              >
+                                <Chip
+                                  icon={<FiStar className="text-blue-500" />}
+                                  label="Primary"
+                                  size="small"
+                                  className="bg-blue-50 text-blue-700"
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 text-gray-700">
+                        <Typography variant="body2" className="mb-1">
+                          {address.street}
+                        </Typography>
+                        <Typography variant="body2" className="mb-1">
+                          {address.city}{address.state ? `, ${address.state}` : ''}
+                        </Typography>
+                        <Typography variant="body2" className="mb-1">
+                          {address.country}, {address.postalCode}
                         </Typography>
                       </div>
-                      <div className="flex items-center">
-                        <IconButton 
-                          size="small"
-                          className="text-gray-500 mr-1"
-                          aria-label="Edit address"
-                          onClick={() => openEditAddressPanel(address)}
-                        >
-                          <FiEdit size={16} />
-                        </IconButton>
-                        <AnimatePresence>
-                          {address.isPrimary && (
-                            <motion.div
-                              initial="hidden"
-                              animate="visible"
-                              exit="exit"
-                              variants={badgeVariants}
+                      
+                      <div className="mt-4 flex justify-end">
+                        {/* Address actions */}
+                        <div className="flex items-center space-x-2">
+                          {!address.isPrimary && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              className="text-xs border-blue-500 text-blue-500 hover:bg-blue-50"
+                              onClick={() => setAsPrimary(address.id)}
+                              disabled={isPrimarySettingLoading === address.id}
                             >
-                              <Chip
-                                icon={<FiStar className="text-red-500" />}
-                                label="Primary"
-                                size="small"
-                                className="bg-red-50 text-red-700"
-                              />
-                            </motion.div>
+                              {isPrimarySettingLoading === address.id ? (
+                                <div className="flex items-center">
+                                  <div className="w-4 h-4 border-2 border-t-transparent border-blue-500 rounded-full animate-spin mr-2"></div>
+                                  <span>Setting...</span>
+                                </div>
+                              ) : (
+                                'Set as Primary'
+                              )}
+                            </Button>
                           )}
-                        </AnimatePresence>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="mt-3 text-gray-700">
-                      <Typography variant="body2" className="mb-1">
-                        {address.street}
-                      </Typography>
-                      <Typography variant="body2" className="mb-1">
-                        {address.city}{address.state ? `, ${address.state}` : ''}
-                      </Typography>
-                      <Typography variant="body2" className="mb-1">
-                        {address.country}, {address.postalCode}
-                      </Typography>
-                    </div>
-                    
-                    <div className="mt-4 flex justify-end">
-                      {!address.isPrimary && (
-                        <Button 
-                          size="small"
-                          startIcon={<FiCheck />}
-                          className="text-red-600 hover:bg-red-50"
-                          onClick={() => setAsPrimary(address.id)}
-                        >
-                          Set as Primary
-                        </Button>
-                      )}
-                    </div>
-                  </Paper>
-                </motion.div>
-              ))}
-            </div>
+                    </Paper>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         </TabPanel>
       </Paper>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={isOpen}
+        message={message}
+        type={type}
+        onClose={hideSnackbar}
+      />
       
       {/* Sidepanel for adding/editing addresses */}
       <Sidepanel

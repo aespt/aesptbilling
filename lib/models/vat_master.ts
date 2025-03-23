@@ -7,7 +7,7 @@ export const VatMasterTable = pgTable(
     country: varchar('country', { length: 100 }).default('UAE').notNull(),
     vat_percentage: decimal('vat_percentage', { precision: 5, scale: 2 }).notNull(),
     description: text('description'),
-    effective_from: timestamp('effective_from').notNull(),
+    effective_from: timestamp('effective_from'),
     effective_to: timestamp('effective_to'),
     created_by: varchar('created_by', { length: 100 }),
     updated_by: varchar('updated_by', { length: 100 }),

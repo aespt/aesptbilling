@@ -1,46 +1,46 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { VatMasterTable } from '@/lib/models/vat_master';
+import { GstMasterTable } from '@/lib/models/gst_master';
 import { desc, lte, gte, and, or, isNull } from 'drizzle-orm';
-import { CreateVatMasterSchema } from '@/lib/schemas/vatMasterSchema';
+import { CreateGstMasterSchema } from '@/lib/schemas/gstMasterSchema';
 import { ZodError } from 'zod';
 
 export async function GET() {
   try {
     const currentDate = new Date();
     
-    // Fetch VAT rates that are currently effective
+    // Fetch GST rates that are currently effective
     // (effective_from <= current date and effective_to is null or >= current date)
-    const vatRates = await db
+    const gstRates = await db
       .select()
-      .from(VatMasterTable)
+      .from(GstMasterTable)
       .where(
         and(
-          lte(VatMasterTable.effective_from, currentDate),
+          lte(GstMasterTable.effective_from, currentDate),
           or(
-            isNull(VatMasterTable.effective_to),
-            gte(VatMasterTable.effective_to, currentDate)
+            isNull(GstMasterTable.effective_to),
+            gte(GstMasterTable.effective_to, currentDate)
           )
         )
       )
-      .orderBy(desc(VatMasterTable.effective_from));
+      .orderBy(desc(GstMasterTable.effective_from));
 
-    // If no current VAT rates found, get the most recent ones
-    if (vatRates.length === 0) {
-      const allVatRates = await db
+    // If no current GST rates found, get the most recent ones
+    if (gstRates.length === 0) {
+      const allGstRates = await db
         .select()
-        .from(VatMasterTable)
-        .orderBy(desc(VatMasterTable.effective_from))
+        .from(GstMasterTable)
+        .orderBy(desc(GstMasterTable.effective_from))
         .limit(5);
         
-      return NextResponse.json({ vatRates: allVatRates }, { status: 200 });
+      return NextResponse.json({ gstRates: allGstRates }, { status: 200 });
     }
 
-    return NextResponse.json({ vatRates }, { status: 200 });
+    return NextResponse.json({ gstRates }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching VAT rates:', error);
+    console.error('Error fetching GST rates:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch VAT rates' },
+      { error: 'Failed to fetch GST rates' },
       { status: 500 }
     );
   }
@@ -56,29 +56,31 @@ export async function POST(request: Request) {
     effectiveTo.setFullYear(effectiveTo.getFullYear() + 1);
 
     // Validate the input using Zod schema
-    const validatedData = CreateVatMasterSchema.parse({
-      country: 'UAE',
-      vat_percentage: body.vat_percentage,
-      description: 'VAT settings updated via admin panel',
+    const validatedData = CreateGstMasterSchema.parse({
+      country: 'India',
+      cgst_percentage: body.cgst_percentage,
+      sgst_percentage: body.sgst_percentage,
+      description: 'GST settings updated via admin panel',
       effective_from: effectiveFrom,
       effective_to: effectiveTo,
       created_by: 'system',
       updated_by: 'system'
     });
 
-    // Check if a VAT record already exists
-    const existingVat = await db
+    // Check if a GST record already exists
+    const existingGst = await db
       .select()
-      .from(VatMasterTable)
-      .orderBy(desc(VatMasterTable.created_at))
+      .from(GstMasterTable)
+      .orderBy(desc(GstMasterTable.created_at))
       .limit(1);
 
-    if (existingVat.length > 0) {
+    if (existingGst.length > 0) {
       // Update existing record
       const updated = await db
-        .update(VatMasterTable)
+        .update(GstMasterTable)
         .set({
-          vat_percentage: String(validatedData.vat_percentage),
+          cgst_percentage: String(validatedData.cgst_percentage),
+          sgst_percentage: String(validatedData.sgst_percentage),
           description: validatedData.description,
           effective_from: validatedData.effective_from,
           effective_to: validatedData.effective_to,
@@ -87,23 +89,24 @@ export async function POST(request: Request) {
         })
         .where(and(
           or(
-            isNull(VatMasterTable.effective_to),
-            gte(VatMasterTable.effective_to, new Date())
+            isNull(GstMasterTable.effective_to),
+            gte(GstMasterTable.effective_to, new Date())
           )
         ))
         .returning();
 
       return NextResponse.json({ 
-        message: 'VAT rate updated successfully', 
+        message: 'GST rates updated successfully', 
         data: updated 
       }, { status: 200 });
     } else {
       // Create new record
       const inserted = await db
-        .insert(VatMasterTable)
+        .insert(GstMasterTable)
         .values({
           country: validatedData.country,
-          vat_percentage: String(validatedData.vat_percentage),
+          cgst_percentage: String(validatedData.cgst_percentage),
+          sgst_percentage: String(validatedData.sgst_percentage),
           description: validatedData.description,
           effective_from: validatedData.effective_from,
           effective_to: validatedData.effective_to,
@@ -113,12 +116,12 @@ export async function POST(request: Request) {
         .returning();
 
       return NextResponse.json({ 
-        message: 'VAT rate created successfully', 
+        message: 'GST rates created successfully', 
         data: inserted 
       }, { status: 201 });
     }
   } catch (error) {
-    console.error('Error updating VAT rate:', error);
+    console.error('Error updating GST rates:', error);
     
     if (error instanceof ZodError) {
       return NextResponse.json(
@@ -128,7 +131,7 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json(
-      { error: 'Failed to update VAT rate' },
+      { error: 'Failed to update GST rates' },
       { status: 500 }
     );
   }

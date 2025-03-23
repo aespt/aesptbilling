@@ -7,7 +7,7 @@ export const VatMasterSchema = BaseSchema.extend({
   country: z.string().default('UAE'),
   vat_percentage: z.number().nonnegative(),
   description: z.string().optional(),
-  effective_from: z.date(),
+  effective_from: z.date().optional(),
   effective_to: z.date().optional(),
 });
 
