@@ -4,8 +4,8 @@ import { AuthProvider } from '@/lib/hooks/useAuth';
 
 export const metadata = {
   metadataBase: new URL('https://postgres-drizzle.vercel.app'),
-  title: 'AESPT - PostgreSQL with Drizzle',
-  description: 'A modern Next.js application with PostgreSQL database and Drizzle ORM',
+  title: 'AESPT - Application',
+  description: 'Invoice generating application',
   manifest: '/manifest.json',
   themeColor: '#000000',
   appleWebApp: {
