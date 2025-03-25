@@ -147,6 +147,11 @@ export default function CreateInvoicePage() {
         throw new Error(result.error || result.message || 'Failed to create invoice');
       }
 
+      // Open PDF view in a new tab
+      if (result.data && result.data.id) {
+        window.open(`/invoices/pdf/${result.data.id}`, '_blank');
+      }
+      
       showSnackbar('Invoice created successfully', 'success');
       router.push('/invoices');
     } catch (error: any) {
