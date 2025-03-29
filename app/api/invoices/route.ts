@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { InvoicesTable } from '@/lib/models/invoices';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
+import { CustomersTable } from '@/lib/models/customers';
 import { CreateInvoiceSchema } from '@/lib/schemas/invoiceSchema';
 import { CreateInvoiceItemSchema } from '@/lib/schemas/invoiceItemSchema';
 import { ZodError } from 'zod';
 import { verifyToken } from '@/lib/utils/jwt';
 import { AUTH_COOKIE_NAME } from '@/lib/utils/jwt';
 import { TokenPayload } from '@/lib/schemas/authSchema';
-import { sql, eq, desc, and } from 'drizzle-orm';
+import { sql, eq, desc, and, gte, lt } from 'drizzle-orm';
 
 /**
  * GET /api/invoices
@@ -39,29 +40,125 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customer_id');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('limit') || '10');
+    const sortField = searchParams.get('sortField') || 'invoice_date';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const invoiceNumber = searchParams.get('invoiceNumber');
+    const salesPerson = searchParams.get('salesPerson');
+    const customer = searchParams.get('customer');
     
-    // Build query with conditions
-    let invoices;
+    // Calculate offset based on page and pageSize
+    const offset = (page - 1) * pageSize;
+    
+    // Build conditions array
+    const conditions = [];
+    
+    // Add customer filter if provided
     if (customerId) {
-      invoices = await db
-        .select()
-        .from(InvoicesTable)
-        .where(eq(InvoicesTable.customer_id, parseInt(customerId)))
-        .orderBy(desc(InvoicesTable.created_at))
-        .limit(limit)
-        .offset(offset);
-    } else {
-      invoices = await db
-        .select()
-        .from(InvoicesTable)
-        .orderBy(desc(InvoicesTable.created_at))
-        .limit(limit)
-        .offset(offset);
+      conditions.push(eq(InvoicesTable.customer_id, parseInt(customerId)));
     }
     
-    return NextResponse.json({ invoices });
+    // Add date range filter if provided
+    if (dateFrom) {
+      conditions.push(gte(InvoicesTable.invoice_date, new Date(dateFrom)));
+    }
+    
+    if (dateTo) {
+      // Add one day to include the end date fully
+      const endDate = new Date(dateTo);
+      endDate.setDate(endDate.getDate() + 1);
+      conditions.push(lt(InvoicesTable.invoice_date, endDate));
+    }
+    
+    // Add invoice number filter if provided
+    if (invoiceNumber) {
+      conditions.push(sql`${InvoicesTable.invoice_number} ILIKE ${`%${invoiceNumber}%`}`);
+    }
+    
+    // Add sales person filter if provided
+    if (salesPerson) {
+      conditions.push(sql`${InvoicesTable.salesperson_name} ILIKE ${`%${salesPerson}%`}`);
+    }
+    
+    // Get total count for pagination
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(InvoicesTable)
+      .where(conditions.length ? and(...conditions) : undefined);
+    
+    // Build sort order
+    const sortDirection = sortOrder === 'asc' ? sql`asc` : sql`desc`;
+    const orderByClause = sql`${InvoicesTable[sortField as keyof typeof InvoicesTable]} ${sortDirection}`;
+    
+    // Execute query with all conditions
+    let invoices = await db
+      .select({
+        id: InvoicesTable.id,
+        invoice_number: InvoicesTable.invoice_number,
+        invoice_date: InvoicesTable.invoice_date,
+        salesperson_name: InvoicesTable.salesperson_name,
+        customer_id: InvoicesTable.customer_id,
+        tax_type: InvoicesTable.tax_type,
+        tax_rate: InvoicesTable.tax_rate,
+        sub_total: InvoicesTable.sub_total,
+        total: InvoicesTable.total,
+        created_at: InvoicesTable.created_at,
+      })
+      .from(InvoicesTable)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(orderByClause)
+      .limit(pageSize)
+      .offset(offset);
+    
+    // Get customer information for each invoice
+    const invoicesWithCustomers = await Promise.all(
+      invoices.map(async (invoice) => {
+        try {
+          const [customerResult] = await db
+            .select({
+              id: CustomersTable.id,
+              name: CustomersTable.name,
+              address: CustomersTable.address,
+            })
+            .from(CustomersTable)
+            .where(eq(CustomersTable.id, invoice.customer_id));
+          
+          // Return invoice with customer data
+          return {
+            ...invoice,
+            customer: customerResult || { id: 0, name: 'Unknown', address: '' },
+          };
+        } catch (error) {
+          console.error(`Error fetching customer for invoice ${invoice.id}:`, error);
+          // Return invoice with placeholder customer data
+          return {
+            ...invoice,
+            customer: { id: 0, name: 'Unknown', address: '' },
+          };
+        }
+      })
+    );
+    
+    // Apply customer name filter if provided - we need to do this post-query since it's a join field
+    let results = invoicesWithCustomers;
+    if (customer) {
+      results = invoicesWithCustomers.filter(invoice => 
+        invoice.customer.name.toLowerCase().includes(customer.toLowerCase())
+      );
+    }
+    
+    return NextResponse.json({
+      invoices: results,
+      pagination: {
+        total: Number(count),
+        page,
+        pageSize,
+        totalPages: Math.ceil(Number(count) / pageSize)
+      }
+    });
   } catch (error) {
     console.error('Error fetching invoices:', error);
     

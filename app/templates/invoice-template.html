@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tax Invoice</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 0;
+        color: #333;
+      }
+      
+      .invoice-container {
+        max-width: 800px;
+        margin: 0 auto;
+        min-height: 1024px;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        position: relative;
+        page-break-inside: avoid;
+      }
+      
+      .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid #ccc;
+      }
+      
+      .invoice-header-content {
+        background-color: #f5f5f5;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 20px;
+        align-items: center;
+      }
+      
+      .invoice-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      
+      .invoice-items-table th {
+        background-color: #f5f5f5;
+        text-align: left;
+        border: 1px solid #ccc;
+        padding: 8px;
+      }
+      
+      .invoice-items-table td {
+        padding: 8px;
+        border: 1px solid #ddd;
+      }
+      
+      .invoice-footer {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+      }
+      
+      .totals-container {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 20px;
+        margin-top: 10px;
+        gap: 10px;
+      }
+      
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+        }
+        
+        .invoice-container {
+          border: none;
+          width: 100%;
+          height: auto;
+          margin: 0;
+          padding: 0;
+        }
+        
+        .invoice-footer {
+          position: relative;
+          margin-top: 20px;
+        }
+        
+        .page-break {
+          page-break-before: always;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="invoice-container">
+      <!-- Header Section -->
+      <div class="invoice-header">
+        <div class="invoice-header-content">
+          <h2 style="margin: 0; color: #0078d4; align-self: center">LOGO</h2>
+
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              background-color: #ffffff;
+              /* border-radius: 25px; */
+              width: 75%;
+              justify-content: space-between;
+              padding: 20px;
+            "
+          >
+            <div>
+              <h3 style="margin: 0; font-size: 16px">
+                Arabian Auto Equipments and
+              </h3>
+              <h3 style="margin: 0; font-size: 16px">Parts Trading (FZC)</h3>
+              <p style="margin: 5px 0 0; font-size: 12px; font-weight: bold">
+                العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
+              </p>
+            </div>
+            <div style="text-align: right; font-size: 12px">
+              <p style="margin: 0">Block B-035-065</p>
+              <p style="margin: 0">SAIF ZONE, UAE</p>
+              <p style="margin: 0">Tel: 123456</p>
+              <p style="margin: 0">Fax: 123456</p>
+              <p style="margin: 0">TRN NO: 123456</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice Title -->
+      <div style="padding: 20px; font-weight: bold; font-size: 18px">
+        Tax Invoice
+      </div>
+
+      <!-- Invoice Details -->
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          padding-left: 20px;
+          padding-right: 20px;
+        "
+      >
+        <div
+          style="
+            width: 50%;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-right: none;
+          "
+        >
+          <div style="border-right: 1px solid #ccc">
+            <p style="margin: 0; font-weight: bold">Invoice To:</p>
+            <p style="margin: 5px 0">{{customerAddress}}</p>
+            <p style="margin: 5px 0; margin: 10px 0">
+              <span style="font-weight: bold">TAX Reg No:</span> {{taxRegNo}}
+            </p>
+            <p style="margin: 5px 0">
+              <span style="font-weight: bold">Ship to Country/Emirate:</span>
+              {{shipToCountry}}
+            </p>
+          </div>
+        </div>
+        <div
+          style="
+            width: 45%;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-left: none;
+          "
+        >
+          <table
+            style="width: 100%; border-collapse: collapse; font-size: 14px"
+          >
+            <tr>
+              <td style="font-weight: bold">Invoice No:</td>
+              <td>{{invoiceNumber}}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold">Invoice date:</td>
+              <td>{{invoiceDate}}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold">Order No:</td>
+              <td>{{orderNo}}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold">Salesman:</td>
+              <td>{{salesperson}}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold">Ship From:</td>
+              <td>{{shipFrom}}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Invoice Items Table -->
+      <div style="padding: 10px 20px; padding-bottom: 0">
+        <table class="invoice-items-table">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Part No.</th>
+              <th>Description</th>
+              <th>QTY</th>
+              <th>Rate</th>
+              <th>Amount</th>
+              <th>VAT %</th>
+              <th>VAT</th>
+              <th>Total Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{invoiceItems}}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer Section -->
+      <div class="invoice-footer">
+        <div class="totals-container">
+          <div style="width: 50%; padding: 15px; background-color: #f5f5f5">
+            <h4 style="margin: 0 0 10px 0">Terms & Conditions</h4>
+            <p style="font-size: 12px; margin: 0">
+              By using our services, you confirm that you accept these Terms and
+              Conditions and that you agree to comply with them.
+            </p>
+          </div>
+          <div style="width: 50%; padding: 15px; background-color: #f5f5f5">
+            <table
+              style="width: 100%; border-collapse: collapse; font-size: 14px"
+            >
+              <tr>
+                <td style="padding: 5px 0; font-weight: bold">Subtotal</td>
+                <td style="padding: 5px 0; text-align: right">{{subtotal}} AED</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; font-weight: bold">{{taxType}}</td>
+                <td style="padding: 5px 0; text-align: right">{{taxAmount}} AED</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; font-weight: bold">Discount</td>
+                <td style="padding: 5px 0; text-align: right">{{discount}} AED</td>
+              </tr>
+              <tr style="border-top: 1px solid #ddd">
+                <td style="padding: 10px 0; font-weight: bold">
+                  Invoice Total
+                </td>
+                <td
+                  style="padding: 10px 0; text-align: right; font-weight: bold"
+                >
+                  {{total}} AED
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div
+          style="padding: 15px; margin: 10px 20px; background-color: #f5f5f5"
+        >
+          <p style="font-size: 12px; color: #999">
+            Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
+            ever since the 1500s.
+          </p>
+        </div>
+        <div
+          style="
+            margin: 30px 20px;
+            display: flex;
+            justify-content: space-between;
+          "
+        >
+          <div>
+            <p
+              style="
+                font-size: 12px;
+                color: #999;
+                border-top: 1px dotted #999;
+                padding-top: 10px;
+              "
+            >
+              Customer Signature
+            </p>
+          </div>
+          <div>
+            <p
+              style="
+                font-size: 12px;
+                color: #999;
+                border-top: 1px dotted #999;
+                padding-top: 10px;
+              "
+            >
+              For Arabian Auto Equipments and Parts Trading (FZC)
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html> 
