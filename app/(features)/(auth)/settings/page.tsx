@@ -271,10 +271,10 @@ export default function SettingsPage() {
       }
       
       // Update the local state
-      setAddresses(addresses.map(address => ({
-        ...address,
-        isPrimary: address.id === id
-      })));
+    setAddresses(addresses.map(address => ({
+      ...address,
+      isPrimary: address.id === id
+    })));
       
       showSnackbar('Primary address updated successfully', 'success');
     } catch (error) {
@@ -371,7 +371,7 @@ export default function SettingsPage() {
                       </div>
                     ) : 'Save VAT Settings'}
                   </Button>
-                </div>
+              </div>
               </form>
 
               {/* India Section */}
@@ -418,10 +418,10 @@ export default function SettingsPage() {
                       <div className="flex items-center">
                         <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
                         <span>Saving...</span>
-                      </div>
+              </div>
                     ) : 'Save GST Settings'}
                   </Button>
-                </div>
+              </div>
               </form>
             </div>
           )}
@@ -454,78 +454,78 @@ export default function SettingsPage() {
                 </Typography>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {addresses.map((address) => (
-                  <motion.div
-                    key={address.id}
-                    initial={address.isPrimary ? "primary" : "notPrimary"}
-                    animate={address.isPrimary ? "primary" : "notPrimary"}
-                    variants={cardVariants}
-                    transition={{ duration: 0.3 }}
-                    className="rounded-lgb"
-                    layout
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {addresses.map((address) => (
+                <motion.div
+                  key={address.id}
+                  initial={address.isPrimary ? "primary" : "notPrimary"}
+                  animate={address.isPrimary ? "primary" : "notPrimary"}
+                  variants={cardVariants}
+                  transition={{ duration: 0.3 }}
+                  className="rounded-lgb"
+                  layout
+                >
+                  <Paper 
+                    className={`p-4 rounded-lg border h-full ${address.isPrimary ? 'bg-blue-100 border-blue-500' : 'bg-white'}`}
+                    elevation={0}
                   >
-                    <Paper 
-                      className={`p-4 rounded-lg border h-full ${address.isPrimary ? 'bg-blue-100 border-blue-500' : 'bg-white'}`}
-                      elevation={0}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center">
-                          <FiHome className="text-gray-600 mr-2" />
-                          <Typography variant="subtitle1" className="font-medium">
-                            {address.type}
-                          </Typography>
-                        </div>
-                        <div className="flex items-center">
-                          <IconButton 
-                            size="small"
-                            className="text-gray-500 mr-1"
-                            aria-label="Edit address"
-                            onClick={() => openEditAddressPanel(address)}
-                          >
-                            <FiEdit size={16} />
-                          </IconButton>
-                          <AnimatePresence>
-                            {address.isPrimary && (
-                              <motion.div
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                                variants={badgeVariants}
-                              >
-                                <Chip
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center">
+                        <FiHome className="text-gray-600 mr-2" />
+                        <Typography variant="subtitle1" className="font-medium">
+                          {address.type}
+                        </Typography>
+                      </div>
+                      <div className="flex items-center">
+                        <IconButton 
+                          size="small"
+                          className="text-gray-500 mr-1"
+                          aria-label="Edit address"
+                          onClick={() => openEditAddressPanel(address)}
+                        >
+                          <FiEdit size={16} />
+                        </IconButton>
+                        <AnimatePresence>
+                          {address.isPrimary && (
+                            <motion.div
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              variants={badgeVariants}
+                            >
+                              <Chip
                                   icon={<FiStar className="text-blue-500" />}
-                                  label="Primary"
-                                  size="small"
+                                label="Primary"
+                                size="small"
                                   className="bg-blue-50 text-blue-700"
-                                />
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                              />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                      
-                      <div className="mt-3 text-gray-700">
-                        <Typography variant="body2" className="mb-1">
-                          {address.street}
-                        </Typography>
-                        <Typography variant="body2" className="mb-1">
-                          {address.city}{address.state ? `, ${address.state}` : ''}
-                        </Typography>
-                        <Typography variant="body2" className="mb-1">
-                          {address.country}, {address.postalCode}
-                        </Typography>
-                      </div>
-                      
-                      <div className="mt-4 flex justify-end">
+                    </div>
+                    
+                    <div className="mt-3 text-gray-700">
+                      <Typography variant="body2" className="mb-1">
+                        {address.street}
+                      </Typography>
+                      <Typography variant="body2" className="mb-1">
+                        {address.city}{address.state ? `, ${address.state}` : ''}
+                      </Typography>
+                      <Typography variant="body2" className="mb-1">
+                        {address.country}, {address.postalCode}
+                      </Typography>
+                    </div>
+                    
+                    <div className="mt-4 flex justify-end">
                         {/* Address actions */}
                         <div className="flex items-center space-x-2">
-                          {!address.isPrimary && (
-                            <Button
-                              size="small"
+                      {!address.isPrimary && (
+                        <Button 
+                          size="small"
                               variant="outlined"
                               className="text-xs border-blue-500 text-blue-500 hover:bg-blue-50"
-                              onClick={() => setAsPrimary(address.id)}
+                          onClick={() => setAsPrimary(address.id)}
                               disabled={isPrimarySettingLoading === address.id}
                             >
                               {isPrimarySettingLoading === address.id ? (
@@ -536,14 +536,14 @@ export default function SettingsPage() {
                               ) : (
                                 'Set as Primary'
                               )}
-                            </Button>
-                          )}
+                        </Button>
+                      )}
                         </div>
-                      </div>
-                    </Paper>
-                  </motion.div>
-                ))}
-              </div>
+                    </div>
+                  </Paper>
+                </motion.div>
+              ))}
+            </div>
             )}
           </div>
         </TabPanel>
