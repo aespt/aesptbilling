@@ -11,6 +11,7 @@ export async function GET() {
         name: CustomersTable.name,
         email: CustomersTable.email,
         phone: CustomersTable.phone,
+        address: CustomersTable.address,
       })
       .from(CustomersTable)
       .orderBy(CustomersTable.name);

@@ -27,6 +27,8 @@ interface Customer {
   id: number;
   name: string;
   address?: string;
+  email?: string;
+  phone?: string;
 }
 
 interface SalesInvoiceDetailsProps {
@@ -84,11 +86,7 @@ export default function SalesInvoiceDetails({
         } catch (error) {
           console.error('Error fetching salesmen:', error);
           // Fallback to mock data when error occurs
-          setSalesmen([
-            { id: 1, name: 'John Doe' },
-            { id: 2, name: 'Jane Smith' },
-            { id: 3, name: 'Mike Johnson' }
-          ]);
+         
         }
 
         // Fetch customers
@@ -350,25 +348,59 @@ export default function SalesInvoiceDetails({
                 
                 {/* Customer details placeholder/display area */}
                 <Box 
-                  className={`border rounded-md p-4 min-h-[180px] flex items-center justify-center ${!selectedCustomer ? 'border-dashed border-gray-300' : 'border-gray-200'}`}
+                  className={`border rounded-md p-4 min-h-[180px] ${!selectedCustomer ? 'border-dashed border-gray-300 flex items-center justify-center' : 'border-gray-200'}`}
                 >
                   {selectedCustomer ? (
-                    <div>
-                      <Typography variant="subtitle2" className="font-medium">
-                        {selectedCustomer.name}
+                    <Box className="space-y-3">
+                      <Typography variant="subtitle2" className="font-medium text-gray-800 border-b pb-2">
+                        {selectedCustomer.name || '-'}
                       </Typography>
-                      <Typography variant="body2" className="text-gray-600 mt-2 whitespace-pre-line">
-                        {selectedCustomer.address || 'No address provided'}
-                      </Typography>
-                    </div>
+                      
+                      <Box className="grid grid-cols-1 gap-2">
+                        {selectedCustomer.address && (
+                          <Box className="flex items-start">
+                            <Typography variant="caption" className="text-gray-500 w-20 flex-shrink-0">
+                              Address:
+                            </Typography>
+                            <Typography variant="body2" className="text-gray-700">
+                              {selectedCustomer.address || '-'}
+                            </Typography>
+                          </Box>
+                        )}
+                        
+                        {selectedCustomer.email && (
+                          <Box className="flex items-start">
+                            <Typography variant="caption" className="text-gray-500 w-20 flex-shrink-0">
+                              Email:
+                            </Typography>
+                            <Typography variant="body2" className="text-gray-700">
+                              {selectedCustomer.email || '-'}
+                            </Typography>
+                          </Box>
+                        )}
+                        
+                        {selectedCustomer.phone && (
+                          <Box className="flex items-start">
+                            <Typography variant="caption" className="text-gray-500 w-20 flex-shrink-0">
+                              Phone:
+                            </Typography>
+                            <Typography variant="body2" className="text-gray-700">
+                              {selectedCustomer.phone || '-'}
+                            </Typography>
+                          </Box>
+                        )}
+                        
+                        {!selectedCustomer.address && !selectedCustomer.email && !selectedCustomer.phone && (
+                          <Typography variant="body2" className="text-gray-500 italic">
+                            No additional customer details available
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
                   ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center h-full flex items-center justify-center">
-                        <Typography variant="body2" className="text-gray-400">
-                          Please select a customer to view details
-                        </Typography>
-                      </div>
-                    </div>
+                    <Typography variant="body2" className="text-gray-400 text-center">
+                      Please select a customer to view details
+                    </Typography>
                   )}
                 </Box>
               </div>
