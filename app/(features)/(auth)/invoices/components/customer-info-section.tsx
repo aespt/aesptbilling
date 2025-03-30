@@ -112,7 +112,7 @@ export default function CustomerInfoSection({
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-100">
+      <div className="bg-white rounded-lg p-6 mb-6 border border-gray-100">
         <Typography variant="h6" className="mb-4 text-gray-800 font-medium">Customer Information</Typography>
         
         <div className="flex items-center mb-4">

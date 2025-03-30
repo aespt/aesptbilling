@@ -5,15 +5,12 @@ import {
   TextField, 
   IconButton,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   Button,
-  Autocomplete
+  Autocomplete,
+  Box,
+  Stack,
+  InputAdornment
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -187,97 +184,183 @@ export default function SalesInvoiceItems({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-100">
-      <div className="flex justify-between items-center mb-4">
-        <Typography variant="h6" className="text-gray-800 font-medium">Invoice Items</Typography>
-      </div>
+    <Paper elevation={0} className="mb-6 overflow-hidden border border-gray-200 shadow-lg">
+      <Box className="bg-blue-50 px-6 py-4 border-b border-gray-200">
+        <Typography variant="subtitle1" className="font-medium text-gray-700">
+          Invoice Items
+        </Typography>
+      </Box>
       
       {errors.items && (
-        <Typography color="error" className="mb-2">{errors.items}</Typography>
+        <Box className="px-6 py-2 bg-red-50">
+          <Typography color="error" variant="caption">{errors.items}</Typography>
+        </Box>
       )}
       
-      <TableContainer component={Paper} className="mb-4">
-        <Table>
-          <TableHead className="bg-gray-50">
-            <TableRow>
-              <TableCell width="35%">Part Number</TableCell>
-              <TableCell width="15%" align="center">Quantity</TableCell>
-              <TableCell width="20%" align="right">Rate</TableCell>
-              <TableCell width="20%" align="right">Total</TableCell>
-              <TableCell width="10%" align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {invoiceItems.map((item, index) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <Autocomplete
-                    options={products}
-                    getOptionLabel={(option) => `${option.part_no} - ${option.name}`}
-                    value={products.find(p => p.id === item.product_id) || null}
-                    onChange={(_, newValue) => handleProductChange(item.id, newValue)}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Select product"
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                      />
-                    )}
-                    disabled={isLoading}
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <TextField
-                    type="number"
-                    value={item.qty}
-                    onChange={(e) => handleQtyChange(item.id, parseInt(e.target.value || "1"))}
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ min: 1, style: { textAlign: 'center' } }}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <TextField
-                    type="number"
-                    value={item.rate}
-                    onChange={(e) => handleRateChange(item.id, parseFloat(e.target.value || "0"))}
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ min: 0, step: 0.01, style: { textAlign: 'right' } }}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  {formatCurrency(item.total)}
-                </TableCell>
-                <TableCell align="center">
+      {/* Header row - desktop only */}
+      <Box className="hidden md:flex px-6 py-3 bg-gray-50 border-b border-gray-200">
+        <Box width="40%" className="px-2">
+          <Typography variant="caption" className="text-gray-600 font-medium">
+            Part Number
+          </Typography>
+        </Box>
+        <Box width="15%" className="px-2 text-center">
+          <Typography variant="caption" className="text-gray-600 font-medium">
+            Quantity
+          </Typography>
+        </Box>
+        <Box width="20%" className="px-2 text-right">
+          <Typography variant="caption" className="text-gray-600 font-medium">
+            Rate
+          </Typography>
+        </Box>
+        <Box width="20%" className="px-2 text-right">
+          <Typography variant="caption" className="text-gray-600 font-medium">
+            Total
+          </Typography>
+        </Box>
+        <Box width="5%" className="px-2">
+          <Typography variant="caption" className="text-gray-600 font-medium">
+            &nbsp;
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Item rows */}
+      <Box className="max-h-[400px] overflow-y-auto">
+        {invoiceItems.map((item, index) => (
+          <Box 
+            key={item.id}
+            className={`relative border-b border-gray-100`}
+          >
+            <Box className="flex flex-wrap md:flex-nowrap px-6 py-4 items-center hover:bg-gray-50 transition-colors">
+              {/* Part Number */}
+              <Box className="w-full md:w-[40%] mb-3 md:mb-0 px-2">
+                <Typography variant="caption" className="text-gray-600 font-medium block md:hidden mb-1">
+                  Part Number
+                </Typography>
+                <Autocomplete
+                  options={products}
+                  getOptionLabel={(option) => `${option.part_no} - ${option.name}`}
+                  value={products.find(p => p.id === item.product_id) || null}
+                  onChange={(_, newValue) => handleProductChange(item.id, newValue)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Select product"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                    />
+                  )}
+                  disabled={isLoading}
+                  size="small"
+                />
+              </Box>
+              
+              {/* Quantity */}
+              <Box className="w-1/3 md:w-[15%] px-2">
+                <Typography variant="caption" className="text-gray-600 font-medium block md:hidden mb-1">
+                  Quantity
+                </Typography>
+                <TextField
+                  type="number"
+                  value={item.qty}
+                  onChange={(e) => handleQtyChange(item.id, parseInt(e.target.value || "1"))}
+                  variant="outlined"
+                  size="small"
+                  inputProps={{ min: 1 }}
+                  fullWidth
+                  sx={{ 
+                    '& input': { textAlign: 'center' } 
+                  }}
+                />
+              </Box>
+              
+              {/* Rate */}
+              <Box className="w-1/3 md:w-[20%] px-2">
+                <Typography variant="caption" className="text-gray-600 font-medium block md:hidden mb-1">
+                  Rate
+                </Typography>
+                <TextField
+                  type="number"
+                  value={item.rate}
+                  onChange={(e) => handleRateChange(item.id, parseFloat(e.target.value || "0"))}
+                  variant="outlined"
+                  size="small"
+                  inputProps={{ min: 0, step: 0.01 }}
+                  fullWidth
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">AED</InputAdornment>,
+                  }}
+                  sx={{ 
+                    '& input': { textAlign: 'right' } 
+                  }}
+                />
+              </Box>
+              
+              {/* Total */}
+              <Box className="w-1/3 md:w-[20%] px-2 flex items-center justify-end">
+                <Typography variant="caption" className="text-gray-600 font-medium block md:hidden mb-1">
+                  Total
+                </Typography>
+                <Box>
+                  <Typography variant="body2" className="font-medium">
+                    {formatCurrency(item.total)}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              {/* Actions */}
+              <Box className="w-full md:w-[5%] mt-3 md:mt-0 px-2 flex justify-end md:justify-center">
+                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, width: '30px', justifyContent: 'center' }}>
                   {invoiceItems.length > 1 && (
                     <IconButton 
                       size="small" 
                       onClick={() => removeInvoiceItem(item.id)}
-                      className="text-red-500"
+                      className="text-red-500 hover:bg-red-50"
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
                   )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        ))}
+        
+        {/* Add button centered below the last row */}
+        {invoiceItems.length > 0 && (
+          <Box className="flex justify-center py-3 border-t border-gray-100">
+            <Button
+              variant="text"
+              startIcon={<AddIcon />}
+              onClick={addInvoiceItem}
+              size="small"
+              className="text-blue-600 hover:bg-blue-50"
+            >
+              Add Item
+            </Button>
+          </Box>
+        )}
+      </Box>
       
-      <div className="flex justify-end">
-        <Button
-          variant="outlined"
-          startIcon={<AddIcon />}
-          onClick={addInvoiceItem}
-          className="mt-2"
-        >
-          Add Item
-        </Button>
-      </div>
-    </div>
+      {/* Empty state */}
+      {invoiceItems.length === 0 && (
+        <Box className="p-8 text-center">
+          <Typography variant="body2" className="text-gray-500 mb-4">
+            No items added to this invoice yet
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={addInvoiceItem}
+            size="small"
+          >
+            Add First Item
+          </Button>
+        </Box>
+      )}
+    </Paper>
   );
 } 

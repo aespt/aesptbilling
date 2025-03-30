@@ -6,6 +6,10 @@ import {
   Typography,
   Autocomplete,
   IconButton,
+  Paper,
+  Divider,
+  Grid,
+  Box,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -185,121 +189,195 @@ export default function SalesInvoiceDetails({
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-100">
-        <Typography variant="h6" className="mb-4 text-gray-800 font-medium">Invoice Details</Typography>
+      <Paper elevation={0} className="mb-6 overflow-hidden border border-gray-200 shadow-lg">
+        <Box className="bg-blue-50 px-6 py-4 border-b border-gray-200">
+          <Typography variant="subtitle1" className="font-medium text-gray-700">
+            Invoice Details
+          </Typography>
+        </Box>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="col-span-1">
-            <TextField
-              label="Invoice Number"
-              name="invoice_number"
-              value={formData.invoice_number}
-              onChange={handleInputChange}
-              fullWidth
-              error={!!errors.invoice_number}
-              helperText={errors.invoice_number}
-              className="mb-4"
-              size="small"
-            />
-          </div>
-          
-          <div className="col-span-1">
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Invoice Date"
-                value={formData.date}
-                onChange={handleDateChange}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    variant: 'outlined',
-                    className: 'mb-4',
-                    size: 'small'
-                  }
-                }}
-              />
-            </LocalizationProvider>
-          </div>
+        <Box className="p-6">
+          <Grid container spacing={4}>
+            {/* Left side - Invoice information with 2 columns */}
+            <Grid item xs={12} md={6}>
+              <Grid container spacing={3}>
+                {/* Left column of the left side */}
+                <Grid item xs={6}>
+                  <div className="space-y-4">
+                    <div>
+                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                        Invoice Number
+                      </Typography>
+                      <TextField
+                        name="invoice_number"
+                        value={formData.invoice_number}
+                        onChange={handleInputChange}
+                        fullWidth
+                        variant="outlined"
+                        margin="none"
+                        placeholder="Invoice Number"
+                        error={!!errors.invoice_number}
+                        helperText={errors.invoice_number}
+                        size="small"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                        Sales Representative
+                      </Typography>
+                      <Autocomplete
+                        options={salesmen}
+                        getOptionLabel={(option) => option.name}
+                        value={selectedSalesman}
+                        onChange={(_, newValue) => handleSalesmanChange(newValue)}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            variant="outlined"
+                            placeholder="Sales Representative"
+                            error={!!errors.salesman_id}
+                            helperText={errors.salesman_id}
+                            fullWidth
+                            size="small"
+                          />
+                        )}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                </Grid>
+                
+                {/* Right column of the left side */}
+                <Grid item xs={6}>
+                  <div className="space-y-4">
+                    <div>
+                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                        Invoice Date
+                      </Typography>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          value={formData.date}
+                          onChange={handleDateChange}
+                          slotProps={{
+                            textField: {
+                              placeholder: 'Invoice Date',
+                              fullWidth: true,
+                              variant: 'outlined',
+                              size: 'small'
+                            }
+                          }}
+                        />
+                      </LocalizationProvider>
+                    </div>
+                    
+                    <div>
+                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                        Ship From
+                      </Typography>
+                      <TextField
+                        name="ship_from"
+                        placeholder="Ship From"
+                        value={formData.ship_from}
+                        onChange={handleInputChange}
+                        fullWidth
+                        variant="outlined"
+                        size="small"
+                      />
+                    </div>
+                  </div>
+                </Grid>
+                
+                {/* Ship To field spans both columns */}
+                <Grid item xs={12}>
+                  <div>
+                    <Typography variant="caption" className="text-gray-500 mb-1 block">
+                      Ship To
+                    </Typography>
+                    <TextField
+                      name="ship_to"
+                      placeholder="Ship To"
+                      value={formData.ship_to}
+                      onChange={handleInputChange}
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      multiline
+                      rows={2}
+                    />
+                  </div>
+                </Grid>
+              </Grid>
+            </Grid>
+            
+            {/* Right side - Customer information */}
+            <Grid item xs={12} md={6}>
+              <div className="space-y-4">
+                <div>
+                  <Typography variant="caption" className="text-gray-500 mb-1 block">
+                    Customer
+                  </Typography>
+                  <div className="flex items-center gap-2">
+                    <Autocomplete
+                      options={customers}
+                      getOptionLabel={(option) => option.name}
+                      value={selectedCustomer}
+                      onChange={(_, newValue) => handleCustomerChange(newValue)}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder="Customer"
+                          variant="outlined"
+                          error={!!errors.customer_id}
+                          helperText={errors.customer_id}
+                          fullWidth
+                          size="small"
+                        />
+                      )}
+                      className="flex-grow"
+                      disabled={isLoading}
+                    />
+                    <IconButton 
+                      onClick={() => setIsCustomerPanelOpen(true)}
+                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200"
+                      size="small"
+                      title="Add New Customer"
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </div>
+                </div>
+                
+                {/* Customer details placeholder/display area */}
+                <Box 
+                  className={`border rounded-md p-4 min-h-[180px] flex items-center justify-center ${!selectedCustomer ? 'border-dashed border-gray-300' : 'border-gray-200'}`}
+                >
+                  {selectedCustomer ? (
+                    <div>
+                      <Typography variant="subtitle2" className="font-medium">
+                        {selectedCustomer.name}
+                      </Typography>
+                      <Typography variant="body2" className="text-gray-600 mt-2 whitespace-pre-line">
+                        {selectedCustomer.address || 'No address provided'}
+                      </Typography>
+                    </div>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center h-full flex items-center justify-center">
+                        <Typography variant="body2" className="text-gray-400">
+                          Please select a customer to view details
+                        </Typography>
+                      </div>
+                    </div>
+                  )}
+                </Box>
+              </div>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
 
-          <div className="col-span-1">
-            <div className="flex items-center">
-              <Autocomplete
-                options={salesmen}
-                getOptionLabel={(option) => option.name}
-                value={selectedSalesman}
-                onChange={(_, newValue) => handleSalesmanChange(newValue)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Sales Person"
-                    error={!!errors.salesman_id}
-                    helperText={errors.salesman_id}
-                    fullWidth
-                    size="small"
-                  />
-                )}
-                className="flex-grow"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-          
-          <div className="col-span-1">
-            <TextField
-              label="Ship From"
-              name="ship_from"
-              value={formData.ship_from}
-              onChange={handleInputChange}
-              fullWidth
-              size="small"
-              className="mb-4"
-            />
-          </div>
-          
-          <div className="col-span-1">
-            <div className="flex items-center">
-              <Autocomplete
-                options={customers}
-                getOptionLabel={(option) => option.name}
-                value={selectedCustomer}
-                onChange={(_, newValue) => handleCustomerChange(newValue)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Customer"
-                    error={!!errors.customer_id}
-                    helperText={errors.customer_id}
-                    fullWidth
-                    size="small"
-                  />
-                )}
-                className="flex-grow"
-                disabled={isLoading}
-              />
-              <IconButton 
-                onClick={() => setIsCustomerPanelOpen(true)}
-                className="ml-2 text-gray-600 hover:text-gray-800"
-              >
-                <AddIcon />
-              </IconButton>
-            </div>
-          </div>
-          
-          <div className="col-span-1">
-            <TextField
-              label="Ship To"
-              name="ship_to"
-              value={formData.ship_to}
-              onChange={handleInputChange}
-              fullWidth
-              size="small"
-              className="mb-4"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Sidepanel for adding new customer - This would need to be replaced with your actual AddCustomer component */}
+      {/* Sidepanel for adding new customer */}
       <Sidepanel
         isOpen={isCustomerPanelOpen}
         onClose={() => setIsCustomerPanelOpen(false)}

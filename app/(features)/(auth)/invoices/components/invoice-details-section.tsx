@@ -282,14 +282,15 @@ export default function InvoiceDetailsSection({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-100">
+    <div className="bg-white rounded-lg p-6 mb-6 border border-gray-100">
       <Typography variant="h6" className="mb-4 text-gray-800 font-medium">Invoice Details</Typography>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <FormField
-            label="Invoice Number"
             name="invoice_number"
+            label="Invoice Number"
+            placeholder="Invoice Number"
             value={formData.invoice_number || ''}
             onChange={handleInputChange}
             required

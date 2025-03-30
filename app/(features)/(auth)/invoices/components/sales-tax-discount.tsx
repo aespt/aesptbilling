@@ -5,11 +5,12 @@ import {
   TextField, 
   Typography,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   InputAdornment,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Paper,
+  Box
 } from "@mui/material";
 import useSnackbar from "@/app/shared/hooks/useSnackbar";
 
@@ -158,113 +159,136 @@ export default function SalesTaxDiscount({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-100">
-      <Typography variant="h6" className="mb-4 text-gray-800 font-medium">Tax and Discount</Typography>
+    <Paper elevation={0} className="mb-6 overflow-hidden border border-gray-200 shadow-lg">
+      <Box className="bg-blue-50 px-6 py-4 border-b border-gray-200">
+        <Typography variant="subtitle1" className="font-medium text-gray-700">
+          Tax and Discount
+        </Typography>
+      </Box>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="col-span-1">
-          <FormControl fullWidth>
-            <InputLabel>Tax Type</InputLabel>
-            <Select
-              label="Tax Type"
-              name="tax_type"
-              size="small"
-              value={formData.tax_type || 'VAT'}
-              onChange={handleTaxTypeChange}
-              disabled={isLoading}
-            >
-              <MenuItem value="VAT">VAT</MenuItem>
-              <MenuItem value="GST" disabled>GST (Not Implemented)</MenuItem>
-              <MenuItem value="NONE">None</MenuItem>
-            </Select>
-          </FormControl>
-        </div>
-        
-        {formData.tax_type === 'VAT' && (
-          <div className="col-span-1">
-            <TextField
-              label="VAT Rate"
-              value={`${formData.vat_percentage}%`}
-              fullWidth
-              size="small"
-              InputProps={{
-                readOnly: true,
-              }}
-            />
-          </div>
-        )}
-        
-        {formData.tax_type === 'GST' && (
-          <>
-            <div className="col-span-1">
-              <TextField
-                label="CGST (%)"
-                type="number"
-                value={formData.cgst_percentage}
-                disabled={true} // Disabled as per requirement
+      <Box className="p-6">
+        <Box sx={{ display: 'grid', gap: 4 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+            <div>
+              <Typography variant="caption" className="text-gray-500 mb-1 block">
+                Tax Type
+              </Typography>
+              <FormControl fullWidth size="small" variant="outlined">
+                <Select
+                  value={formData.tax_type || 'VAT'}
+                  onChange={handleTaxTypeChange}
+                  disabled={isLoading}
+                  displayEmpty
+                >
+                  <MenuItem value="VAT">VAT</MenuItem>
+                  <MenuItem value="GST" disabled>GST (Not Implemented)</MenuItem>
+                  <MenuItem value="NONE">None</MenuItem>
+                </Select>
+              </FormControl>
+            </div>
+            
+            {formData.tax_type === 'VAT' && (
+              <div>
+                <Typography variant="caption" className="text-gray-500 mb-1 block">
+                  VAT Rate
+                </Typography>
+                <TextField
+                  value={`${formData.vat_percentage}%`}
                   fullWidth
-                size="small"
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                }}
-              />
+                  size="small"
+                  variant="outlined"
+                  placeholder="VAT Rate"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </div>
+            )}
+            
+            {formData.tax_type === 'GST' && (
+              <>
+                <div>
+                  <Typography variant="caption" className="text-gray-500 mb-1 block">
+                    CGST (%)
+                  </Typography>
+                  <TextField
+                    type="number"
+                    value={formData.cgst_percentage}
+                    disabled={true}
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    placeholder="CGST Rate"
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                    }}
+                  />
+                </div>
+                <div>
+                  <Typography variant="caption" className="text-gray-500 mb-1 block">
+                    SGST (%)
+                  </Typography>
+                  <TextField
+                    type="number"
+                    value={formData.sgst_percentage}
+                    disabled={true}
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    placeholder="SGST Rate"
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                    }}
+                  />
+                </div>
+              </>
+            )}
+            
+            <div>
+              <Typography variant="caption" className="text-gray-500 mb-1 block">
+                Discount Type
+              </Typography>
+              <FormControl fullWidth size="small" variant="outlined">
+                <Select
+                  value={formData.discount_type || 'PERCENTAGE'}
+                  onChange={handleDiscountTypeChange}
+                  displayEmpty
+                >
+                  <MenuItem value="PERCENTAGE">Percentage (%)</MenuItem>
+                  <MenuItem value="FIXED">Fixed Amount</MenuItem>
+                  <MenuItem value="NONE">No Discount</MenuItem>
+                </Select>
+              </FormControl>
             </div>
-            <div className="col-span-1">
-              <TextField
-                label="SGST (%)"
-                type="number"
-                value={formData.sgst_percentage}
-                disabled={true} // Disabled as per requirement
-                fullWidth
-                size="small"
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                }}
-              />
-            </div>
-          </>
-        )}
-        
-        <div className="col-span-1">
-          <FormControl fullWidth>
-            <InputLabel>Discount Type</InputLabel>
-            <Select
-              name="discount_type"
-              label="Discount Type"
-              size="small"
-              value={formData.discount_type || 'PERCENTAGE'}
-              onChange={handleDiscountTypeChange}
-            >
-              <MenuItem value="PERCENTAGE">Percentage (%)</MenuItem>
-              <MenuItem value="FIXED">Fixed Amount</MenuItem>
-              <MenuItem value="NONE">No Discount</MenuItem>
-            </Select>
-          </FormControl>
-        </div>
-        
-        {formData.discount_type !== 'NONE' && (
-          <div className="col-span-1">
-            <TextField
-              label={formData.discount_type === 'PERCENTAGE' ? 'Discount (%)' : 'Discount Amount'}
-              type="number"
-              name="discount_value"
-              value={formData.discount_value}
-              onChange={handleDiscountValueChange}
-              fullWidth
-              size="small"
-              InputProps={{
-                endAdornment: formData.discount_type === 'PERCENTAGE' ? 
-                  <InputAdornment position="end">%</InputAdornment> : 
-                  <InputAdornment position="end">AED</InputAdornment>,
-                inputProps: { 
-                  min: 0,
-                  max: formData.discount_type === 'PERCENTAGE' ? 100 : undefined 
-                }
-              }}
-            />
-          </div>
-        )}
-      </div>
-    </div>
+            
+            {formData.discount_type !== 'NONE' && (
+              <div>
+                <Typography variant="caption" className="text-gray-500 mb-1 block">
+                  {formData.discount_type === 'PERCENTAGE' ? 'Discount (%)' : 'Discount Amount'}
+                </Typography>
+                <TextField
+                  type="number"
+                  value={formData.discount_value}
+                  onChange={handleDiscountValueChange}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  placeholder={formData.discount_type === 'PERCENTAGE' ? 'Discount (%)' : 'Discount Amount'}
+                  InputProps={{
+                    endAdornment: formData.discount_type === 'PERCENTAGE' ? 
+                      <InputAdornment position="end">%</InputAdornment> : 
+                      <InputAdornment position="end">AED</InputAdornment>,
+                    inputProps: { 
+                      min: 0,
+                      max: formData.discount_type === 'PERCENTAGE' ? 100 : undefined 
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </Box>
+        </Box>
+      </Box>
+    </Paper>
   );
 } 

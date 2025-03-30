@@ -2,12 +2,9 @@
 
 import { 
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
+  Box,
   Paper,
+  Divider,
 } from "@mui/material";
 
 interface InvoiceItem {
@@ -84,55 +81,71 @@ export default function SalesInvoiceSummary({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-100">
-      <Typography variant="h6" className="mb-4 text-gray-800 font-medium">Invoice Summary</Typography>
+    <Paper elevation={0} className="mb-6 overflow-hidden border border-gray-200 shadow-lg">
+      <Box className="bg-blue-50 px-6 py-4 border-b border-gray-200">
+        <Typography variant="subtitle1" className="font-medium text-gray-700">
+          Invoice Summary
+        </Typography>
+      </Box>
       
-      <div className="flex justify-end">
-        <TableContainer component={Paper} className="w-full md:w-1/2 lg:w-1/3">
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Subtotal</TableCell>
-                <TableCell align="right">
+      <Box className="px-6 py-4">
+        <Box className="flex justify-end">
+          <Box className="w-full md:w-1/2 lg:w-1/3">
+            {/* Summary Items */}
+            <Box className="space-y-3">
+              {/* Subtotal Row */}
+              <Box className="flex justify-between items-center py-2">
+                <Typography variant="body2" className="text-gray-600">
+                  Subtotal
+                </Typography>
+                <Typography variant="body1">
                   {formatCurrency(subtotal)}
-                </TableCell>
-              </TableRow>
+                </Typography>
+              </Box>
               
+              {/* Discount Row - Only shown if discount exists */}
               {formData.discount_type && formData.discount_type !== 'NONE' && formData.discount_value > 0 && (
-                <TableRow>
-                  <TableCell className="font-medium">
+                <Box className="flex justify-between items-center py-2">
+                  <Typography variant="body2" className="text-gray-600">
                     Discount 
                     {formData.discount_type === 'PERCENTAGE' ? ` (${formData.discount_value}%)` : ''}
-                  </TableCell>
-                  <TableCell align="right" className="text-red-600">
+                  </Typography>
+                  <Typography variant="body1" className="text-red-600">
                     -{formatCurrency(discountAmount)}
-                  </TableCell>
-                </TableRow>
+                  </Typography>
+                </Box>
               )}
               
+              {/* Tax Row - Only shown if tax exists */}
               {(formData.tax_type === 'VAT' || formData.tax_type === 'GST') && (
-                <TableRow>
-                  <TableCell className="font-medium">
+                <Box className="flex justify-between items-center py-2">
+                  <Typography variant="body2" className="text-gray-600">
                     {formData.tax_type === 'VAT' 
                       ? `VAT (${formData.vat_percentage}%)` 
                       : `GST (CGST: ${formData.cgst_percentage}%, SGST: ${formData.sgst_percentage}%)`}
-                  </TableCell>
-                  <TableCell align="right">
+                  </Typography>
+                  <Typography variant="body1">
                     {formatCurrency(taxAmount)}
-                  </TableCell>
-                </TableRow>
+                  </Typography>
+                </Box>
               )}
               
-              <TableRow>
-                <TableCell className="font-bold text-lg">Total Amount</TableCell>
-                <TableCell align="right" className="font-bold text-lg">
+              {/* Divider before total */}
+              <Divider className="my-2" />
+              
+              {/* Total Row */}
+              <Box className="flex justify-between items-center py-2">
+                <Typography variant="subtitle2" className="font-medium">
+                  Total Amount
+                </Typography>
+                <Typography variant="subtitle1" className="font-bold">
                   {formatCurrency(total)}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </div>
-    </div>
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Paper>
   );
 } 
