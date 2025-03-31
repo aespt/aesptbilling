@@ -94,6 +94,10 @@ export default function AddProduct({
     setServerError(null);
     
     try {
+      // Console log to debug the form values
+      console.log('Form data:', data);
+      console.log('MRP value:', data.mrp, typeof data.mrp);
+      
       // Convert form data to match the API expectations
       const productData = {
         part_no: data.partNo,
@@ -103,6 +107,9 @@ export default function AddProduct({
         mrp: data.mrp,
         count: data.count
       };
+      
+      // Console log to debug the API payload
+      console.log('API payload:', productData);
       
       // If in edit mode, add the ID and use PUT method
       if (isEditMode && productToEdit) {

@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       name: validatedData.name,
       description: validatedData.description,
       price: priceValue,
+      mrp: validatedData.mrp?.toString(),
       count: validatedData.count,
       created_at: new Date(),
       updated_at: new Date(),
@@ -118,6 +119,18 @@ export async function PUT(request: Request) {
       // Ensure it's a valid decimal string
       if (priceValue !== null && !isNaN(parseFloat(priceValue))) {
         updateData.price = priceValue;
+      }
+    }
+    
+    if (validatedData.mrp !== undefined) {
+      // Convert mrp to string for decimal type if needed
+      const mrpValue = typeof validatedData.mrp === 'number' 
+        ? validatedData.mrp.toString() 
+        : validatedData.mrp;
+      
+      // Ensure it's a valid decimal string
+      if (mrpValue !== null && !isNaN(parseFloat(mrpValue))) {
+        updateData.mrp = mrpValue;
       }
     }
     
