@@ -122,7 +122,7 @@
                 العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
               </p>
             </div>
-            <div style="text-align: right; font-size: 12px">
+            <div id="address" style="text-align: right; font-size: 12px">
               <p style="margin: 0">Block B-035-065</p>
               <p style="margin: 0">SAIF ZONE, UAE</p>
               <p style="margin: 0">Tel: 123456</p>
@@ -158,11 +158,11 @@
         >
           <div style="border-right: 1px solid #ccc">
             <p style="margin: 0; font-weight: bold">Invoice To:</p>
-            <p style="margin: 5px 0">{{customerAddress}}</p>
-            <p style="margin: 5px 0; margin: 10px 0">
+            <p id="customer-address" style="margin: 5px 0">{{customerAddress}}</p>
+            <p id="tax-reg-no" style="margin: 5px 0; margin: 10px 0">
               <span style="font-weight: bold">TAX Reg No:</span> {{taxRegNo}}
             </p>
-            <p style="margin: 5px 0">
+            <p id="ship-to-country" style="margin: 5px 0">
               <span style="font-weight: bold">Ship to Country/Emirate:</span>
               {{shipToCountry}}
             </p>
@@ -182,23 +182,23 @@
           >
             <tr>
               <td style="font-weight: bold">Invoice No:</td>
-              <td>{{invoiceNumber}}</td>
+              <td id="invoice-number">{{invoiceNumber}}</td>
             </tr>
             <tr>
               <td style="font-weight: bold">Invoice date:</td>
-              <td>{{invoiceDate}}</td>
+              <td id="invoice-date">{{invoiceDate}}</td>
             </tr>
             <tr>
               <td style="font-weight: bold">Order No:</td>
-              <td>{{orderNo}}</td>
+              <td id="order-no">{{orderNo}}</td>
             </tr>
             <tr>
               <td style="font-weight: bold">Salesman:</td>
-              <td>{{salesperson}}</td>
+              <td id="salesperson">{{salesperson}}</td>
             </tr>
             <tr>
               <td style="font-weight: bold">Ship From:</td>
-              <td>{{shipFrom}}</td>
+              <td id="ship-from">{{shipFrom}}</td>
             </tr>
           </table>
         </div>
@@ -220,8 +220,7 @@
               <th>Total Amount</th>
             </tr>
           </thead>
-          <tbody>
-            {{invoiceItems}}
+          <tbody id="invoice-items-body">
           </tbody>
         </table>
       </div>
@@ -242,21 +241,21 @@
             >
               <tr>
                 <td style="padding: 5px 0; font-weight: bold">Subtotal</td>
-                <td style="padding: 5px 0; text-align: right">{{subtotal}} AED</td>
+                <td id="subtotal" style="padding: 5px 0; text-align: right">{{subtotal}} AED</td>
               </tr>
               <tr>
-                <td style="padding: 5px 0; font-weight: bold">{{taxType}}</td>
-                <td style="padding: 5px 0; text-align: right">{{taxAmount}} AED</td>
+                <td id="tax-type" style="padding: 5px 0; font-weight: bold">{{taxType}}</td>
+                <td id="tax-amount" style="padding: 5px 0; text-align: right">{{taxAmount}} AED</td>
               </tr>
               <tr>
                 <td style="padding: 5px 0; font-weight: bold">Discount</td>
-                <td style="padding: 5px 0; text-align: right">{{discount}} AED</td>
+                <td id="discount" style="padding: 5px 0; text-align: right">{{discount}} AED</td>
               </tr>
               <tr style="border-top: 1px solid #ddd">
                 <td style="padding: 10px 0; font-weight: bold">
                   Invoice Total
                 </td>
-                <td
+                <td id="invoice-total"
                   style="padding: 10px 0; text-align: right; font-weight: bold"
                 >
                   {{total}} AED

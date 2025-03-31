@@ -9,6 +9,8 @@ import { CustomersTable } from '@/lib/models/customers';
 import { ProductsTable } from '@/lib/models/products';
 import { eq } from 'drizzle-orm';
 import format from 'date-fns/format';
+import { AddressTable } from '@/lib/models/address';
+import * as cheerio from 'cheerio';
 
 export async function GET(
   request: NextRequest,
@@ -52,6 +54,21 @@ export async function GET(
     const customer = customers.length > 0 ? customers[0] : null;
     console.log('Customer data retrieved:', customer ? 'Yes' : 'No');
 
+    // Get primary address
+    const addresses = await db
+      .select()
+      .from(AddressTable)
+      .where(eq(AddressTable.is_primary, true));
+    
+    const primaryAddress = addresses.length > 0 ? addresses[0] : null;
+    console.log('Primary address retrieved:', primaryAddress ? 'Yes' : 'No');
+
+    if (!primaryAddress) {
+      console.warn('No primary address found, using default address');
+      // You could either use a default address or return an error
+      // return NextResponse.json({ error: 'No primary address configured' }, { status: 500 });
+    }
+
     console.log('Fetching invoice items');
     // Get invoice items
     const invoiceItems = await db
@@ -87,23 +104,59 @@ export async function GET(
     // Format invoice date
     const formattedDate = format(new Date(invoice.invoice_date), 'MMMM dd, yyyy');
 
-    console.log('Filling template with invoice data');
+    console.log('Loading template into cheerio');
+    // Load HTML template into cheerio
+    const $ = cheerio.load(htmlTemplate);
+
     // Fill in the customer details
-    htmlTemplate = htmlTemplate.replace('{{customerAddress}}', customer?.address || 'N/A');
+    $('#customer-address').text(customer?.address || 'N/A');
     // Use a default value for tax number as it's not defined in the customer model
     const taxRegNo = 'N/A'; // Customize as needed
-    htmlTemplate = htmlTemplate.replace('{{taxRegNo}}', taxRegNo);
-    htmlTemplate = htmlTemplate.replace('{{shipToCountry}}', 'Emirates');
+    $('#tax-reg-no').html(`<span style="font-weight: bold">TAX Reg No:</span> ${taxRegNo}`);
+    $('#ship-to-country').html(`<span style="font-weight: bold">Ship to Country/Emirate:</span> Emirates`);
 
     // Fill in the invoice details
-    htmlTemplate = htmlTemplate.replace('{{invoiceNumber}}', invoice.invoice_number);
-    htmlTemplate = htmlTemplate.replace('{{invoiceDate}}', formattedDate);
-    htmlTemplate = htmlTemplate.replace('{{orderNo}}', invoice.id.toString());
-    htmlTemplate = htmlTemplate.replace('{{salesperson}}', invoice.salesperson_name);
-    htmlTemplate = htmlTemplate.replace('{{shipFrom}}', 'Emirates');
+    $('#invoice-number').text(invoice.invoice_number);
+    $('#invoice-date').text(formattedDate);
+    $('#order-no').text(invoice.id.toString());
+    $('#salesperson').text(invoice.salesperson_name);
+    $('#ship-from').text('Emirates');
 
-    // Generate invoice items HTML
-    let itemsHtml = '';
+    console.log('Fetching company address', primaryAddress);
+
+    // Update the company address section in the template
+    if (primaryAddress) {
+      let addressHtml = `
+        <p style="margin: 0">${primaryAddress.street}</p>
+        <p style="margin: 0">${primaryAddress.city}${primaryAddress.state ? ', ' + primaryAddress.state : ''}</p>
+        <p style="margin: 0">${primaryAddress.country} ${primaryAddress.postal_code}</p>
+      `;
+      
+      // Use type assertion with optional chaining to avoid TypeScript errors
+      const addressWithExtras = primaryAddress as any;
+      
+      // Only add phone number if it exists
+      if (addressWithExtras.phone_no) {
+        addressHtml += `<p style="margin: 0">Tel: ${addressWithExtras.phone_no}</p>`;
+      }
+      
+      // Only add fax number if it exists
+      if (addressWithExtras.fax_no) {
+        addressHtml += `<p style="margin: 0">Fax: ${addressWithExtras.fax_no}</p>`;
+      }
+      
+      // Only add transaction number if it exists
+      if (addressWithExtras.transaction_no) {
+        addressHtml += `<p style="margin: 0">TRN NO: ${addressWithExtras.transaction_no}</p>`;
+      }
+      
+      $('#address').html(addressHtml);
+    }
+
+    // Clear existing invoice items placeholder
+    $('#invoice-items-body').empty();
+    
+    // Generate invoice items and append them to the table
     invoiceItems.forEach((item, index) => {
       const product = productsMap.get(item.product_id);
       const taxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
@@ -112,21 +165,23 @@ export async function GET(
       const vatAmount = unitPrice * taxRate / 100 * quantity;
       const totalAmount = parseFloat(item.total_price.toString());
       
-      itemsHtml += `
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd">${index + 1}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${product?.partNo || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${product?.name || 'N/A'}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${item.quantity}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${item.unit_price}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${(unitPrice * quantity).toFixed(2)}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${taxRate}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${vatAmount.toFixed(2)}</td>
-          <td style="padding: 8px; border: 1px solid #ddd">${totalAmount.toFixed(2)}</td>
-        </tr>
-      `;
+      // Create a new row with an ID for easier identification
+      const $row = $('<tr>').attr('id', `invoice-item-${item.id}`);
+      
+      // Append cells with data
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((index + 1).toString()));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.partNo || 'N/A'));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.name || 'N/A'));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.quantity.toString()));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.unit_price.toString()));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((unitPrice * quantity).toFixed(2)));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(taxRate.toString()));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(vatAmount.toFixed(2)));
+      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(totalAmount.toFixed(2)));
+      
+      // Append the row to the table body
+      $('#invoice-items-body').append($row);
     });
-    htmlTemplate = htmlTemplate.replace('{{invoiceItems}}', itemsHtml);
 
     // Fill in the totals
     const subtotal = parseFloat(invoice.sub_total.toString()).toFixed(2);
@@ -135,14 +190,14 @@ export async function GET(
     const taxAmount = (parseFloat(subtotal) * taxRate / 100).toFixed(2);
     const total = parseFloat(invoice.total.toString()).toFixed(2);
 
-    htmlTemplate = htmlTemplate.replace('{{subtotal}}', subtotal);
+    $('#subtotal').text(`${subtotal} AED`);
     const taxType = invoice.tax_type || 'Tax';
-    htmlTemplate = htmlTemplate.replace('{{taxType}}', taxType);
-    htmlTemplate = htmlTemplate.replace('{{taxAmount}}', taxAmount);
-    htmlTemplate = htmlTemplate.replace('{{discount}}', discount);
-    htmlTemplate = htmlTemplate.replace('{{total}}', total);
+    $('#tax-type').text(taxType);
+    $('#tax-amount').text(`${taxAmount} AED`);
+    $('#discount').text(`${discount} AED`);
+    $('#invoice-total').text(`${total} AED`);
     
-    console.log('Template filled successfully');
+    console.log('Template filled successfully with cheerio');
 
     console.log('Launching Puppeteer');
     
@@ -164,7 +219,7 @@ export async function GET(
       console.log('New page created');
       
       console.log('Setting page content');
-      await page.setContent(htmlTemplate, { waitUntil: 'networkidle0' });
+      await page.setContent($.html(), { waitUntil: 'networkidle0' });
       console.log('Content set, generating PDF');
       
       const pdf = await page.pdf({

@@ -57,6 +57,7 @@ export async function PUT(request: Request, { params }: Params) {
     }
     
     const body = await request.json();
+    console.log('Received body data:', body);
     
     // Validate the input using Zod schema
     const validatedData = UpdateAddressSchema.parse({
@@ -64,6 +65,8 @@ export async function PUT(request: Request, { params }: Params) {
       updated_by: 'system',
       updated_at: new Date()
     });
+    
+    console.log('Validated data to be saved:', validatedData);
     
     // If marking as primary, update all other addresses
     if (validatedData.is_primary) {
@@ -86,6 +89,8 @@ export async function PUT(request: Request, { params }: Params) {
         { status: 404 }
       );
     }
+    
+    console.log('Address updated successfully with:', updatedAddress[0]);
     
     return NextResponse.json({
       message: 'Address updated successfully',

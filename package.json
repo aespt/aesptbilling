@@ -40,6 +40,7 @@
     "autoprefixer": "10.4.20",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
+    "cheerio": "^1.0.0",
     "cookies-next": "^5.1.0",
     "date-fns": "2.30.0",
     "dayjs": "^1.11.13",

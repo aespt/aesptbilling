@@ -11,6 +11,9 @@ export const AddressSchema = BaseSchema.extend({
   country: z.string().min(1, "Country is required"),
   postal_code: z.string().min(1, "Postal code is required"),
   is_primary: z.boolean().default(false),
+  transaction_no: z.string().optional(),
+  phone_no: z.string().optional(),
+  fax_no: z.string().optional(),
 });
 
 // Zod schema for creating a new address

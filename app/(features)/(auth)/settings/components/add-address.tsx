@@ -27,6 +27,9 @@ interface Address {
   country: string;
   postalCode: string;
   isPrimary: boolean;
+  transactionNo: string;
+  phoneNo: string;
+  faxNo: string;
 }
 
 // API representation of address
@@ -39,6 +42,9 @@ interface ApiAddress {
   country: string;
   postal_code: string;
   is_primary: boolean;
+  transaction_no?: string;
+  phone_no?: string;
+  fax_no?: string;
   created_by?: string;
   updated_by?: string;
   created_at?: Date;
@@ -73,7 +79,10 @@ export default function AddAddress({
     state: '',
     country: 'UAE',
     postal_code: '',
-    is_primary: false
+    is_primary: false,
+    transaction_no: '',
+    phone_no: '',
+    fax_no: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,7 +100,10 @@ export default function AddAddress({
         state: addressToEdit.state || '',
         country: addressToEdit.country,
         postal_code: addressToEdit.postalCode,
-        is_primary: false // Always set to false, let the settings page handle primary status
+        is_primary: false, // Always set to false, let the settings page handle primary status
+        transaction_no: addressToEdit.transactionNo || '',
+        phone_no: addressToEdit.phoneNo || '',
+        fax_no: addressToEdit.faxNo || ''
       });
     }
   }, [addressToEdit]);
@@ -165,7 +177,10 @@ export default function AddAddress({
       state: apiAddress.state || '',
       country: apiAddress.country,
       postalCode: apiAddress.postal_code,
-      isPrimary: apiAddress.is_primary
+      isPrimary: apiAddress.is_primary,
+      transactionNo: apiAddress.transaction_no || '',
+      phoneNo: apiAddress.phone_no || '',
+      faxNo: apiAddress.fax_no || ''
     };
   };
 
@@ -184,6 +199,8 @@ export default function AddAddress({
         is_primary: false
       };
       
+      console.log('Sending address data:', addressData);
+      
       if (addressToEdit) {
         // Update existing address
         const response = await fetch(`/api/addresses/${address.id}`, {
@@ -199,6 +216,7 @@ export default function AddAddress({
         }
         
         const result = await response.json();
+        console.log('Update response:', result);
         
         // Call the callback with UI-formatted address
         onAddressUpdated?.(convertToUiAddress(result.address));
@@ -217,6 +235,7 @@ export default function AddAddress({
         }
         
         const result = await response.json();
+        console.log('Create response:', result);
         
         // Call the callback with UI-formatted address
         onAddressAdded?.(convertToUiAddress(result.address));
@@ -338,6 +357,45 @@ export default function AddAddress({
             required
             error={!!errors.postal_code}
             helperText={errors.postal_code}
+          />
+          
+          {/* Transaction No */}
+          <TextField
+            label="Transaction No (TRN)"
+            name="transaction_no"
+            value={address.transaction_no || ''}
+            onChange={handleChange}
+            fullWidth
+            variant="outlined"
+            size="small"
+            error={!!errors.transaction_no}
+            helperText={errors.transaction_no}
+          />
+          
+          {/* Phone No */}
+          <TextField
+            label="Phone Number"
+            name="phone_no"
+            value={address.phone_no || ''}
+            onChange={handleChange}
+            fullWidth
+            variant="outlined"
+            size="small"
+            error={!!errors.phone_no}
+            helperText={errors.phone_no}
+          />
+          
+          {/* Fax No */}
+          <TextField
+            label="Fax Number"
+            name="fax_no"
+            value={address.fax_no || ''}
+            onChange={handleChange}
+            fullWidth
+            variant="outlined"
+            size="small"
+            error={!!errors.fax_no}
+            helperText={errors.fax_no}
           />
           
           {/* Primary Address Checkbox - Removed as requested */}
