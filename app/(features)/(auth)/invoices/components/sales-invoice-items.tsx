@@ -16,13 +16,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import useSnackbar from "@/app/shared/hooks/useSnackbar";
 import Sidepanel from "@/app/shared/components/sidepanel";
-
-interface Product {
-  id: number;
-  part_no: string;
-  name: string;
-  mrp: number;
-}
+import { Product } from "@/lib/types";
 
 interface InvoiceItem {
   id: string;
@@ -59,15 +53,12 @@ export default function SalesInvoiceItems({
         const response = await fetch('/api/products');
         if (!response.ok) throw new Error('Failed to fetch products');
         const data = await response.json();
+        console.log('Fetched products:', data.products);
         setProducts(data.products || []);
       } catch (error) {
         console.error('Error fetching products:', error);
         // For now, use mock data
-        setProducts([
-          { id: 1, part_no: 'P001', name: 'Product 1', mrp: 100 },
-          { id: 2, part_no: 'P002', name: 'Product 2', mrp: 200 },
-          { id: 3, part_no: 'P003', name: 'Product 3', mrp: 300 },
-        ]);
+        setProducts([]);
       } finally {
         setIsLoading(false);
       }
@@ -102,11 +93,11 @@ export default function SalesInvoiceItems({
   const handleProductChange = (itemId: string, product: Product | null) => {
     const updatedItems = invoiceItems.map(item => {
       if (item.id === itemId) {
-        const rate = product?.mrp || 0;
+        const rate = Number(product?.mrp) || 0;
         return {
           ...item,
           product_id: product?.id || null,
-          part_no: product?.part_no || "",
+          part_no: product?.partNo || "",
           rate: rate,
           total: item.qty * rate
         };
@@ -241,7 +232,7 @@ export default function SalesInvoiceItems({
                 </Typography>
                 <Autocomplete
                   options={products}
-                  getOptionLabel={(option) => `${option.part_no} - ${option.name}`}
+                  getOptionLabel={(option) => option ? `${option.partNo} - ${option.name}` : ''}
                   value={products.find(p => p.id === item.product_id) || null}
                   onChange={(_, newValue) => handleProductChange(item.id, newValue)}
                   renderInput={(params) => (
@@ -255,6 +246,7 @@ export default function SalesInvoiceItems({
                   )}
                   disabled={isLoading}
                   size="small"
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
                 />
               </Box>
               

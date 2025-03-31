@@ -143,7 +143,19 @@ export default function SalesTaxDiscount({
 
   // Handle discount value change
   const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
+    const inputValue = e.target.value;
+    
+    // Allow empty input
+    if (inputValue === '') {
+      setFormData((prev: any) => ({
+        ...prev,
+        discount_value: ''
+      }));
+      onTaxDiscountChange();
+      return;
+    }
+    
+    const value = parseFloat(inputValue);
     
     // Validate percentage cannot be > 100
     if (formData.discount_type === 'PERCENTAGE' && value > 100) {
