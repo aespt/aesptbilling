@@ -28,6 +28,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import PrimaryButton from '@/app/shared/components/primary-button';
+import { useRouter } from 'next/navigation';
 
 // Add custom CSS for animations
 const tableRowAnimation = `
@@ -89,6 +90,7 @@ interface FilterOptions {
 }
 
 export default function InvoicesListPage() {
+  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -261,6 +263,10 @@ export default function InvoicesListPage() {
     return date.toLocaleDateString();
   };
 
+  const handleInvoiceClick = (invoiceId: number) => {
+    window.open(`/invoices/pdf/${invoiceId}`, '_blank');
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="px-4 md:px-6 pt-24 pb-6 md:ml-[280px]">
@@ -344,12 +350,12 @@ export default function InvoicesListPage() {
                           }}
                         >
                           <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
-                          <TableCell className="font-medium text-blue-600">{invoice.invoice_number}</TableCell>
+                          <TableCell className="font-medium text-blue-600 cursor-pointer" onClick={() => handleInvoiceClick(invoice.id)}>{invoice.invoice_number}</TableCell>
                           <TableCell>{invoice.salesperson_name}</TableCell>
                           <TableCell>{invoice.customer.name}</TableCell>
                           <TableCell>Head Office</TableCell>
                           <TableCell>{invoice.customer.address}</TableCell>
-                          <TableCell align="right" className="font-medium">${parseFloat(invoice.total).toFixed(2)}</TableCell>
+                          <TableCell align="right" className="font-medium">{parseFloat(invoice.total).toFixed(2)}</TableCell>
                         </TableRow>
                       ))
                     ) : (

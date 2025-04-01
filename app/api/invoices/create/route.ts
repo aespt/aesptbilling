@@ -22,6 +22,7 @@ export async function POST(request: Request) {
               body.tax_type === 'GST' ? body.cgst_percentage + body.sgst_percentage : 0),
         sub_total: String(body.subtotal),
         total: String(body.total),
+        discount: body.discount,
         created_by: 'system',
         updated_by: 'system'
       }).returning();
