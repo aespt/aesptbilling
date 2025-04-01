@@ -120,8 +120,8 @@ export async function GET(
     $('#invoice-date').text(formattedDate);
     $('#order-no').text(invoice.id.toString());
     $('#salesperson').text(invoice.salesperson_name);
-    $('#ship-from').text('Emirates');
-
+    $('#ship-from').text(invoice.ship_from || 'N/A');
+    $('#ship-to').text(invoice.ship_to || 'N/A');
     console.log('Fetching company address', primaryAddress);
 
     // Update the company address section in the template

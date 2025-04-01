@@ -19,6 +19,8 @@ export const InvoicesTable = pgTable(
     sub_total: decimal('sub_total', { precision: 10, scale: 2 }).notNull(),
     discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
     total: decimal('total', { precision: 10, scale: 2 }).notNull(),
+    ship_to: varchar('ship_to', { length: 255 }),
+    ship_from: varchar('ship_from', { length: 255 }),
     created_by: varchar('created_by', { length: 100 }),
     updated_by: varchar('updated_by', { length: 100 }),
     created_at: timestamp('created_at').defaultNow().notNull(),

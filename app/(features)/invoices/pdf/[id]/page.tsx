@@ -71,11 +71,6 @@ const InvoicePdfPage = () => {
 
     checkPdfAvailability();
 
-    // Add event listener to handle the print button functionality
-    const handlePrint = () => {
-      window.print();
-    };
-
     // Add the buttons to the document
     const addButtons = () => {
       const iframe = document.getElementById('pdf-iframe') as HTMLIFrameElement;
@@ -86,12 +81,6 @@ const InvoicePdfPage = () => {
       buttonsContainer.className = 'fixed top-4 right-4 flex space-x-2 z-50 print:hidden';
       document.body.appendChild(buttonsContainer);
 
-      // Create print button
-      const printButton = document.createElement('button');
-      printButton.innerText = 'Print';
-      printButton.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded';
-      printButton.onclick = handlePrint;
-      buttonsContainer.appendChild(printButton);
 
       // Create download button
       const downloadButton = document.createElement('button');

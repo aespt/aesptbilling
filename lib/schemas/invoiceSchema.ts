@@ -17,6 +17,8 @@ export const InvoiceSchema = BaseSchema.extend({
   discount: z.number().nonnegative().default(0),
   sub_total: z.number().positive(),
   total: z.number().positive(),
+  ship_to: z.string().min(1, { message: "Ship to is required" }),
+  ship_from: z.string().min(1, { message: "Ship from is required" }),
 });
 
 // Zod schema for creating a new invoice

@@ -23,6 +23,8 @@ export async function POST(request: Request) {
         sub_total: String(body.subtotal),
         total: String(body.total),
         discount: body.discount,
+        ship_to: body.ship_to,
+        ship_from: body.ship_from,
         created_by: 'system',
         updated_by: 'system'
       }).returning();
