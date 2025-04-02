@@ -4,7 +4,8 @@ import { ProductsTable } from '@/lib/models/products';
 import { SalesmenTable } from '@/lib/models/salesmen';
 import { CustomersTable } from '@/lib/models/customers';
 import { SuppliersTable } from '@/lib/models/suppliers';
-import { count } from 'drizzle-orm';
+import { InvoicesTable } from '@/lib/models/invoices';
+import { count, sql } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -21,7 +22,81 @@ export async function GET() {
       db.select({ count: count() }).from(SuppliersTable)
     ]);
 
-    // Format the response as an array of objects
+    // Default data for all months
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    // Initialize default sales data with 0 values
+    const salesData = monthNames.map(name => ({
+      name,
+      value: 0
+    }));
+    
+    // Initialize default margin data with 0 values
+    const marginData = monthNames.map(name => ({
+      name,
+      sales: 0,
+      purchase: 0,
+      margin: 0
+    }));
+
+    try {
+      // Query monthly sales data without year restriction
+      const monthlySalesResults = await db
+        .select({
+          month: sql<string>`to_char(${InvoicesTable.invoice_date}, 'Mon')`,
+          total: sql<number>`COALESCE(sum(${InvoicesTable.total}), 0)`,
+        })
+        .from(InvoicesTable)
+        .groupBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`)
+        .orderBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`);
+
+      console.log("Sales results:", JSON.stringify(monthlySalesResults));
+
+      // Update sales data with actual values
+      if (monthlySalesResults && monthlySalesResults.length > 0) {
+        monthlySalesResults.forEach(result => {
+          const monthIndex = monthNames.findIndex(name => 
+            name.toLowerCase() === result.month.substring(0, 3).toLowerCase()
+          );
+          if (monthIndex !== -1) {
+            salesData[monthIndex].value = parseFloat(String(result.total));
+          }
+        });
+      }
+
+      // Query monthly profit margin data without year restriction
+      const monthlyMarginResults = await db
+        .select({
+          month: sql<string>`to_char(${InvoicesTable.invoice_date}, 'Mon')`,
+          sales: sql<number>`COALESCE(sum(${InvoicesTable.total}), 0)`,
+          purchase: sql<number>`COALESCE(sum(${InvoicesTable.total} - COALESCE(${InvoicesTable.profit}, 0)), 0)`,
+          margin: sql<number>`COALESCE(sum(COALESCE(${InvoicesTable.profit}, 0)), 0)`,
+        })
+        .from(InvoicesTable)
+        .groupBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`)
+        .orderBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`);
+
+      console.log("Margin results:", JSON.stringify(monthlyMarginResults));
+
+      // Update margin data with actual values
+      if (monthlyMarginResults && monthlyMarginResults.length > 0) {
+        monthlyMarginResults.forEach(result => {
+          const monthIndex = monthNames.findIndex(name => 
+            name.toLowerCase() === result.month.substring(0, 3).toLowerCase()
+          );
+          if (monthIndex !== -1) {
+            marginData[monthIndex].sales = parseFloat(String(result.sales));
+            marginData[monthIndex].purchase = parseFloat(String(result.purchase));
+            marginData[monthIndex].margin = parseFloat(String(result.margin));
+          }
+        });
+      }
+    } catch (dbError) {
+      console.error('Error querying invoice data:', dbError);
+      // Continue with empty data if there's an error
+    }
+
+    // Format the metrics response
     const metrics = [
       {
         id: 'products',
@@ -49,7 +124,11 @@ export async function GET() {
       }
     ];
 
-    return NextResponse.json({ metrics }, { status: 200 });
+    return NextResponse.json({ 
+      metrics,
+      salesData,
+      marginData
+    }, { status: 200 });
   } catch (error) {
     console.error('Error fetching dashboard metrics:', error);
     return NextResponse.json(

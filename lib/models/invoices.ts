@@ -19,6 +19,7 @@ export const InvoicesTable = pgTable(
     tax_rate: decimal('tax_rate', { precision: 5, scale: 2 }).default('0'),
     sub_total: decimal('sub_total', { precision: 10, scale: 2 }).notNull(),
     discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
+    profit: decimal('profit', { precision: 10, scale: 2 }).default('0'),
     total: decimal('total', { precision: 10, scale: 2 }).notNull(),
     ship_to: varchar('ship_to', { length: 255 }),
     ship_from: varchar('ship_from', { length: 255 }),

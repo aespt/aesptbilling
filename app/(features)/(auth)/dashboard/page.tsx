@@ -137,6 +137,8 @@ export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<any[]>([]);
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [marginData, setMarginData] = useState<any[]>([]);
 
   // Fetch dashboard metrics from API
   const fetchDashboardMetrics = async () => {
@@ -147,6 +149,8 @@ export default function Dashboard() {
       }
       const data = await response.json();
       setMetrics(data.metrics);
+      setSalesData(data.salesData);
+      setMarginData(data.marginData);
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);
     } finally {
@@ -299,7 +303,43 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Monthly Purchase Chart */}
+          {/* Profit Margin Chart */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+                <FiDollarSign className="mr-2 text-green-500" /> Profit Margin
+              </h2>
+              <span className="text-sm font-medium text-green-500 flex items-center">
+                <FiArrowUp size={14} className="mr-1" /> 8.7%
+              </span>
+            </div>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={marginData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="sales" name="Sales" fill="#3B82F6" />
+                  <Bar dataKey="purchase" name="Purchase" fill="#EF4444" />
+                  <Bar dataKey="margin" name="Margin" fill="#10B981" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Commenting out the Monthly Purchase and Top Products graphs for now */}
+        {/* 
+        <motion.div
+          variants={itemVariants}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+        >
+          
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800 flex items-center">
@@ -344,43 +384,8 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           </div>
-        </motion.div>
 
-        {/* Margin and Top Products */}
-        <motion.div
-          variants={itemVariants}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-        >
-          {/* Margin Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                <FiDollarSign className="mr-2 text-green-500" /> Profit Margin
-              </h2>
-              <span className="text-sm font-medium text-green-500 flex items-center">
-                <FiArrowUp size={14} className="mr-1" /> 8.7%
-              </span>
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={marginData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="sales" name="Sales" fill="#3B82F6" />
-                  <Bar dataKey="purchase" name="Purchase" fill="#EF4444" />
-                  <Bar dataKey="margin" name="Margin" fill="#10B981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Top Products */}
+          
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-gray-800">
@@ -416,6 +421,7 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
+        */}
       </motion.div>
     </div>
   );
