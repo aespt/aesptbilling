@@ -44,7 +44,7 @@ export default function Header() {
       <div className="flex items-center justify-between h-16 px-4 md:px-6 mt-1">
         {/* Left side - Page title */}
         <div className="flex items-center">
-          <h1 className="text-xl font-semibold text-gray-800">AESPT Admin</h1>
+          <h1 className="text-xl font-semibold text-gray-800"></h1>
         </div>
 
         {/* Right side - User info and notifications */}
