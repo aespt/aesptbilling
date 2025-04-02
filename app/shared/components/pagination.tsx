@@ -67,22 +67,26 @@ const Pagination: React.FC<PaginationProps> = ({
   itemName = "items",
 }) => {
   const {
-    total,
-    totalPages,
-    currentPage,
-    pageSize,
-    hasNext,
-    hasPrev
+    total = 0,
+    totalPages = 1,
+    currentPage = 1,
+    pageSize = 10,
+    hasNext = false,
+    hasPrev = false
   } = paginationInfo;
 
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onPageSizeChange(parseInt(e.target.value, 10));
   };
 
+  // Calculate the range of items being displayed
+  const startItem = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, total);
+
   return (
     <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4 px-6 py-3 bg-white border border-gray-200 rounded-lg">
       <div className="text-sm text-gray-600">
-        Showing <span className="font-bold">{total === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> to <span className="font-bold">{Math.min(currentPage * pageSize, total)}</span> of <span className="font-bold">{total}</span> {itemName}
+        Showing <span className="font-bold">{startItem}</span> to <span className="font-bold">{endItem}</span> of <span className="font-bold">{total}</span> {itemName}
       </div>
       
       <div className="flex items-center gap-2">
@@ -113,7 +117,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <div className="mx-2 text-sm bg-gray-50 px-4 py-1.5 rounded-md border border-gray-200">
           <span className="font-medium">{currentPage}</span>
           <span className="mx-1 text-gray-500">/</span>
-          <span className="text-gray-600">{totalPages || 1}</span>
+          <span className="text-gray-600">{totalPages}</span>
         </div>
         
         <Button

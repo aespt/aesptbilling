@@ -29,6 +29,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import PrimaryButton from '@/app/shared/components/primary-button';
 import { useRouter } from 'next/navigation';
+import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
 
 // Add custom CSS for animations
 const tableRowAnimation = `
@@ -77,13 +78,6 @@ interface Invoice {
   total: string;
 }
 
-interface PaginationInfo {
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
 interface SortConfig {
   field: string;
   direction: 'asc' | 'desc';
@@ -103,9 +97,11 @@ export default function InvoicesListPage() {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
-    page: 1,
+    totalPages: 0,
+    currentPage: 1,
     pageSize: 10,
-    totalPages: 0
+    hasNext: false,
+    hasPrev: false
   });
   const [sort, setSort] = useState<SortConfig>({
     field: 'invoice_date',
@@ -157,10 +153,10 @@ export default function InvoicesListPage() {
     setLoading(true);
     
     try {
-      // Build query parameters
+      // Build query parameters with null checks and default values
       const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.pageSize.toString(),
+        page: (pagination?.currentPage ?? 1).toString(),
+        limit: (pagination?.pageSize ?? 10).toString(),
         sortField: sort.field,
         sortOrder: sort.direction,
       });
@@ -197,7 +193,15 @@ export default function InvoicesListPage() {
       
       const data = await response.json();
       setInvoices(data.invoices);
-      setPagination(data.pagination);
+      // Ensure pagination data has all required fields
+      setPagination({
+        total: data.pagination.total ?? 0,
+        totalPages: data.pagination.totalPages ?? 1,
+        currentPage: data.pagination.currentPage ?? 1,
+        pageSize: data.pagination.pageSize ?? 10,
+        hasNext: data.pagination.hasNext ?? false,
+        hasPrev: data.pagination.hasPrev ?? false
+      });
     } catch (error) {
       console.error('Error fetching invoices:', error);
     } finally {
@@ -208,20 +212,20 @@ export default function InvoicesListPage() {
   // Load invoices on initial page load and when filters change
   useEffect(() => {
     fetchInvoices();
-  }, [pagination.page, pagination.pageSize, sort]);
+  }, [pagination.currentPage, pagination.pageSize, sort]);
 
-  const handlePageChange = (_: any, newPage: number) => {
+  const handlePageChange = (newPage: number) => {
     setPagination(prev => ({
       ...prev,
-      page: newPage + 1
+      currentPage: newPage
     }));
   };
 
-  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRowsPerPageChange = (newPageSize: number) => {
     setPagination(prev => ({
       ...prev,
-      page: 1,
-      pageSize: parseInt(event.target.value, 10)
+      currentPage: 1,
+      pageSize: newPageSize
     }));
   };
 
@@ -243,7 +247,7 @@ export default function InvoicesListPage() {
     // Reset to page 1 when applying new filters
     setPagination(prev => ({
       ...prev,
-      page: 1
+      currentPage: 1
     }));
     fetchInvoices();
     setFilterDrawerOpen(false);
@@ -259,7 +263,7 @@ export default function InvoicesListPage() {
     });
     setPagination(prev => ({
       ...prev,
-      page: 1
+      currentPage: 1
     }));
     // Wait for state to update before fetching
     setTimeout(fetchInvoices, 0);
@@ -375,14 +379,12 @@ export default function InvoicesListPage() {
                 </TableBody>
               </Table>
             </TableContainer>
-            <TablePagination
-              component="div"
-              count={pagination.total}
-              page={pagination.page - 1}
+            <Pagination
+              paginationInfo={pagination}
               onPageChange={handlePageChange}
-              rowsPerPage={pagination.pageSize}
-              onRowsPerPageChange={handleRowsPerPageChange}
-              rowsPerPageOptions={[5, 10, 25, 50]}
+              onPageSizeChange={handleRowsPerPageChange}
+              pageSizeOptions={[5, 10, 25, 50]}
+              itemName="invoices"
             />
           </Paper>
         )}
