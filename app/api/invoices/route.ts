@@ -3,6 +3,7 @@ import { db } from '@/lib/drizzle';
 import { InvoicesTable } from '@/lib/models/invoices';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { CustomersTable } from '@/lib/models/customers';
+import { SalesmenTable } from '@/lib/models/salesmen';
 import { CreateInvoiceSchema } from '@/lib/schemas/invoiceSchema';
 import { CreateInvoiceItemSchema } from '@/lib/schemas/invoiceItemSchema';
 import { ZodError } from 'zod';
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
     
     // Add sales person filter if provided
     if (salesPerson) {
-      conditions.push(sql`${InvoicesTable.salesperson_name} ILIKE ${`%${salesPerson}%`}`);
+      conditions.push(sql`${InvoicesTable.salesman_id} ILIKE ${`%${salesPerson}%`}`);
     }
     
     // Get total count for pagination
@@ -99,24 +100,27 @@ export async function GET(request: NextRequest) {
         id: InvoicesTable.id,
         invoice_number: InvoicesTable.invoice_number,
         invoice_date: InvoicesTable.invoice_date,
-        salesperson_name: InvoicesTable.salesperson_name,
+        salesman_id: InvoicesTable.salesman_id,
         customer_id: InvoicesTable.customer_id,
         tax_type: InvoicesTable.tax_type,
         tax_rate: InvoicesTable.tax_rate,
         sub_total: InvoicesTable.sub_total,
         total: InvoicesTable.total,
         created_at: InvoicesTable.created_at,
+        ship_from: InvoicesTable.ship_from,
+        ship_to: InvoicesTable.ship_to,
       })
       .from(InvoicesTable)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(orderByClause)
       .limit(pageSize)
       .offset(offset);
-    
-    // Get customer information for each invoice
-    const invoicesWithCustomers = await Promise.all(
+
+    // Get customer and salesman information for each invoice
+    const invoicesWithDetails = await Promise.all(
       invoices.map(async (invoice) => {
         try {
+          // Fetch customer information
           const [customerResult] = await db
             .select({
               id: CustomersTable.id,
@@ -125,27 +129,39 @@ export async function GET(request: NextRequest) {
             })
             .from(CustomersTable)
             .where(eq(CustomersTable.id, invoice.customer_id));
+
+          // Fetch salesman information
+          const [salesmanResult] = invoice.salesman_id ? await db
+            .select({
+              id: SalesmenTable.id,
+              name: SalesmenTable.name,
+              contact_number: SalesmenTable.contact_number,
+            })
+            .from(SalesmenTable)
+            .where(eq(SalesmenTable.id, invoice.salesman_id)) : [null];
           
-          // Return invoice with customer data
+          // Return invoice with customer and salesman data
           return {
             ...invoice,
             customer: customerResult || { id: 0, name: 'Unknown', address: '' },
+            salesman: salesmanResult || { id: 0, name: 'Unknown', contact_number: '' },
           };
         } catch (error) {
-          console.error(`Error fetching customer for invoice ${invoice.id}:`, error);
-          // Return invoice with placeholder customer data
+          console.error(`Error fetching details for invoice ${invoice.id}:`, error);
+          // Return invoice with placeholder data
           return {
             ...invoice,
             customer: { id: 0, name: 'Unknown', address: '' },
+            salesman: { id: 0, name: 'Unknown', contact_number: '' },
           };
         }
       })
     );
     
     // Apply customer name filter if provided - we need to do this post-query since it's a join field
-    let results = invoicesWithCustomers;
+    let results = invoicesWithDetails;
     if (customer) {
-      results = invoicesWithCustomers.filter(invoice => 
+      results = invoicesWithDetails.filter(invoice => 
         invoice.customer.name.toLowerCase().includes(customer.toLowerCase())
       );
     }
@@ -223,7 +239,7 @@ export async function POST(request: NextRequest) {
         invoice_date: validatedInvoice.invoice_date ? new Date(validatedInvoice.invoice_date) : new Date(),
         user_id: validatedInvoice.user_id,
         customer_id: validatedInvoice.customer_id,
-        salesperson_name: validatedInvoice.salesperson_name,
+        salesman_id: validatedInvoice.salesmen_id,
         tax_type: validatedInvoice.tax_type,
         tax_rate: validatedInvoice.tax_rate.toString(),
         sub_total: validatedInvoice.sub_total.toString(),
