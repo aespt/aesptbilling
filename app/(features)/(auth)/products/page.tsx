@@ -23,6 +23,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { Product } from "@/lib/types";
+import Search from "@/app/shared/components/search";
 
 const actionMenuItems = [
   { 
@@ -78,11 +79,15 @@ export default function ProductsPage() {
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Fetch products from API
-  const fetchProducts = async (pageNumber = page, pageSize = rowsPerPage) => {
+  const fetchProducts = async (pageNumber = page, pageSize = rowsPerPage, search = searchQuery) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/products?page=${pageNumber}&limit=${pageSize}`);
+      const response = await fetch(
+        `/api/products?page=${pageNumber}&limit=${pageSize}&search=${encodeURIComponent(search)}`
+      );
       
       if (!response.ok) {
         throw new Error('Failed to fetch products');
@@ -102,8 +107,8 @@ export default function ProductsPage() {
 
   // Load products on component mount
   useEffect(() => {
-    fetchProducts();
-  }, [page, rowsPerPage]);
+    fetchProducts(page, rowsPerPage, searchQuery);
+  }, [page, rowsPerPage, searchQuery]);
 
   const handleActionClick = async (productId: number, actionName: string) => {
     console.log(`Action ${actionName} clicked for product ${productId}`);
@@ -221,6 +226,12 @@ export default function ProductsPage() {
     showSnackbar(`Product "${productName}" updated successfully`, 'success');
   };
 
+  // Add search handler
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 md:ml-[280px] pt-16 px-4 md:px-6 py-8">
       <div className="max-w-screen-2xl mx-auto">
@@ -229,6 +240,15 @@ export default function ProductsPage() {
           buttonText="Add Product"
           onButtonClick={handleAddProductClick}
         />
+
+        {/* Add Search Component */}
+        <div className="mb-6">
+          <Search
+            onSearch={handleSearch}
+            placeholder="Search by part number or product name..."
+            className="max-w-md"
+          />
+        </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">

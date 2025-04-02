@@ -1,24 +1,37 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { ProductsTable } from '@/lib/models/products';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, sql, or, ilike } from 'drizzle-orm';
 import { CreateProductSchema, UpdateProductSchema } from '@/lib/schemas/productSchema';
 import { ZodError } from 'zod';
 
 export async function GET(request: Request) {
   try {
-    // Get URL parameters for pagination
+    // Get URL parameters for pagination and search
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
     
     // Calculate offset based on page and limit
     const offset = (page - 1) * limit;
     
+    // Build the query conditions
+    const conditions = [];
+    if (search) {
+      conditions.push(
+        or(
+          ilike(ProductsTable.partNo, `%${search}%`),
+          ilike(ProductsTable.name, `%${search}%`)
+        )
+      );
+    }
+    
     // Count total products for pagination info
     const totalCountResult = await db
       .select({ count: sql<number>`count(*)` })
-      .from(ProductsTable);
+      .from(ProductsTable)
+      .where(conditions.length > 0 ? conditions[0] : undefined);
     
     const totalCount = totalCountResult[0].count;
     const totalPages = Math.ceil(totalCount / limit);
@@ -27,6 +40,7 @@ export async function GET(request: Request) {
     const products = await db
       .select()
       .from(ProductsTable)
+      .where(conditions.length > 0 ? conditions[0] : undefined)
       .orderBy(desc(ProductsTable.created_at))
       .limit(limit)
       .offset(offset);
