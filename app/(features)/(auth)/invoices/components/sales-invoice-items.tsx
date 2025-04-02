@@ -25,6 +25,8 @@ interface InvoiceItem {
   qty: number;
   rate: number;
   total: number;
+  price: number;  // Hidden price field
+  mrp: number;    // MRP field
 }
 
 interface SalesInvoiceItemsProps {
@@ -75,7 +77,9 @@ export default function SalesInvoiceItems({
       part_no: "",
       qty: 1,
       rate: 0,
-      total: 0
+      total: 0,
+      price: 0,
+      mrp: 0
     };
 
     setInvoiceItems([...invoiceItems, newItem]);
@@ -93,13 +97,16 @@ export default function SalesInvoiceItems({
   const handleProductChange = (itemId: string, product: Product | null) => {
     const updatedItems = invoiceItems.map(item => {
       if (item.id === itemId) {
-        const rate = Number(product?.mrp) || 0;
+        const mrp = Number(product?.mrp) || 0;
+        const price = Number(product?.price) || 0;
         return {
           ...item,
           product_id: product?.id || null,
           part_no: product?.partNo || "",
-          rate: rate,
-          total: item.qty * rate
+          rate: mrp,  // Use MRP as the rate
+          total: item.qty * mrp,
+          price: price,  // Store the hidden price
+          mrp: mrp      // Store the MRP
         };
       }
       return item;
@@ -125,7 +132,7 @@ export default function SalesInvoiceItems({
         return {
           ...item,
           qty: qty,
-          total: qty * item.rate
+          total: qty * item.rate  // Use rate (which is MRP) for total
         };
       }
       return item;
@@ -143,7 +150,8 @@ export default function SalesInvoiceItems({
         return {
           ...item,
           rate: rate,
-          total: item.qty * rate
+          total: item.qty * rate,
+          mrp: rate  // Update MRP when rate is manually changed
         };
       }
       return item;

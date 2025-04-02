@@ -25,6 +25,7 @@ export async function POST(request: Request) {
         discount: body.discount,
         ship_to: body.ship_to,
         ship_from: body.ship_from,
+        profit: body.profit,
         created_by: 'system',
         updated_by: 'system'
       }).returning();

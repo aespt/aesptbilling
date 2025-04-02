@@ -109,6 +109,25 @@ export default function CreateInvoicePage() {
     };
   };
 
+  const calculateProfit = (invoiceItems: any[], discountValue: number) => {
+    // Calculate profit for each item
+    const itemProfits = invoiceItems.map(item => {
+      if (!item.product_id) return 0;
+      
+      // Calculate profit per item: (MRP - Price) * Quantity
+      const profitPerUnit = item.mrp - item.price;
+      return profitPerUnit * item.qty;
+    });
+    
+    // Sum up all item profits
+    const totalProfit = itemProfits.reduce((sum, profit) => sum + profit, 0);
+    
+    // Apply discount to profit
+    const discountedProfit = totalProfit - discountValue;
+    
+    return discountedProfit;
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent, saveAsDraft = false) => {
     e.preventDefault();
@@ -121,6 +140,7 @@ export default function CreateInvoicePage() {
     setIsSubmitting(true);
     try {
       const totals = calculateInvoiceTotals();
+      const profit = calculateProfit(invoiceItems, totals.discount);
       
       const invoiceData = {
         ...formData,
@@ -129,7 +149,8 @@ export default function CreateInvoicePage() {
         subtotal: totals.subtotal,
         discount: totals.discount,
         tax: totals.tax,
-        total: totals.total
+        total: totals.total,
+        profit
       };
 
       // Send data to the API
