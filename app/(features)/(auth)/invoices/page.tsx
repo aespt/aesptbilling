@@ -61,10 +61,18 @@ interface Invoice {
   id: number;
   invoice_number: string;
   invoice_date: string;
-  salesperson_name: string;
+  salesman_id: number;
+  ship_from: string;
+  ship_to: string;
   customer: {
+    id: number;
     name: string;
     address: string;
+  };
+  salesman: {
+    id: number;
+    name: string;
+    contact_number: string;
   };
   total: string;
 }
@@ -316,9 +324,9 @@ export default function InvoicesListPage() {
                       </TableCell>
                       <TableCell className="font-medium">
                         <TableSortLabel
-                          active={sort.field === 'salesperson_name'}
-                          direction={sort.field === 'salesperson_name' ? sort.direction : 'asc'}
-                          onClick={() => handleSortChange('salesperson_name')}
+                          active={sort.field === 'salesman_id'}
+                          direction={sort.field === 'salesman_id' ? sort.direction : 'asc'}
+                          onClick={() => handleSortChange('salesman_id')}
                         >
                           Sales Person
                         </TableSortLabel>
@@ -351,10 +359,10 @@ export default function InvoicesListPage() {
                         >
                           <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
                           <TableCell className="font-medium text-blue-600 cursor-pointer" onClick={() => handleInvoiceClick(invoice.id)}>{invoice.invoice_number}</TableCell>
-                          <TableCell>{invoice.salesperson_name}</TableCell>
+                          <TableCell>{invoice.salesman.name}</TableCell>
                           <TableCell>{invoice.customer.name}</TableCell>
-                          <TableCell>Head Office</TableCell>
-                          <TableCell>{invoice.customer.address}</TableCell>
+                          <TableCell>{invoice.ship_from}</TableCell>
+                          <TableCell>{invoice.ship_to}</TableCell>
                           <TableCell align="right" className="font-medium">{parseFloat(invoice.total).toFixed(2)}</TableCell>
                         </TableRow>
                       ))
