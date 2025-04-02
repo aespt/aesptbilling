@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         invoice_date: new Date(body.date),
         user_id: 1, // Default to user ID 1 - replace with actual user ID from session
         customer_id: body.customer_id,
-        salesperson_name: body.salesmen_id?.toString() || 'Not Specified',
+        salesman_id: body.salesman_id || null,
         tax_type: body.tax_type,
         tax_rate: String(body.tax_type === 'VAT' ? body.vat_percentage : 
               body.tax_type === 'GST' ? body.cgst_percentage + body.sgst_percentage : 0),

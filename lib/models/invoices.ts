@@ -1,6 +1,7 @@
 import { pgTable, serial, varchar, timestamp, decimal, integer, pgEnum } from 'drizzle-orm/pg-core';
 import { UsersTable } from './users';
 import { CustomersTable } from './customers';
+import { SalesmenTable } from './salesmen';
 
 // Create an enum for tax types
 export const taxTypeEnum = pgEnum('tax_type', ['VAT', 'GST', 'NONE']);
@@ -13,7 +14,7 @@ export const InvoicesTable = pgTable(
     invoice_date: timestamp('invoice_date').defaultNow().notNull(),
     user_id: integer('user_id').notNull().references(() => UsersTable.id),
     customer_id: integer('customer_id').notNull().references(() => CustomersTable.id),
-    salesperson_name: varchar('salesperson_name', { length: 255 }).notNull(),
+    salesman_id: integer('salesman_id').references(() => SalesmenTable.id),
     tax_type: taxTypeEnum('tax_type').default('NONE'),
     tax_rate: decimal('tax_rate', { precision: 5, scale: 2 }).default('0'),
     sub_total: decimal('sub_total', { precision: 10, scale: 2 }).notNull(),
