@@ -225,8 +225,8 @@ export default function ProductsPage() {
                   <TableCell className="font-semibold">Part No</TableCell>
                   <TableCell className="font-semibold">Name</TableCell>
                   <TableCell className="font-semibold">Description</TableCell>
+                  <TableCell className="font-semibold">Price</TableCell>
                   <TableCell className="font-semibold">MRP</TableCell>
-                  <TableCell className="font-semibold">Quantity</TableCell>
                   <TableCell className="font-semibold">Last Updated</TableCell>
                   <TableCell className="font-semibold">Actions</TableCell>
                 </TableRow>
@@ -249,7 +249,7 @@ export default function ProductsPage() {
                       <TableCell className="text-gray-600">{product.description || '-'}</TableCell>
                       <TableCell className="text-gray-700">{formatPrice(product.price)}</TableCell>
                       <TableCell className="text-gray-700">{formatPrice(product.mrp)}</TableCell>
-                      <TableCell className="text-gray-600">{product.count || 0}</TableCell>
+                      {/* <TableCell className="text-gray-600">{product.count || 0}</TableCell> */}
                       <TableCell className="text-gray-600">{formatDate(product.updated_at)}</TableCell>
                       <TableCell>
                         <ActionMenu
