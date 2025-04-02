@@ -11,7 +11,7 @@ export const InvoiceSchema = BaseSchema.extend({
   invoice_date: z.date().default(() => new Date()),
   user_id: z.number(),
   customer_id: z.number(),
-  salesperson_name: z.string().min(1, { message: "Salesperson name is required" }),
+  salesmen_id: z.number().min(1, { message: "Salesperson name is required" }),
   tax_type: TaxTypeEnum.default('NONE'),
   tax_rate: z.number().nonnegative().default(0),
   discount: z.number().nonnegative().default(0),

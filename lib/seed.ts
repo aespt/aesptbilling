@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import { db } from './drizzle';
 import { ProductsTable } from './models/products';
 import { CustomersTable } from './models/customers';
 import { GstMasterTable } from './models/gst_master';
@@ -6,189 +6,280 @@ import { SalesmenTable } from './models/salesmen';
 import { SuppliersTable } from './models/suppliers';
 import { VatMasterTable } from './models/vat_master';
 
-const sql = postgres(process.env.POSTGRES_URL!, { 
-  ssl: { rejectUnauthorized: false },
-  timeout: 60 // increase timeout even more
-});
-
 export async function seed() {
   // Seed products
   const products = await Promise.all([
-    sql`
-      INSERT INTO products (part_no, name, description, price, mrp, count, created_by, updated_by)
-      VALUES ('P001', 'Brake Pad Set', 'High-performance brake pads for all vehicle types', 45.99, 59.99, 100, 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO products (part_no, name, description, price, mrp, count, created_by, updated_by)
-      VALUES ('P002', 'Oil Filter', 'Premium quality oil filter for engines', 12.50, 15.99, 250, 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO products (part_no, name, description, price, mrp, count, created_by, updated_by)
-      VALUES ('P003', 'Air Filter', 'High-flow air filter for improved performance', 18.75, 24.99, 175, 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO products (part_no, name, description, price, mrp, count, created_by, updated_by)
-      VALUES ('P004', 'Spark Plug Set', 'Set of 4 iridium spark plugs', 32.00, 39.99, 120, 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO products (part_no, name, description, price, mrp, count, created_by, updated_by)
-      VALUES ('P005', 'Alternator', 'OEM replacement alternator for sedans', 125.00, 159.99, 30, 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
+    db.insert(ProductsTable).values({
+      partNo: 'P001',
+      name: 'Brake Pad Set',
+      description: 'High-performance brake pads for all vehicle types',
+      price: '45.99',
+      mrp: '59.99',
+      count: 100,
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(ProductsTable).values({
+      partNo: 'P002',
+      name: 'Oil Filter',
+      description: 'Premium quality oil filter for engines',
+      price: '12.50',
+      mrp: '15.99',
+      count: 250,
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(ProductsTable).values({
+      partNo: 'P003',
+      name: 'Air Filter',
+      description: 'High-flow air filter for improved performance',
+      price: '18.75',
+      mrp: '24.99',
+      count: 175,
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(ProductsTable).values({
+      partNo: 'P004',
+      name: 'Spark Plug Set',
+      description: 'Set of 4 iridium spark plugs',
+      price: '32.00',
+      mrp: '39.99',
+      count: 120,
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(ProductsTable).values({
+      partNo: 'P005',
+      name: 'Alternator',
+      description: 'OEM replacement alternator for sedans',
+      price: '125.00',
+      mrp: '159.99',
+      count: 30,
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
   ]);
   console.log(`Seeded ${products.length} products`);
 
   // Seed customers
   const customers = await Promise.all([
-    sql`
-      INSERT INTO customers (name, email, phone, address, created_by, updated_by)
-      VALUES ('John Smith', 'john.smith@example.com', '+971501234567', 'Downtown Dubai, UAE', 'system', 'system')
-      ON CONFLICT (email) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO customers (name, email, phone, address, created_by, updated_by)
-      VALUES ('Sarah Johnson', 'sarah.j@example.com', '+971502345678', 'Sharjah City, UAE', 'system', 'system')
-      ON CONFLICT (email) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO customers (name, email, phone, address, created_by, updated_by)
-      VALUES ('Mohammed Al-Farsi', 'mohammed.af@example.com', '+971503456789', 'Abu Dhabi Marina, UAE', 'system', 'system')
-      ON CONFLICT (email) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO customers (name, email, phone, address, created_by, updated_by)
-      VALUES ('Priya Patel', 'priya.p@example.com', '+971504567890', 'Silicon Oasis, Dubai, UAE', 'system', 'system')
-      ON CONFLICT (email) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO customers (name, email, phone, address, created_by, updated_by)
-      VALUES ('Ali Hassan', 'ali.h@example.com', '+971505678901', 'Ajman Corniche, UAE', 'system', 'system')
-      ON CONFLICT (email) DO NOTHING RETURNING *;
-    `,
+    db.insert(CustomersTable).values({
+      name: 'John Smith',
+      email: 'john.smith@example.com',
+      phone: '+971501234567',
+      address: 'Downtown Dubai, UAE',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(CustomersTable).values({
+      name: 'Sarah Johnson',
+      email: 'sarah.j@example.com',
+      phone: '+971502345678',
+      address: 'Sharjah City, UAE',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(CustomersTable).values({
+      name: 'Mohammed Al-Farsi',
+      email: 'mohammed.af@example.com',
+      phone: '+971503456789',
+      address: 'Abu Dhabi Marina, UAE',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(CustomersTable).values({
+      name: 'Priya Patel',
+      email: 'priya.p@example.com',
+      phone: '+971504567890',
+      address: 'Silicon Oasis, Dubai, UAE',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(CustomersTable).values({
+      name: 'Ali Hassan',
+      email: 'ali.h@example.com',
+      phone: '+971505678901',
+      address: 'Ajman Corniche, UAE',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
   ]);
   console.log(`Seeded ${customers.length} customers`);
 
   // Seed GST master
   const gstEntries = await Promise.all([
-    sql`
-      INSERT INTO gst_master (country, gst_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('India', 5.00, 'Basic essential goods', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO gst_master (country, gst_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('India', 12.00, 'Standard goods', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO gst_master (country, gst_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('India', 18.00, 'Most manufactured goods', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO gst_master (country, gst_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('India', 28.00, 'Luxury and premium goods', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO gst_master (country, gst_percentage, description, effective_from, effective_to, created_by, updated_by)
-      VALUES ('India', 0.00, 'Zero-rated goods', '2023-01-01', NULL, 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
+    db.insert(GstMasterTable).values({
+      country: 'India',
+      cgst_percentage: '2.50',
+      sgst_percentage: '2.50',
+      description: 'Basic essential goods',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(GstMasterTable).values({
+      country: 'India',
+      cgst_percentage: '6.00',
+      sgst_percentage: '6.00',
+      description: 'Standard goods',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(GstMasterTable).values({
+      country: 'India',
+      cgst_percentage: '9.00',
+      sgst_percentage: '9.00',
+      description: 'Most manufactured goods',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(GstMasterTable).values({
+      country: 'India',
+      cgst_percentage: '14.00',
+      sgst_percentage: '14.00',
+      description: 'Luxury and premium goods',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(GstMasterTable).values({
+      country: 'India',
+      cgst_percentage: '0.00',
+      sgst_percentage: '0.00',
+      description: 'Zero-rated goods',
+      effective_from: new Date('2023-01-01'),
+      effective_to: null,
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
   ]);
   console.log(`Seeded ${gstEntries.length} GST entries`);
 
   // Seed salesmen
   const salesmen = await Promise.all([
-    sql`
-      INSERT INTO salesmen (name, contact_number, created_by, updated_by)
-      VALUES ('Raj Kumar', '+971551234567', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO salesmen (name, contact_number, created_by, updated_by)
-      VALUES ('Ahmed Al-Mansouri', '+971552345678', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO salesmen (name, contact_number, created_by, updated_by)
-      VALUES ('Lisa Chen', '+971553456789', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO salesmen (name, contact_number, created_by, updated_by)
-      VALUES ('Fahad Al-Otaibi', '+971554567890', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO salesmen (name, contact_number, created_by, updated_by)
-      VALUES ('Sanjay Mehta', '+971555678901', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
+    db.insert(SalesmenTable).values({
+      name: 'Raj Kumar',
+      contact_number: '+971551234567',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SalesmenTable).values({
+      name: 'Ahmed Al-Mansouri',
+      contact_number: '+971552345678',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SalesmenTable).values({
+      name: 'Lisa Chen',
+      contact_number: '+971553456789',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SalesmenTable).values({
+      name: 'Fahad Al-Otaibi',
+      contact_number: '+971554567890',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SalesmenTable).values({
+      name: 'Sanjay Mehta',
+      contact_number: '+971555678901',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
   ]);
   console.log(`Seeded ${salesmen.length} salesmen`);
 
   // Seed suppliers
   const suppliers = await Promise.all([
-    sql`
-      INSERT INTO suppliers (tax_registration_number, name, address, contact_number, created_by, updated_by)
-      VALUES ('TRN123456789', 'AutoParts Global', 'Industrial Area 1, Dubai, UAE', '+97142345678', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO suppliers (tax_registration_number, name, address, contact_number, created_by, updated_by)
-      VALUES ('TRN234567890', 'Emirates Auto Supplies', 'Sheikh Zayed Road, Dubai, UAE', '+97143456789', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO suppliers (tax_registration_number, name, address, contact_number, created_by, updated_by)
-      VALUES ('TRN345678901', 'Jebel Ali Parts Co.', 'Jebel Ali Free Zone, Dubai, UAE', '+97144567890', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO suppliers (tax_registration_number, name, address, contact_number, created_by, updated_by)
-      VALUES ('TRN456789012', 'Abu Dhabi Motors Supply', 'Mussafah Industrial Area, Abu Dhabi, UAE', '+97125678901', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO suppliers (tax_registration_number, name, address, contact_number, created_by, updated_by)
-      VALUES ('TRN567890123', 'Sharjah Auto Components', 'Industrial Area 10, Sharjah, UAE', '+97166789012', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
+    db.insert(SuppliersTable).values({
+      tax_registration_number: 'TRN123456789',
+      name: 'AutoParts Global',
+      address: 'Industrial Area 1, Dubai, UAE',
+      contact_number: '+97142345678',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SuppliersTable).values({
+      tax_registration_number: 'TRN234567890',
+      name: 'Emirates Auto Supplies',
+      address: 'Sheikh Zayed Road, Dubai, UAE',
+      contact_number: '+97143456789',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SuppliersTable).values({
+      tax_registration_number: 'TRN345678901',
+      name: 'Jebel Ali Parts Co.',
+      address: 'Jebel Ali Free Zone, Dubai, UAE',
+      contact_number: '+97144567890',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SuppliersTable).values({
+      tax_registration_number: 'TRN456789012',
+      name: 'Abu Dhabi Motors Supply',
+      address: 'Mussafah Industrial Area, Abu Dhabi, UAE',
+      contact_number: '+97125678901',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(SuppliersTable).values({
+      tax_registration_number: 'TRN567890123',
+      name: 'Sharjah Auto Components',
+      address: 'Industrial Area 10, Sharjah, UAE',
+      contact_number: '+97166789012',
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
   ]);
   console.log(`Seeded ${suppliers.length} suppliers`);
 
   // Seed VAT master
   const vatEntries = await Promise.all([
-    sql`
-      INSERT INTO vat_master (country, vat_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('UAE', 5.00, 'Standard VAT rate', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO vat_master (country, vat_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('UAE', 0.00, 'Zero-rated supplies', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO vat_master (country, vat_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('Saudi Arabia', 15.00, 'Standard VAT rate', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO vat_master (country, vat_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('Bahrain', 10.00, 'Standard VAT rate', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
-    sql`
-      INSERT INTO vat_master (country, vat_percentage, description, effective_from, created_by, updated_by)
-      VALUES ('Oman', 5.00, 'Standard VAT rate', '2023-01-01', 'system', 'system')
-      ON CONFLICT (id) DO NOTHING RETURNING *;
-    `,
+    db.insert(VatMasterTable).values({
+      country: 'UAE',
+      vat_percentage: '5.00',
+      description: 'Standard VAT rate',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(VatMasterTable).values({
+      country: 'UAE',
+      vat_percentage: '0.00',
+      description: 'Zero-rated supplies',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(VatMasterTable).values({
+      country: 'Saudi Arabia',
+      vat_percentage: '15.00',
+      description: 'Standard VAT rate',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(VatMasterTable).values({
+      country: 'Bahrain',
+      vat_percentage: '10.00',
+      description: 'Standard VAT rate',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
+    db.insert(VatMasterTable).values({
+      country: 'Oman',
+      vat_percentage: '5.00',
+      description: 'Standard VAT rate',
+      effective_from: new Date('2023-01-01'),
+      created_by: 'system',
+      updated_by: 'system'
+    }).onConflictDoNothing().returning(),
   ]);
   console.log(`Seeded ${vatEntries.length} VAT entries`);
 

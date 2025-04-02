@@ -11,7 +11,8 @@ import { eq } from 'drizzle-orm';
 import format from 'date-fns/format';
 import { AddressTable } from '@/lib/models/address';
 import * as cheerio from 'cheerio';
-
+import { SalesmenTable } from '@/lib/models/salesmen';
+  
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -50,6 +51,12 @@ export async function GET(
       .select()
       .from(CustomersTable)
       .where(eq(CustomersTable.id, invoice.customer_id));
+
+    // Get salesperson data only if salesperson_name exists
+    const salesPerson = invoice.salesman_id ? await db
+      .select()
+      .from(SalesmenTable)
+      .where(eq(SalesmenTable.id, invoice.salesman_id)) : null;
     
     const customer = customers.length > 0 ? customers[0] : null;
     console.log('Customer data retrieved:', customer ? 'Yes' : 'No');
@@ -104,7 +111,7 @@ export async function GET(
     // Format invoice date
     const formattedDate = format(new Date(invoice.invoice_date), 'MMMM dd, yyyy');
 
-    console.log('Loading template into cheerio');
+    console.log(invoice);
     // Load HTML template into cheerio
     const $ = cheerio.load(htmlTemplate);
 
@@ -119,7 +126,7 @@ export async function GET(
     $('#invoice-number').text(invoice.invoice_number);
     $('#invoice-date').text(formattedDate);
     $('#order-no').text(invoice.id.toString());
-    $('#salesperson').text(invoice.salesperson_name);
+    $('#salesperson').text(salesPerson?.[0]?.name || 'N/A');
     $('#ship-from').text(invoice.ship_from || 'N/A');
     $('#ship-to').text(invoice.ship_to || 'N/A');
     console.log('Fetching company address', primaryAddress);
