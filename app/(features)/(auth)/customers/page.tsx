@@ -22,6 +22,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { Customer } from "@/lib/types";
+import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
 
 const actionMenuItems = [
   { 
@@ -48,6 +49,14 @@ export default function CustomersPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [sidepanelMode, setSidepanelMode] = useState<'add' | 'edit'>('add');
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    pageSize: 10,
+    hasNext: false,
+    hasPrev: false,
+  });
   
   // Use our custom confirmation hook
   const {
@@ -65,11 +74,11 @@ export default function CustomersPage() {
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
-  // Fetch customers from API
-  const fetchCustomers = async () => {
+  // Fetch customers from API with pagination
+  const fetchCustomers = async (page = pagination.currentPage, pageSize = pagination.pageSize) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/customers');
+      const response = await fetch(`/api/customers?page=${page}&pageSize=${pageSize}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch customers');
@@ -77,6 +86,7 @@ export default function CustomersPage() {
       
       const data = await response.json();
       setCustomers(data.customers);
+      setPagination(data.pagination);
     } catch (err) {
       console.error('Error fetching customers:', err);
       setError('Failed to load customers. Please try again later.');
@@ -90,6 +100,16 @@ export default function CustomersPage() {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    fetchCustomers(page, pagination.pageSize);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (pageSize: number) => {
+    fetchCustomers(1, pageSize);
+  };
 
   const handleActionClick = async (customerId: number, actionName: string) => {
     console.log(`Action ${actionName} clicked for customer ${customerId}`);
@@ -140,7 +160,7 @@ export default function CustomersPage() {
       showSnackbar(`Customer "${customerName}" deleted successfully`, 'success');
       
       // Refresh the customer list
-      fetchCustomers();
+      fetchCustomers(pagination.currentPage, pagination.pageSize);
     } catch (err) {
       console.error('Error deleting customer:', err);
       showSnackbar('Failed to delete customer', 'error');
@@ -171,14 +191,14 @@ export default function CustomersPage() {
 
   // Handle customer added
   const handleCustomerAdded = (customerName: string) => {
-    fetchCustomers();
+    fetchCustomers(pagination.currentPage, pagination.pageSize);
     setIsSidepanelOpen(false);
     showSnackbar(`Customer "${customerName}" added successfully`, 'success');
   };
 
   // Handle customer updated
   const handleCustomerUpdated = (customerName: string) => {
-    fetchCustomers();
+    fetchCustomers(pagination.currentPage, pagination.pageSize);
     setIsSidepanelOpen(false);
     showSnackbar(`Customer "${customerName}" updated successfully`, 'success');
   };
@@ -201,52 +221,64 @@ export default function CustomersPage() {
             {error}
           </div>
         ) : (
-          <TableContainer
-            component={Paper}
-            className="shadow-md rounded-lg overflow-hidden border border-gray-100"
-            elevation={0}
-          >
-            <Table className="border border-gray-100">
-              <TableHead>
-                <TableRow className="bg-gray-100">
-                  <TableCell className="font-semibold">Name</TableCell>
-                  <TableCell className="font-semibold">Email</TableCell>
-                  <TableCell className="font-semibold">Phone</TableCell>
-                  <TableCell className="font-semibold">Address</TableCell>
-                  <TableCell className="font-semibold">Last Updated</TableCell>
-                  <TableCell className="font-semibold">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {customers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      No customers found. Click "Add Customer" to create one.
-                    </TableCell>
+          <>
+            <TableContainer
+              component={Paper}
+              className="rounded-lg overflow-hidden border border-gray-100"
+              elevation={0}
+            >
+              <Table className="border border-gray-100">
+                <TableHead>
+                  <TableRow className="bg-gray-100">
+                    <TableCell className="font-semibold">Name</TableCell>
+                    <TableCell className="font-semibold">Email</TableCell>
+                    <TableCell className="font-semibold">Phone</TableCell>
+                    <TableCell className="font-semibold">Address</TableCell>
+                    <TableCell className="font-semibold">Last Updated</TableCell>
+                    <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>
-                ) : (
-                  customers.map((customer) => (
-                    <TableRow
-                      key={customer.id}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <TableCell className="text-gray-700">{customer.name}</TableCell>
-                      <TableCell className="text-gray-700">{customer.email}</TableCell>
-                      <TableCell className="text-gray-600">{customer.phone || '-'}</TableCell>
-                      <TableCell className="text-gray-600">{customer.address || '-'}</TableCell>
-                      <TableCell className="text-gray-600">{formatDate(customer.updated_at)}</TableCell>
-                      <TableCell>
-                        <ActionMenu 
-                          menuItems={actionMenuItems} 
-                          onMenuItemClick={(actionName) => handleActionClick(customer.id, actionName)}
-                        />
+                </TableHead>
+                <TableBody>
+                  {customers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        No customers found. Click "Add Customer" to create one.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    customers.map((customer) => (
+                      <TableRow
+                        key={customer.id}
+                        className="hover:bg-gray-50/50 transition-colors"
+                      >
+                        <TableCell className="text-gray-700">{customer.name}</TableCell>
+                        <TableCell className="text-gray-700">{customer.email}</TableCell>
+                        <TableCell className="text-gray-600">{customer.phone || '-'}</TableCell>
+                        <TableCell className="text-gray-600">{customer.address || '-'}</TableCell>
+                        <TableCell className="text-gray-600">{formatDate(customer.updated_at)}</TableCell>
+                        <TableCell>
+                          <ActionMenu 
+                            menuItems={actionMenuItems} 
+                            onMenuItemClick={(actionName) => handleActionClick(customer.id, actionName)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            {pagination.total > 0 && (
+              <Pagination
+                paginationInfo={pagination}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[5, 10, 25, 50]}
+                itemName="customers"
+              />
+            )}
+          </>
         )}
       </div>
 

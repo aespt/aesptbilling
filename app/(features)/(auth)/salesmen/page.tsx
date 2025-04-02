@@ -21,6 +21,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Salesman } from "@/lib/types";
+import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
 
 const actionMenuItems = [
   { 
@@ -41,6 +42,14 @@ export default function SalesmenPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSalesman, setSelectedSalesman] = useState<Salesman | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    pageSize: 10,
+    hasNext: false,
+    hasPrev: false,
+  });
   
   // Custom hooks for confirmation dialog and snackbar
   const { 
@@ -59,13 +68,13 @@ export default function SalesmenPage() {
     hideSnackbar
   } = useSnackbar();
 
-  // Fetch salesmen data
-  const fetchSalesmen = async () => {
+  // Fetch salesmen data with pagination
+  const fetchSalesmen = async (page = pagination.currentPage, pageSize = pagination.pageSize) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetch('/api/salesmen');
+      const response = await fetch(`/api/salesmen?page=${page}&pageSize=${pageSize}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch salesmen');
@@ -73,6 +82,7 @@ export default function SalesmenPage() {
       
       const data = await response.json();
       setSalesmen(data.salesmen);
+      setPagination(data.pagination);
     } catch (error: any) {
       console.error('Error fetching salesmen:', error);
       setError(error.message || 'An error occurred while fetching salesmen');
@@ -85,6 +95,16 @@ export default function SalesmenPage() {
   useEffect(() => {
     fetchSalesmen();
   }, []);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    fetchSalesmen(page, pagination.pageSize);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (pageSize: number) => {
+    fetchSalesmen(1, pageSize);
+  };
 
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
@@ -128,8 +148,8 @@ export default function SalesmenPage() {
         throw new Error('Failed to delete salesman');
       }
       
-      // Refresh the salesmen list
-      fetchSalesmen();
+      // Refresh the salesmen list with current pagination
+      fetchSalesmen(pagination.currentPage, pagination.pageSize);
       
       // Show success message
       showSnackbar(`${selectedSalesman.name} has been deleted successfully`, 'success');
@@ -144,13 +164,13 @@ export default function SalesmenPage() {
 
   // Handle salesman added event
   const handleSalesmanAdded = (salesmanName: string) => {
-    fetchSalesmen();
+    fetchSalesmen(pagination.currentPage, pagination.pageSize);
     showSnackbar(`${salesmanName} has been added successfully`, 'success');
   };
 
   // Handle salesman updated event
   const handleSalesmanUpdated = (salesmanName: string) => {
-    fetchSalesmen();
+    fetchSalesmen(pagination.currentPage, pagination.pageSize);
     showSnackbar(`${salesmanName} has been updated successfully`, 'success');
   };
 
@@ -172,50 +192,62 @@ export default function SalesmenPage() {
             {error}
           </div>
         ) : (
-          <TableContainer
-            component={Paper}
-            className="shadow-md rounded-lg overflow-hidden border border-gray-100"
-            elevation={0}
-          >
-            <Table className="border border-gray-100">
-              <TableHead>
-                <TableRow className="bg-gray-100">
-                  <TableCell className="font-semibold">Name</TableCell>
-                  <TableCell className="font-semibold">Contact Number</TableCell>
-                  <TableCell className="font-semibold">Created At</TableCell>
-                  <TableCell className="font-semibold">Last Updated</TableCell>
-                  <TableCell className="font-semibold">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {salesmen.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      No salesmen found. Click "Add Salesman" to create one.
-                    </TableCell>
+          <>
+            <TableContainer
+              component={Paper}
+              className="rounded-lg overflow-hidden border border-gray-100"
+              elevation={0}
+            >
+              <Table className="border border-gray-100">
+                <TableHead>
+                  <TableRow className="bg-gray-100">
+                    <TableCell className="font-semibold">Name</TableCell>
+                    <TableCell className="font-semibold">Contact Number</TableCell>
+                    <TableCell className="font-semibold">Created At</TableCell>
+                    <TableCell className="font-semibold">Last Updated</TableCell>
+                    <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>
-                ) : (
-                  salesmen.map((salesman) => (
-                    <TableRow
-                      key={salesman.id}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <TableCell className="text-gray-700">{salesman.name}</TableCell>
-                      <TableCell className="text-gray-600">{salesman.contact_number}</TableCell>
-                      <TableCell className="text-gray-600">{formatDate(salesman.created_at)}</TableCell>
-                      <TableCell className="text-gray-600">{formatDate(salesman.updated_at)}</TableCell>
-                      <TableCell>
-                        <ActionMenu 
-                          menuItems={actionMenuItems} 
-                          onMenuItemClick={(action) => handleActionSelect(action, salesman)} 
-                        />
+                </TableHead>
+                <TableBody>
+                  {salesmen.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        No salesmen found. Click "Add Salesman" to create one.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    salesmen.map((salesman) => (
+                      <TableRow
+                        key={salesman.id}
+                        className="hover:bg-gray-50/50 transition-colors"
+                      >
+                        <TableCell className="text-gray-700">{salesman.name}</TableCell>
+                        <TableCell className="text-gray-600">{salesman.contact_number}</TableCell>
+                        <TableCell className="text-gray-600">{formatDate(salesman.created_at)}</TableCell>
+                        <TableCell className="text-gray-600">{formatDate(salesman.updated_at)}</TableCell>
+                        <TableCell>
+                          <ActionMenu 
+                            menuItems={actionMenuItems} 
+                            onMenuItemClick={(action) => handleActionSelect(action, salesman)} 
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {pagination.total > 0 && (
+              <Pagination
+                paginationInfo={pagination}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[5, 10, 25, 50]}
+                itemName="salesmen"
+              />
+            )}
+          </>
         )}
         
         {/* Sidepanel for adding/editing salesmen */}

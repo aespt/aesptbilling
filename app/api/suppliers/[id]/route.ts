@@ -1,25 +1,48 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { SuppliersTable } from '@/lib/models/suppliers';
 import { eq } from 'drizzle-orm';
 
-export async function DELETE(
-  request: Request,
+export async function GET(
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
+    const supplierId = parseInt(params.id, 10);
     
-    if (isNaN(id)) {
+    const supplier = await db
+      .select()
+      .from(SuppliersTable)
+      .where(eq(SuppliersTable.id, supplierId))
+      .limit(1);
+    
+    if (supplier.length === 0) {
       return NextResponse.json(
-        { error: 'Invalid supplier ID' },
-        { status: 400 }
+        { error: 'Supplier not found' },
+        { status: 404 }
       );
     }
     
-    // Delete the supplier from the database
-    const deletedSupplier = await db.delete(SuppliersTable)
-      .where(eq(SuppliersTable.id, id))
+    return NextResponse.json({ supplier: supplier[0] }, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching supplier:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch supplier' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supplierId = parseInt(params.id, 10);
+    
+    const deletedSupplier = await db
+      .delete(SuppliersTable)
+      .where(eq(SuppliersTable.id, supplierId))
       .returning();
     
     if (deletedSupplier.length === 0) {
@@ -37,6 +60,46 @@ export async function DELETE(
     console.error('Error deleting supplier:', error);
     return NextResponse.json(
       { error: 'Failed to delete supplier' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supplierId = parseInt(params.id, 10);
+    const body = await request.json();
+    
+    const updatedSupplier = await db
+      .update(SuppliersTable)
+      .set({
+        tax_registration_number: body.tax_registration_number,
+        name: body.name,
+        address: body.address || null,
+        contact_number: body.contact_number,
+        updated_at: new Date()
+      })
+      .where(eq(SuppliersTable.id, supplierId))
+      .returning();
+    
+    if (updatedSupplier.length === 0) {
+      return NextResponse.json(
+        { error: 'Supplier not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json(
+      { supplier: updatedSupplier[0] },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error updating supplier:', error);
+    return NextResponse.json(
+      { error: 'Failed to update supplier' },
       { status: 500 }
     );
   }

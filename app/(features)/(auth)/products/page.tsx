@@ -7,6 +7,7 @@ import ActionMenu from "@/app/shared/components/action-menu";
 import AddProduct from "./components/add-product";
 import ConfirmationDialog from "@/app/shared/components/confirmation-dialog";
 import Snackbar from "@/app/shared/components/snackbar";
+import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
 import useConfirmation from "@/app/shared/hooks/useConfirmation";
 import useSnackbar from "@/app/shared/hooks/useSnackbar";
 import {
@@ -49,6 +50,18 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sidepanelMode, setSidepanelMode] = useState<'add' | 'edit'>('add');
   
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    pageSize: 10,
+    hasNext: false,
+    hasPrev: false,
+  });
+  
   // Use our custom confirmation hook
   const {
     isConfirmationOpen,
@@ -66,10 +79,10 @@ export default function ProductsPage() {
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
   // Fetch products from API
-  const fetchProducts = async () => {
+  const fetchProducts = async (pageNumber = page, pageSize = rowsPerPage) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/products');
+      const response = await fetch(`/api/products?page=${pageNumber}&limit=${pageSize}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch products');
@@ -77,6 +90,7 @@ export default function ProductsPage() {
       
       const data = await response.json();
       setProducts(data.products);
+      setPaginationInfo(data.pagination);
     } catch (err) {
       console.error('Error fetching products:', err);
       setError('Failed to load products. Please try again later.');
@@ -89,7 +103,7 @@ export default function ProductsPage() {
   // Load products on component mount
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [page, rowsPerPage]);
 
   const handleActionClick = async (productId: number, actionName: string) => {
     console.log(`Action ${actionName} clicked for product ${productId}`);
@@ -123,6 +137,17 @@ export default function ProductsPage() {
         alert(`Product Details:\n${JSON.stringify(productToView, null, 2)}`);
       }
     }
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  // Handle rows per page change
+  const handleRowsPerPageChange = (newPageSize: number) => {
+    setRowsPerPage(newPageSize);
+    setPage(1); // Reset to first page when changing rows per page
   };
 
   // Handle deleting a product
@@ -214,57 +239,66 @@ export default function ProductsPage() {
             {error}
           </div>
         ) : (
-          <TableContainer
-            component={Paper}
-            className="shadow-md rounded-lg overflow-hidden border border-gray-100"
-            elevation={0}
-          >
-            <Table className="border border-gray-100">
-              <TableHead>
-                <TableRow className="bg-gray-100">
-                  <TableCell className="font-semibold">Part No</TableCell>
-                  <TableCell className="font-semibold">Name</TableCell>
-                  <TableCell className="font-semibold">Description</TableCell>
-                  <TableCell className="font-semibold">Price</TableCell>
-                  <TableCell className="font-semibold">MRP</TableCell>
-                  <TableCell className="font-semibold">Last Updated</TableCell>
-                  <TableCell className="font-semibold">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {products.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      No products found. Click "Add Product" to create one.
-                    </TableCell>
+          <>
+            <TableContainer
+              component={Paper}
+              className="rounded-lg overflow-hidden border border-gray-100"
+              elevation={0}
+            >
+              <Table className="border border-gray-100">
+                <TableHead>
+                  <TableRow className="bg-gray-100">
+                    <TableCell className="font-semibold">Part No</TableCell>
+                    <TableCell className="font-semibold">Name</TableCell>
+                    <TableCell className="font-semibold">Description</TableCell>
+                    <TableCell className="font-semibold">Price</TableCell>
+                    <TableCell className="font-semibold">MRP</TableCell>
+                    <TableCell className="font-semibold">Last Updated</TableCell>
+                    <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>
-                ) : (
-                  products.map((product) => (
-                    <TableRow
-                      key={product.id}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <TableCell className="text-gray-700">{product.partNo}</TableCell>
-                      <TableCell className="text-gray-700">{product.name}</TableCell>
-                      <TableCell className="text-gray-600">{product.description || '-'}</TableCell>
-                      <TableCell className="text-gray-700">{formatPrice(product.price)}</TableCell>
-                      <TableCell className="text-gray-700">{formatPrice(product.mrp)}</TableCell>
-                      {/* <TableCell className="text-gray-600">{product.count || 0}</TableCell> */}
-                      <TableCell className="text-gray-600">{formatDate(product.updated_at)}</TableCell>
-                      <TableCell>
-                        <ActionMenu
-                          menuItems={actionMenuItems}
-                          onMenuItemClick={(actionName) =>
-                            handleActionClick(product.id, actionName)
-                          }
-                        />
+                </TableHead>
+                <TableBody>
+                  {products.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        No products found. Click "Add Product" to create one.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    products.map((product) => (
+                      <TableRow
+                        key={product.id}
+                        className="hover:bg-gray-50/50 transition-colors"
+                      >
+                        <TableCell className="text-gray-700">{product.partNo}</TableCell>
+                        <TableCell className="text-gray-700">{product.name}</TableCell>
+                        <TableCell className="text-gray-600">{product.description || '-'}</TableCell>
+                        <TableCell className="text-gray-700">{formatPrice(product.price)}</TableCell>
+                        <TableCell className="text-gray-700">{formatPrice(product.mrp)}</TableCell>
+                        <TableCell className="text-gray-600">{formatDate(product.updated_at)}</TableCell>
+                        <TableCell>
+                          <ActionMenu
+                            menuItems={actionMenuItems}
+                            onMenuItemClick={(actionName) =>
+                              handleActionClick(product.id, actionName)
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            {/* Use the shared Pagination component */}
+            <Pagination
+              paginationInfo={paginationInfo}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handleRowsPerPageChange}
+              itemName="products"
+            />
+          </>
         )}
       </div>
 

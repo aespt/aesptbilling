@@ -1,19 +1,47 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { ProductsTable } from '@/lib/models/products';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { CreateProductSchema, UpdateProductSchema } from '@/lib/schemas/productSchema';
 import { ZodError } from 'zod';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Fetch all products from the database, ordered by most recent first
+    // Get URL parameters for pagination
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    
+    // Calculate offset based on page and limit
+    const offset = (page - 1) * limit;
+    
+    // Count total products for pagination info
+    const totalCountResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(ProductsTable);
+    
+    const totalCount = totalCountResult[0].count;
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    // Fetch paginated products from the database
     const products = await db
       .select()
       .from(ProductsTable)
-      .orderBy(desc(ProductsTable.created_at));
+      .orderBy(desc(ProductsTable.created_at))
+      .limit(limit)
+      .offset(offset);
 
-    return NextResponse.json({ products }, { status: 200 });
+    return NextResponse.json({ 
+      products,
+      pagination: {
+        total: totalCount,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    }, { status: 200 });
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(

@@ -1,19 +1,49 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { CustomersTable } from '@/lib/models/customers';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { CreateCustomerSchema, UpdateCustomerSchema } from '@/lib/schemas/customerSchema';
 import { ZodError } from 'zod';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch all customers from the database, ordered by most recent first
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
+    
+    // Calculate offset
+    const offset = (page - 1) * pageSize;
+    
+    // Fetch paginated customers
     const customers = await db
       .select()
       .from(CustomersTable)
-      .orderBy(desc(CustomersTable.created_at));
+      .limit(pageSize)
+      .offset(offset)
+      .orderBy(CustomersTable.name);
+      
+    // Get total count for pagination
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(CustomersTable);
+      
+    const total = Number(countResult[0].count);
+    const totalPages = Math.ceil(total / pageSize);
+    
+    // Create pagination info
+    const paginationInfo = {
+      total,
+      totalPages,
+      currentPage: page,
+      pageSize,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
 
-    return NextResponse.json({ customers }, { status: 200 });
+    return NextResponse.json({ 
+      customers, 
+      pagination: paginationInfo 
+    }, { status: 200 });
   } catch (error) {
     console.error('Error fetching customers:', error);
     return NextResponse.json(
@@ -23,47 +53,23 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Parse the request body
     const body = await request.json();
     
-    // Validate the input using Zod schema
-    const validatedData = CreateCustomerSchema.parse(body);
+    const newCustomer = await db
+      .insert(CustomersTable)
+      .values({
+        name: body.name,
+        email: body.email,
+        phone: body.phone || null,
+        address: body.address || null
+      })
+      .returning();
     
-    // Insert the new customer into the database
-    const newCustomer = await db.insert(CustomersTable).values({
-      name: validatedData.name,
-      email: validatedData.email,
-      phone: validatedData.phone || '',
-      address: validatedData.address || '',
-      created_at: new Date(),
-      updated_at: new Date(),
-    }).returning();
-    
-    return NextResponse.json({ 
-      message: 'Customer created successfully',
-      customer: newCustomer[0]
-    }, { status: 201 });
-  } catch (error: unknown) {
+    return NextResponse.json({ customer: newCustomer[0] }, { status: 201 });
+  } catch (error) {
     console.error('Error creating customer:', error);
-    
-    // Check if it's a validation error
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
-    }
-    
-    // Check if it's a unique constraint violation (duplicate email)
-    if (error instanceof Error && error.message.includes('duplicate key value violates unique constraint')) {
-      return NextResponse.json(
-        { error: 'A customer with this email already exists' },
-        { status: 409 }
-      );
-    }
-    
     return NextResponse.json(
       { error: 'Failed to create customer' },
       { status: 500 }
@@ -148,6 +154,32 @@ export async function PUT(request: Request) {
     
     return NextResponse.json(
       { error: 'Failed to update customer' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Customer ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    await db
+      .delete(CustomersTable)
+      .where(eq(CustomersTable.id, parseInt(id, 10)));
+    
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete customer' },
       { status: 500 }
     );
   }

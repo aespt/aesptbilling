@@ -1,19 +1,49 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { SuppliersTable } from '@/lib/models/suppliers';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { CreateSupplierSchema, UpdateSupplierSchema } from '@/lib/schemas/supplierSchema';
 import { ZodError } from 'zod';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch all suppliers from the database, ordered by most recent first
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
+    
+    // Calculate offset
+    const offset = (page - 1) * pageSize;
+    
+    // Fetch paginated suppliers
     const suppliers = await db
       .select()
       .from(SuppliersTable)
+      .limit(pageSize)
+      .offset(offset)
       .orderBy(desc(SuppliersTable.created_at));
+      
+    // Get total count for pagination
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(SuppliersTable);
+      
+    const total = Number(countResult[0].count);
+    const totalPages = Math.ceil(total / pageSize);
+    
+    // Create pagination info
+    const paginationInfo = {
+      total,
+      totalPages,
+      currentPage: page,
+      pageSize,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
 
-    return NextResponse.json({ suppliers }, { status: 200 });
+    return NextResponse.json({ 
+      suppliers, 
+      pagination: paginationInfo 
+    }, { status: 200 });
   } catch (error) {
     console.error('Error fetching suppliers:', error);
     return NextResponse.json(

@@ -1,19 +1,49 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { SalesmenTable } from '@/lib/models/salesmen';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { CreateSalesmanSchema, UpdateSalesmanSchema } from '@/lib/schemas/salesmanSchema';
 import { ZodError } from 'zod';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch all salesmen from the database, ordered by most recent first
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
+    
+    // Calculate offset
+    const offset = (page - 1) * pageSize;
+    
+    // Fetch paginated salesmen
     const salesmen = await db
       .select()
       .from(SalesmenTable)
+      .limit(pageSize)
+      .offset(offset)
       .orderBy(desc(SalesmenTable.created_at));
+      
+    // Get total count for pagination
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(SalesmenTable);
+      
+    const total = Number(countResult[0].count);
+    const totalPages = Math.ceil(total / pageSize);
+    
+    // Create pagination info
+    const paginationInfo = {
+      total,
+      totalPages,
+      currentPage: page,
+      pageSize,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
 
-    return NextResponse.json({ salesmen }, { status: 200 });
+    return NextResponse.json({ 
+      salesmen, 
+      pagination: paginationInfo 
+    }, { status: 200 });
   } catch (error) {
     console.error('Error fetching salesmen:', error);
     return NextResponse.json(
@@ -46,17 +76,12 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('Error creating salesman:', error);
     
-    // Handle validation errors
+    // Check if it's a validation error
     if (error instanceof ZodError) {
-      const formattedErrors = error.errors.map(err => ({
-        path: err.path.join('.'),
-        message: err.message
-      }));
-      
-      return NextResponse.json({ 
-        error: 'Validation failed', 
-        details: formattedErrors 
-      }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Validation error', details: error.errors },
+        { status: 400 }
+      );
     }
     
     return NextResponse.json(

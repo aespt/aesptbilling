@@ -22,6 +22,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { Supplier } from "@/lib/types";
+import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
 
 const actionMenuItems = [
   { 
@@ -48,6 +49,14 @@ export default function SuppliersPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [sidepanelMode, setSidepanelMode] = useState<'add' | 'edit'>('add');
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    pageSize: 10,
+    hasNext: false,
+    hasPrev: false,
+  });
   
   // Use our custom confirmation hook
   const {
@@ -65,11 +74,11 @@ export default function SuppliersPage() {
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
-  // Fetch suppliers from API
-  const fetchSuppliers = async () => {
+  // Fetch suppliers from API with pagination
+  const fetchSuppliers = async (page = pagination.currentPage, pageSize = pagination.pageSize) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/suppliers');
+      const response = await fetch(`/api/suppliers?page=${page}&pageSize=${pageSize}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch suppliers');
@@ -77,6 +86,7 @@ export default function SuppliersPage() {
       
       const data = await response.json();
       setSuppliers(data.suppliers);
+      setPagination(data.pagination);
     } catch (err) {
       console.error('Error fetching suppliers:', err);
       setError('Failed to load suppliers. Please try again later.');
@@ -90,6 +100,16 @@ export default function SuppliersPage() {
   useEffect(() => {
     fetchSuppliers();
   }, []);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    fetchSuppliers(page, pagination.pageSize);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (pageSize: number) => {
+    fetchSuppliers(1, pageSize);
+  };
 
   const handleActionClick = async (supplierId: number, actionName: string) => {
     console.log(`Action ${actionName} clicked for supplier ${supplierId}`);
@@ -140,7 +160,7 @@ export default function SuppliersPage() {
       showSnackbar(`Supplier "${supplierName}" deleted successfully`, 'success');
       
       // Refresh the supplier list
-      fetchSuppliers();
+      fetchSuppliers(pagination.currentPage, pagination.pageSize);
     } catch (err) {
       console.error('Error deleting supplier:', err);
       showSnackbar('Failed to delete supplier', 'error');
@@ -171,14 +191,14 @@ export default function SuppliersPage() {
 
   // Handle supplier added
   const handleSupplierAdded = (supplierName: string) => {
-    fetchSuppliers();
+    fetchSuppliers(pagination.currentPage, pagination.pageSize);
     setIsSidepanelOpen(false);
     showSnackbar(`Supplier "${supplierName}" added successfully`, 'success');
   };
 
   // Handle supplier updated
   const handleSupplierUpdated = (supplierName: string) => {
-    fetchSuppliers();
+    fetchSuppliers(pagination.currentPage, pagination.pageSize);
     setIsSidepanelOpen(false);
     showSnackbar(`Supplier "${supplierName}" updated successfully`, 'success');
   };
@@ -201,52 +221,64 @@ export default function SuppliersPage() {
             {error}
           </div>
         ) : (
-          <TableContainer
-            component={Paper}
-            className="shadow-md rounded-lg overflow-hidden border border-gray-100"
-            elevation={0}
-          >
-            <Table className="border border-gray-100">
-              <TableHead>
-                <TableRow className="bg-gray-100">
-                  <TableCell className="font-semibold">Tax Reg. No</TableCell>
-                  <TableCell className="font-semibold">Name</TableCell>
-                  <TableCell className="font-semibold">Address</TableCell>
-                  <TableCell className="font-semibold">Contact Number</TableCell>
-                  <TableCell className="font-semibold">Last Updated</TableCell>
-                  <TableCell className="font-semibold">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {suppliers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      No suppliers found. Click "Add Supplier" to create one.
-                    </TableCell>
+          <>
+            <TableContainer
+              component={Paper}
+              className="rounded-lg overflow-hidden border border-gray-100"
+              elevation={0}
+            >
+              <Table className="border border-gray-100">
+                <TableHead>
+                  <TableRow className="bg-gray-100">
+                    <TableCell className="font-semibold">Tax Reg. No</TableCell>
+                    <TableCell className="font-semibold">Name</TableCell>
+                    <TableCell className="font-semibold">Address</TableCell>
+                    <TableCell className="font-semibold">Contact Number</TableCell>
+                    <TableCell className="font-semibold">Last Updated</TableCell>
+                    <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>
-                ) : (
-                  suppliers.map((supplier) => (
-                    <TableRow
-                      key={supplier.id}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <TableCell className="text-gray-700">{supplier.tax_registration_number}</TableCell>
-                      <TableCell className="text-gray-700">{supplier.name}</TableCell>
-                      <TableCell className="text-gray-600">{supplier.address || '-'}</TableCell>
-                      <TableCell className="text-gray-600">{supplier.contact_number}</TableCell>
-                      <TableCell className="text-gray-600">{formatDate(supplier.updated_at)}</TableCell>
-                      <TableCell>
-                        <ActionMenu 
-                          menuItems={actionMenuItems} 
-                          onMenuItemClick={(actionName) => handleActionClick(supplier.id, actionName)}
-                        />
+                </TableHead>
+                <TableBody>
+                  {suppliers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        No suppliers found. Click "Add Supplier" to create one.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    suppliers.map((supplier) => (
+                      <TableRow
+                        key={supplier.id}
+                        className="hover:bg-gray-50/50 transition-colors"
+                      >
+                        <TableCell className="text-gray-700">{supplier.tax_registration_number}</TableCell>
+                        <TableCell className="text-gray-700">{supplier.name}</TableCell>
+                        <TableCell className="text-gray-600">{supplier.address || '-'}</TableCell>
+                        <TableCell className="text-gray-600">{supplier.contact_number}</TableCell>
+                        <TableCell className="text-gray-600">{formatDate(supplier.updated_at)}</TableCell>
+                        <TableCell>
+                          <ActionMenu 
+                            menuItems={actionMenuItems} 
+                            onMenuItemClick={(actionName) => handleActionClick(supplier.id, actionName)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {pagination.total > 0 && (
+              <Pagination
+                paginationInfo={pagination}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[5, 10, 25, 50]}
+                itemName="suppliers"
+              />
+            )}
+          </>
         )}
       </div>
 
