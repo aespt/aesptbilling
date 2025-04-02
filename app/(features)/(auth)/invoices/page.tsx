@@ -269,7 +269,7 @@ export default function InvoicesListPage() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="px-4 md:px-6 pt-24 pb-6 md:ml-[280px]">
+      <div className="px-4 md:px-6 pt-16 pb-6 md:ml-[280px]">
         <style jsx global>{tableRowAnimation}</style>
         <Box className="flex justify-between items-center mb-6">
           <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
@@ -285,103 +285,99 @@ export default function InvoicesListPage() {
           </IconButton>
         </Box>
 
-        <Paper elevation={2} className="overflow-hidden">
-          {loading ? (
-            <Box className="flex justify-center items-center p-8">
-              <CircularProgress />
-            </Box>
-          ) : (
-            <>
-              <TableContainer>
-                <Table>
-                  <TableHead className="bg-gray-100">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+          </div>
+        ) : (
+          <Paper elevation={2} className="overflow-hidden shadow-md rounded-lg border border-gray-100">
+            <TableContainer>
+              <Table>
+                <TableHead className="bg-gray-100">
+                  <TableRow>
+                    <TableCell className="font-medium">
+                      <TableSortLabel
+                        active={sort.field === 'invoice_date'}
+                        direction={sort.field === 'invoice_date' ? sort.direction : 'asc'}
+                        onClick={() => handleSortChange('invoice_date')}
+                      >
+                        Invoice Date
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <TableSortLabel
+                        active={sort.field === 'invoice_number'}
+                        direction={sort.field === 'invoice_number' ? sort.direction : 'asc'}
+                        onClick={() => handleSortChange('invoice_number')}
+                      >
+                        Invoice Number
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <TableSortLabel
+                        active={sort.field === 'salesperson_name'}
+                        direction={sort.field === 'salesperson_name' ? sort.direction : 'asc'}
+                        onClick={() => handleSortChange('salesperson_name')}
+                      >
+                        Sales Person
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell className="font-medium">Customer</TableCell>
+                    <TableCell className="font-medium">Ship From</TableCell>
+                    <TableCell className="font-medium">Ship To</TableCell>
+                    <TableCell align="right" className="font-medium">
+                      <TableSortLabel
+                        active={sort.field === 'total'}
+                        direction={sort.field === 'total' ? sort.direction : 'asc'}
+                        onClick={() => handleSortChange('total')}
+                      >
+                        Total
+                      </TableSortLabel>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {invoices.length > 0 ? (
+                    invoices.map((invoice, index) => (
+                      <TableRow 
+                        key={invoice.id} 
+                        hover
+                        className="transition-all duration-150 hover:bg-gray-50"
+                        style={{ 
+                          animationDelay: `${index * 30}ms`,
+                          animation: 'fadeIn 0.5s ease-in-out forwards'
+                        }}
+                      >
+                        <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
+                        <TableCell className="font-medium text-blue-600 cursor-pointer" onClick={() => handleInvoiceClick(invoice.id)}>{invoice.invoice_number}</TableCell>
+                        <TableCell>{invoice.salesperson_name}</TableCell>
+                        <TableCell>{invoice.customer.name}</TableCell>
+                        <TableCell>Head Office</TableCell>
+                        <TableCell>{invoice.customer.address}</TableCell>
+                        <TableCell align="right" className="font-bold">{parseFloat(invoice.total).toFixed(2)} AED</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
                     <TableRow>
-                      <TableCell className="font-medium">
-                        <TableSortLabel
-                          active={sort.field === 'invoice_date'}
-                          direction={sort.field === 'invoice_date' ? sort.direction : 'asc'}
-                          onClick={() => handleSortChange('invoice_date')}
-                        >
-                          Invoice Date
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <TableSortLabel
-                          active={sort.field === 'invoice_number'}
-                          direction={sort.field === 'invoice_number' ? sort.direction : 'asc'}
-                          onClick={() => handleSortChange('invoice_number')}
-                        >
-                          Invoice Number
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <TableSortLabel
-                          active={sort.field === 'salesperson_name'}
-                          direction={sort.field === 'salesperson_name' ? sort.direction : 'asc'}
-                          onClick={() => handleSortChange('salesperson_name')}
-                        >
-                          Sales Person
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell className="font-medium">Customer</TableCell>
-                      <TableCell className="font-medium">Ship From</TableCell>
-                      <TableCell className="font-medium">Ship To</TableCell>
-                      <TableCell align="right" className="font-medium">
-                        <TableSortLabel
-                          active={sort.field === 'total'}
-                          direction={sort.field === 'total' ? sort.direction : 'asc'}
-                          onClick={() => handleSortChange('total')}
-                        >
-                          Total
-                        </TableSortLabel>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        No invoices found. Please try adjusting your filters.
                       </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {invoices.length > 0 ? (
-                      invoices.map((invoice, index) => (
-                        <TableRow 
-                          key={invoice.id} 
-                          hover
-                          className="transition-all duration-150 hover:bg-gray-50"
-                          style={{ 
-                            animationDelay: `${index * 30}ms`,
-                            animation: 'fadeIn 0.5s ease-in-out forwards'
-                          }}
-                        >
-                          <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
-                          <TableCell className="font-medium text-blue-600 cursor-pointer" onClick={() => handleInvoiceClick(invoice.id)}>{invoice.invoice_number}</TableCell>
-                          <TableCell>{invoice.salesperson_name}</TableCell>
-                          <TableCell>{invoice.customer.name}</TableCell>
-                          <TableCell>Head Office</TableCell>
-                          <TableCell>{invoice.customer.address}</TableCell>
-                          <TableCell align="right" className="font-medium">{parseFloat(invoice.total).toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center" className="py-8">
-                          <Typography variant="body1" className="text-gray-500">
-                            No invoices found
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                component="div"
-                count={pagination.total}
-                page={pagination.page - 1}
-                onPageChange={handlePageChange}
-                rowsPerPage={pagination.pageSize}
-                onRowsPerPageChange={handleRowsPerPageChange}
-                rowsPerPageOptions={[5, 10, 25, 50]}
-              />
-            </>
-          )}
-        </Paper>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              component="div"
+              count={pagination.total}
+              page={pagination.page - 1}
+              onPageChange={handlePageChange}
+              rowsPerPage={pagination.pageSize}
+              onRowsPerPageChange={handleRowsPerPageChange}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+            />
+          </Paper>
+        )}
 
         {/* Enhanced Filter Drawer */}
         <Drawer
