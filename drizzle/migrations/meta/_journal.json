@@ -113,6 +113,27 @@
       "when": 1743591812181,
       "tag": "0017_many_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1743611930405,
+      "tag": "0018_fix_user_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1743611930406,
+      "tag": "0019_add_discount_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1743611930408,
+      "tag": "0021_remove_user_id",
+      "breakpoints": true
     }
   ]
 }

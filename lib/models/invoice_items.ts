@@ -1,6 +1,7 @@
 import { pgTable, serial, integer, decimal, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { InvoicesTable } from './invoices';
 import { ProductsTable } from './products';
+import { UsersTable } from './users';
 
 export const InvoiceItemsTable = pgTable(
   'invoice_items',
@@ -15,8 +16,8 @@ export const InvoiceItemsTable = pgTable(
     quantity: integer('quantity').notNull(),
     unit_price: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
     total_price: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
-    created_by: varchar('created_by', { length: 100 }),
-    updated_by: varchar('updated_by', { length: 100 }),
+    created_by: integer('created_by').references(() => UsersTable.id),
+    updated_by: integer('updated_by').references(() => UsersTable.id),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   }

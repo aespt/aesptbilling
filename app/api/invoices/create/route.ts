@@ -1,11 +1,34 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { InvoicesTable } from '@/lib/models/invoices';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { ZodError } from 'zod';
+import { verifyToken } from '@/lib/utils/jwt';
+import { AUTH_COOKIE_NAME } from '@/lib/utils/jwt';
+import { TokenPayload } from '@/lib/schemas/authSchema';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Get the auth token from cookies
+    const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify token
+    const payload = verifyToken<TokenPayload>(token);
+    
+    if (!payload) {
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     
     // Start transaction
@@ -14,7 +37,6 @@ export async function POST(request: Request) {
       const [newInvoice] = await tx.insert(InvoicesTable).values({
         invoice_number: body.invoice_number,
         invoice_date: new Date(body.date),
-        user_id: 1, // Default to user ID 1 - replace with actual user ID from session
         customer_id: body.customer_id,
         salesman_id: body.salesman_id || null,
         tax_type: body.tax_type,
@@ -26,8 +48,8 @@ export async function POST(request: Request) {
         ship_to: body.ship_to,
         ship_from: body.ship_from,
         profit: body.profit,
-        created_by: 'system',
-        updated_by: 'system'
+        created_by: payload.userId,
+        updated_by: payload.userId
       }).returning();
         
       if (!newInvoice) {
@@ -50,8 +72,8 @@ export async function POST(request: Request) {
           quantity: item.qty,
           unit_price: String(item.rate),
           total_price: String(item.total),
-          created_by: 'system',
-          updated_by: 'system'
+          created_by: payload.userId,
+          updated_by: payload.userId
         }));
         
         // Insert all invoice items
