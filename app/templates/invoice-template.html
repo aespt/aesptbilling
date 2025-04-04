@@ -207,7 +207,12 @@
       <!-- Header Section -->
       <div class="invoice-header">
         <div class="invoice-header-content">
-          <h2 style="margin: 0; color: #0078d4; align-self: center">LOGO</h2>
+          <!-- <h2 style="margin: 0; color: #0078d4; align-self: center">LOGO</h2> -->
+          <img
+            src="logo.png"
+            alt="Logo"
+            style="width: 150px; height: auto; max-height: 80px; object-fit: contain"
+          />
 
           <div
             style="
@@ -226,13 +231,7 @@
                 العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
               </p>
             </div>
-            <div id="address" style="text-align: right; font-size: 12px">
-              <p style="margin: 0">Block B-035-065</p>
-              <p style="margin: 0">SAIF ZONE, UAE</p>
-              <p style="margin: 0">Tel: 123456</p>
-              <p style="margin: 0">Fax: 123456</p>
-              <p style="margin: 0">TRN NO: 123456</p>
-            </div>
+            <div id="address" style="text-align: right; font-size: 12px"></div>
           </div>
         </div>
       </div>
@@ -267,7 +266,7 @@
             </p>
             <p style="margin: 5px 0">
               <span style="font-weight: bold">Ship to Country/Emirate:</span>
-              <span id="ship-to"></span>
+              <span id="ship-to">{{shipTo}}</span>
             </p>
           </div>
         </div>
@@ -289,10 +288,10 @@
               <td style="font-weight: bold">Invoice date:</td>
               <td id="invoice-date">{{invoiceDate}}</td>
             </tr>
-            <tr>
+            <!-- <tr>
               <td style="font-weight: bold">Order No:</td>
               <td id="order-no">{{orderNo}}</td>
-            </tr>
+            </tr> -->
             <tr>
               <td style="font-weight: bold">Salesman:</td>
               <td id="salesperson">{{salesperson}}</td>

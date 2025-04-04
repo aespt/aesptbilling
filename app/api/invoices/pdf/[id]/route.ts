@@ -22,7 +22,6 @@ export async function GET(
   let browser: any = null;
   
   try {
-    console.log('Starting PDF generation for invoice ID:', params.id);
     
     const invoiceId = parseInt(params.id);
 
@@ -31,7 +30,6 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid invoice ID' }, { status: 400 });
     }
 
-    console.log('Fetching invoice data from database');
     // Get invoice data from database
     const invoices = await db
       .select()
@@ -44,9 +42,7 @@ export async function GET(
     }
     
     const invoice = invoices[0];
-    console.log('Invoice found:', invoice.invoice_number);
 
-    console.log('Fetching customer data');
     // Get customer data
     const customers = await db
       .select()
@@ -60,7 +56,6 @@ export async function GET(
       .where(eq(SalesmenTable.id, invoice.salesman_id)) : null;
     
     const customer = customers.length > 0 ? customers[0] : null;
-    console.log('Customer data retrieved:', customer ? 'Yes' : 'No');
 
     // Get primary address
     const addresses = await db
@@ -69,7 +64,6 @@ export async function GET(
       .where(eq(AddressTable.is_primary, true));
     
     const primaryAddress = addresses.length > 0 ? addresses[0] : null;
-    console.log('Primary address retrieved:', primaryAddress ? 'Yes' : 'No');
 
     if (!primaryAddress) {
       console.warn('No primary address found, using default address');
@@ -77,16 +71,13 @@ export async function GET(
       // return NextResponse.json({ error: 'No primary address configured' }, { status: 500 });
     }
 
-    console.log('Fetching invoice items');
     // Get invoice items
     const invoiceItems = await db
       .select()
       .from(InvoiceItemsTable)
       .where(eq(InvoiceItemsTable.invoice_id, invoiceId));
     
-    console.log(`Found ${invoiceItems.length} invoice items`);
 
-    console.log('Fetching product data');
     // Get products for invoice items
     const productsMap = new Map();
     
@@ -101,13 +92,10 @@ export async function GET(
         productsMap.set(item.product_id, productRows[0]);
       }
     }
-    console.log(`Found ${productsMap.size} products`);
 
-    console.log('Reading HTML template');
     // Read the HTML template
     const templatePath = path.join(process.cwd(), 'app/templates/invoice-template.html');
     const htmlTemplate = fs.readFileSync(templatePath, 'utf8');
-    console.log('Template read successfully');
 
     // Format invoice date
     const formattedDate = format(new Date(invoice.invoice_date), 'MMMM dd, yyyy');
@@ -115,8 +103,18 @@ export async function GET(
     // Load HTML template into cheerio
     const $ = cheerio.load(htmlTemplate);
 
+    // Replace the logo path with data URL to ensure it works in Puppeteer
+    const logoPath = path.join(process.cwd(), 'public/logo.png');
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath);
+      const logoBase64 = logoBuffer.toString('base64');
+      $('img[src="logo.png"]').attr('src', `data:image/png;base64,${logoBase64}`);
+    } else {
+      console.warn('Logo file not found at:', logoPath);
+    }
+
     // Fill in the customer details
-    $('#customer-address').text(customer?.address || 'N/A');
+    $('#customer-address').text(customer?.name || 'N/A');
     // Use a default value for tax number as it's not defined in the customer model
     const taxRegNo = 'N/A'; // Customize as needed
     $('#tax-reg-no').html(`<span style="font-weight: bold">TAX Reg No:</span> ${taxRegNo}`);
@@ -125,11 +123,10 @@ export async function GET(
     // Fill in the invoice details
     $('#invoice-number').text(invoice.invoice_number);
     $('#invoice-date').text(formattedDate);
-    $('#order-no').text(invoice.id.toString());
+    // $('#order-no').text(invoice.id.toString());
     $('#salesperson').text(salesPerson?.[0]?.name || 'N/A');
     $('#ship-from').text(invoice.ship_from || 'N/A');
     $('#ship-to').text(invoice.ship_to || 'N/A');
-    console.log('Fetching company address', primaryAddress);
 
     // Update the company address section in the template
     if (primaryAddress) {
@@ -212,9 +209,7 @@ export async function GET(
     // Add a spacer at the end to ensure adequate space for the footer
     $('body').append('<div class="footer-spacer"></div>');
     
-    console.log('Template filled successfully with cheerio');
 
-    console.log('Launching Puppeteer');
     
     // Launch browser with optimized settings for Apple Silicon
     const launchOptions = {
@@ -228,13 +223,10 @@ export async function GET(
 
     try {
       browser = await puppeteer.launch(launchOptions);
-      console.log('Puppeteer launched successfully');
       
       // Generate main document PDF without footer
       const mainPage = await browser.newPage();
-      console.log('New page created for main document');
       
-      console.log('Setting page content for main document');
       await mainPage.setContent($.html(), { waitUntil: 'networkidle0' });
       
       // Set page size to match A4 dimensions
@@ -261,7 +253,6 @@ export async function GET(
       });
       
       // Generate the main PDF without any footer
-      console.log('Generating main PDF without footer');
       const mainPdfBuffer = await mainPage.pdf({
         format: 'A4',
         printBackground: true,
@@ -275,7 +266,6 @@ export async function GET(
       });
       
       // Now create a new page with only the footer
-      console.log('Creating a separate page for footer');
       const footerPage = await browser.newPage();
       
       // Create a clean HTML document with only the footer
@@ -346,7 +336,6 @@ export async function GET(
       await footerPage.setContent(footerHtml, { waitUntil: 'networkidle0' });
       
       // Generate just the footer PDF
-      console.log('Generating footer PDF');
       const footerPdfBuffer = await footerPage.pdf({
         format: 'A4',
         printBackground: true,
@@ -362,11 +351,9 @@ export async function GET(
       // Close the browser as we're done with generation
         await browser.close();
         browser = null;
-        console.log('Browser closed');
       
       try {
         // Now use pdf-lib to create a PDF with footer on the last page
-        console.log('Using pdf-lib to process PDFs');
         
         // Load both PDFs
         const mainPdfDoc = await PDFDocument.load(mainPdfBuffer);
@@ -374,7 +361,6 @@ export async function GET(
         
         // Get the number of pages in the main document
         const pageCount = mainPdfDoc.getPageCount();
-        console.log(`Main PDF has ${pageCount} pages`);
         
         // The approach depends on whether we have a single or multiple pages
         if (pageCount === 1) {
