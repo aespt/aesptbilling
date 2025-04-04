@@ -12,6 +12,7 @@ import format from 'date-fns/format';
 import { AddressTable } from '@/lib/models/address';
 import * as cheerio from 'cheerio';
 import { SalesmenTable } from '@/lib/models/salesmen';
+import { PDFDocument } from 'pdf-lib';
   
 export async function GET(
   request: NextRequest,
@@ -105,13 +106,12 @@ export async function GET(
     console.log('Reading HTML template');
     // Read the HTML template
     const templatePath = path.join(process.cwd(), 'app/templates/invoice-template.html');
-    let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
+    const htmlTemplate = fs.readFileSync(templatePath, 'utf8');
     console.log('Template read successfully');
 
     // Format invoice date
     const formattedDate = format(new Date(invoice.invoice_date), 'MMMM dd, yyyy');
 
-    console.log(invoice);
     // Load HTML template into cheerio
     const $ = cheerio.load(htmlTemplate);
 
@@ -134,27 +134,27 @@ export async function GET(
     // Update the company address section in the template
     if (primaryAddress) {
       let addressHtml = `
-        <p style="margin: 0">${primaryAddress.street}</p>
-        <p style="margin: 0">${primaryAddress.city}${primaryAddress.state ? ', ' + primaryAddress.state : ''}</p>
-        <p style="margin: 0">${primaryAddress.country} ${primaryAddress.postal_code}</p>
+        <p style="margin: 0">${primaryAddress.street || ''}</p>
+        <p style="margin: 0">${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}</p>
+        <p style="margin: 0">${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}</p>
       `;
       
-      // Use type assertion with optional chaining to avoid TypeScript errors
-      const addressWithExtras = primaryAddress as any;
+      // Access properties safely since they might not exist in the type
+      const addressObj = primaryAddress as Record<string, any>;
       
       // Only add phone number if it exists
-      if (addressWithExtras.phone_no) {
-        addressHtml += `<p style="margin: 0">Tel: ${addressWithExtras.phone_no}</p>`;
+      if (addressObj.phone_no) {
+        addressHtml += `<p style="margin: 0">Tel: ${addressObj.phone_no}</p>`;
       }
       
       // Only add fax number if it exists
-      if (addressWithExtras.fax_no) {
-        addressHtml += `<p style="margin: 0">Fax: ${addressWithExtras.fax_no}</p>`;
+      if (addressObj.fax_no) {
+        addressHtml += `<p style="margin: 0">Fax: ${addressObj.fax_no}</p>`;
       }
       
       // Only add transaction number if it exists
-      if (addressWithExtras.transaction_no) {
-        addressHtml += `<p style="margin: 0">TRN NO: ${addressWithExtras.transaction_no}</p>`;
+      if (addressObj.transaction_no) {
+        addressHtml += `<p style="margin: 0">TRN NO: ${addressObj.transaction_no}</p>`;
       }
       
       $('#address').html(addressHtml);
@@ -166,29 +166,34 @@ export async function GET(
     // Generate invoice items and append them to the table
     invoiceItems.forEach((item, index) => {
       const product = productsMap.get(item.product_id);
-      const taxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
+      const invoiceTaxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
       const unitPrice = parseFloat(item.unit_price.toString());
       const quantity = parseFloat(item.quantity.toString());
-      const vatAmount = unitPrice * taxRate / 100 * quantity;
+      const vatAmount = unitPrice * invoiceTaxRate / 100 * quantity;
       const totalAmount = parseFloat(item.total_price.toString());
       
       // Create a new row with an ID for easier identification
-      const $row = $('<tr>').attr('id', `invoice-item-${item.id}`);
+      const rowEl = $('<tr>');
+      rowEl.attr('id', `invoice-item-${item.id}`);
+      rowEl.addClass('invoice-item-row');
       
       // Append cells with data
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((index + 1).toString()));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.partNo || 'N/A'));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.name || 'N/A'));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.quantity.toString()));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.unit_price.toString()));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((unitPrice * quantity).toFixed(2)));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(taxRate.toString()));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(vatAmount.toFixed(2)));
-      $row.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(totalAmount.toFixed(2)));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((index + 1).toString()));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.partNo || 'N/A'));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.name || 'N/A'));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.quantity.toString()));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.unit_price.toString()));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((unitPrice * quantity).toFixed(2)));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(invoiceTaxRate.toString()));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(vatAmount.toFixed(2)));
+      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(totalAmount.toFixed(2)));
       
       // Append the row to the table body
-      $('#invoice-items-body').append($row);
+      $('#invoice-items-body').append(rowEl);
     });
+
+    // Add a class to the table headers to ensure they repeat on new pages
+    $('thead tr').addClass('table-header-row');
 
     // Fill in the totals
     const subtotal = parseFloat(invoice.sub_total.toString()).toFixed(2);
@@ -203,6 +208,9 @@ export async function GET(
     $('#tax-amount').text(`${taxAmount} AED`);
     $('#discount').text(`${discount} AED`);
     $('#invoice-total').text(`${total} AED`);
+    
+    // Add a spacer at the end to ensure adequate space for the footer
+    $('body').append('<div class="footer-spacer"></div>');
     
     console.log('Template filled successfully with cheerio');
 
@@ -222,22 +230,60 @@ export async function GET(
       browser = await puppeteer.launch(launchOptions);
       console.log('Puppeteer launched successfully');
       
-      const page = await browser.newPage();
-      console.log('New page created');
+      // Generate main document PDF without footer
+      const mainPage = await browser.newPage();
+      console.log('New page created for main document');
       
-      console.log('Setting page content');
-      await page.setContent($.html(), { waitUntil: 'networkidle0' });
+      console.log('Setting page content for main document');
+      await mainPage.setContent($.html(), { waitUntil: 'networkidle0' });
       
       // Set page size to match A4 dimensions
-      await page.setViewport({
+      await mainPage.setViewport({
         width: 794, // A4 width in pixels at 96 DPI
         height: 1123, // A4 height in pixels at 96 DPI
         deviceScaleFactor: 1,
       });
       
-      // Add CSS to ensure the document fits the page completely
-      await page.addStyleTag({
-        content: `
+      // First, manipulate the DOM to hide the footer completely for the main document
+      await mainPage.evaluate(() => {
+        // Find any footer elements and completely remove them from the DOM
+        const footerElements = document.querySelectorAll('.page-footer');
+        footerElements.forEach(element => {
+          element.remove();
+        });
+        
+        // Minimize the footer spacer to avoid extra blank pages
+        const footerSpacer = document.querySelector('.footer-spacer');
+        if (footerSpacer && footerSpacer instanceof HTMLElement) {
+          footerSpacer.style.height = '0';
+          footerSpacer.style.display = 'none';
+        }
+      });
+      
+      // Generate the main PDF without any footer
+      console.log('Generating main PDF without footer');
+      const mainPdfBuffer = await mainPage.pdf({
+        format: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: '10mm',
+          right: '0mm',
+          bottom: '20mm',
+          left: '0mm'
+        }
+      });
+      
+      // Now create a new page with only the footer
+      console.log('Creating a separate page for footer');
+      const footerPage = await browser.newPage();
+      
+      // Create a clean HTML document with only the footer
+      const footerHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
           @page {
             size: A4;
             margin: 0;
@@ -245,48 +291,171 @@ export async function GET(
           body {
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
           }
-          .invoice-container {
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
+          .footer {
+            position: absolute;
+            bottom: 20mm;
+            left: 0;
+            right: 0;
+            width: 100%;
           }
-        `
-      });
+          .text-container {
+            padding: 15px;
+            margin: 10px 20px;
+            background-color: #f5f5f5;
+          }
+          .signature-container {
+            margin: 30px 20px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .signature-line {
+            font-size: 12px;
+            color: #999;
+            border-top: 1px dotted #999;
+            padding-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="footer">
+          <div class="text-container">
+            <p style="font-size: 12px; color: #999; margin: 0;">
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum
+              has been the industry's standard dummy text ever since the 1500s.
+            </p>
+          </div>
+          <div class="signature-container">
+            <div>
+              <p class="signature-line">
+                Customer Signature
+              </p>
+            </div>
+            <div>
+              <p class="signature-line">
+                For Arabian Auto Equipments and Parts Trading (FZC)
+              </p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+      `;
       
-      console.log('Content set, generating PDF');
+      await footerPage.setContent(footerHtml, { waitUntil: 'networkidle0' });
       
-      const pdf = await page.pdf({
+      // Generate just the footer PDF
+      console.log('Generating footer PDF');
+      const footerPdfBuffer = await footerPage.pdf({
         format: 'A4',
         printBackground: true,
-        preferCSSPageSize: true,
+        preferCSSPageSize: false,
         margin: {
           top: '0mm',
           right: '0mm',
           bottom: '0mm',
           left: '0mm'
-        },
-        scale: 1.0, // Full scale to ensure content fills the page
+        }
       });
       
-      console.log('PDF generated successfully');
-      
-      if (browser) {
+      // Close the browser as we're done with generation
         await browser.close();
         browser = null;
         console.log('Browser closed');
-      }
       
-      console.log('Returning PDF response');
-      return new NextResponse(pdf, {
+      try {
+        // Now use pdf-lib to create a PDF with footer on the last page
+        console.log('Using pdf-lib to process PDFs');
+        
+        // Load both PDFs
+        const mainPdfDoc = await PDFDocument.load(mainPdfBuffer);
+        const footerPdfDoc = await PDFDocument.load(footerPdfBuffer);
+        
+        // Get the number of pages in the main document
+        const pageCount = mainPdfDoc.getPageCount();
+        console.log(`Main PDF has ${pageCount} pages`);
+        
+        // The approach depends on whether we have a single or multiple pages
+        if (pageCount === 1) {
+          // For a single page document, we can embed the footer content directly
+          const [footerPage] = await footerPdfDoc.getPages();
+          const embedFooter = await mainPdfDoc.embedPage(footerPage);
+          
+          // Get the dimensions
+          const mainPage = mainPdfDoc.getPage(0);
+          const { width, height } = mainPage.getSize();
+          
+          // Draw the footer on the main page (at the bottom)
+          mainPage.drawPage(embedFooter, {
+            x: 0,
+            y: 0,
+            width: width,
+            height: height,
+            opacity: 1,
+          });
+          
+          // Return the single page with embedded footer
+          const finalPdfBytes = await mainPdfDoc.save();
+          return new NextResponse(Buffer.from(finalPdfBytes), {
+            headers: {
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
+            },
+          });
+        } else {
+          // For multi-page documents, we'll create a completely new PDF
+          // Create the new document
+          const finalPdfDoc = await PDFDocument.create();
+          
+          // Copy all pages except the last one as-is
+          for (let i = 0; i < pageCount - 1; i++) {
+            const [copiedPage] = await finalPdfDoc.copyPages(mainPdfDoc, [i]);
+            finalPdfDoc.addPage(copiedPage);
+          }
+          
+          // For the last page, we need to copy it, then overlay the footer
+          const [lastMainPage] = await finalPdfDoc.copyPages(mainPdfDoc, [pageCount - 1]);
+          const lastPageAdded = finalPdfDoc.addPage(lastMainPage);
+          
+          // Now get the footer content
+          const [footerPage] = await footerPdfDoc.getPages();
+          const embedFooter = await finalPdfDoc.embedPage(footerPage);
+          
+          // Get the dimensions
+          const { width, height } = lastPageAdded.getSize();
+          
+          // Draw the footer on the last page (at the bottom)
+          lastPageAdded.drawPage(embedFooter, {
+            x: 0,
+            y: 0,
+            width: width,
+            height: height,
+            opacity: 1,
+          });
+          
+          // Return the multi-page PDF with footer on the last page
+          const finalPdfBytes = await finalPdfDoc.save();
+          return new NextResponse(Buffer.from(finalPdfBytes), {
+            headers: {
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
+            },
+          });
+        }
+      } catch (pdfLibError) {
+        console.error('Error in PDF-lib processing:', pdfLibError);
+        
+        // If pdf-lib fails, return the main PDF without footer as fallback
+        return new NextResponse(mainPdfBuffer, {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
         },
       });
+      }
     } catch (error) {
-      console.error('Puppeteer error:', error);
+      console.error('Puppeteer or PDF-lib error:', error);
       
       // Clean up if browser is still open
       if (browser) {

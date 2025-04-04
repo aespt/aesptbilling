@@ -12,6 +12,22 @@
         color: #333;
       }
 
+      /* Hide footer by default - extremely important */
+      .page-footer {
+        display: none !important;
+      }
+
+      /* Only the footer in the last-page container should show */
+      body.last-page .page-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        margin-top: 20px;
+      }
+
       .invoice-container {
         width: 100%;
         margin: 0;
@@ -20,7 +36,6 @@
         background-color: #ffffff;
         border: none;
         position: relative;
-        page-break-inside: avoid;
       }
 
       .invoice-header {
@@ -57,8 +72,6 @@
       }
 
       .invoice-footer {
-        /* position: absolute;
-        bottom: 0; */
         width: 100%;
       }
 
@@ -70,11 +83,43 @@
         gap: 10px;
       }
 
+      .table-container {
+        page-break-inside: auto;
+      }
+
+      .invoice-items-table tr {
+        page-break-inside: avoid;
+      }
+
+      .invoice-items-table thead {
+        display: table-header-group;
+      }
+
+      .signature-section {
+        page-break-inside: avoid;
+      }
+
       @media print {
+        /* Crucial rules for footer handling */
+        .page-footer {
+          display: none !important; /* Hidden by default */
+        }
+
+        /* Only display on the last page when body has last-page class */
+        body.last-page .page-footer {
+          display: block !important;
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+        }
+
         body {
           margin: 0;
           padding: 0;
           font-family: Arial, sans-serif;
+          /* Prevent unwanted blank pages */
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         .invoice-container {
@@ -83,6 +128,9 @@
           height: auto;
           margin: 0;
           padding: 0;
+          /* Prevent container from causing page breaks */
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
 
         .invoice-footer {
@@ -92,12 +140,70 @@
 
         .page-break {
           page-break-before: always;
+          break-before: always;
+        }
+
+        .invoice-header,
+        .customer-details {
+          page-break-after: avoid;
+          break-after: avoid;
+        }
+
+        html[data-last-page='true'] .page-footer {
+          display: block !important;
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          margin-top: 2cm;
+        }
+
+        .table-header {
+          display: table-header-group;
+        }
+
+        /* Control pagination */
+        @page {
+          size: A4;
+          margin-top: 1cm;
+          margin-bottom: 1cm;
+        }
+
+        @page :first {
+          margin-top: 0cm;
+        }
+
+        /* Keep content within bounds to avoid extra pages */
+        html,
+        body {
+          height: 100%;
+          overflow: visible;
+          /* Ensure we don't have extra blank pages */
+          position: relative;
+        }
+
+        /* Make sure the content doesn't create a new page */
+        .invoice-container:after {
+          content: '';
+          display: block;
+          height: 0;
+          clear: both;
+        }
+
+        /* Create a spacer that doesn't force a new page */
+        .footer-spacer {
+          height: 0.5cm;
+          min-height: 0 !important;
+          max-height: 0.5cm !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          page-break-after: avoid;
+          break-after: avoid;
         }
       }
     </style>
   </head>
   <body>
-    <div class="invoice-container" style="min-height: 1024px; width: 100%; margin: 0; padding: 0">
+    <div class="invoice-container">
       <!-- Header Section -->
       <div class="invoice-header">
         <div class="invoice-header-content">
@@ -108,7 +214,6 @@
               display: flex;
               align-items: center;
               background-color: #ffffff;
-              /* border-radius: 25px; */
               width: 75%;
               justify-content: space-between;
               padding: 20px;
@@ -137,6 +242,7 @@
 
       <!-- Invoice Details -->
       <div
+        class="customer-details"
         style="
           display: flex;
           justify-content: space-between;
@@ -200,9 +306,9 @@
       </div>
 
       <!-- Invoice Items Table -->
-      <div style="padding: 10px 20px; padding-bottom: 0">
+      <div class="table-container" style="padding: 10px 20px; padding-bottom: 0">
         <table class="invoice-items-table">
-          <thead>
+          <thead class="table-header">
             <tr>
               <th>No.</th>
               <th>Part No.</th>
@@ -220,7 +326,7 @@
       </div>
 
       <!-- Footer Section -->
-      <div class="invoice-footer">
+      <div class="invoice-footer signature-section">
         <div class="totals-container">
           <div style="width: 50%; padding: 15px; background-color: #f5f5f5">
             <h4 style="margin: 0 0 10px 0">Terms & Conditions</h4>
@@ -256,26 +362,9 @@
           </div>
         </div>
       </div>
-      <div style="position: absolute; bottom: 0; width: 100%">
-        <div style="padding: 15px; margin: 10px 20px; background-color: #f5f5f5">
-          <p style="font-size: 12px; color: #999">
-            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum
-            has been the industry's standard dummy text ever since the 1500s.
-          </p>
-        </div>
-        <div style="margin: 30px 20px; display: flex; justify-content: space-between">
-          <div>
-            <p style="font-size: 12px; color: #999; border-top: 1px dotted #999; padding-top: 10px">
-              Customer Signature
-            </p>
-          </div>
-          <div>
-            <p style="font-size: 12px; color: #999; border-top: 1px dotted #999; padding-top: 10px">
-              For Arabian Auto Equipments and Parts Trading (FZC)
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
+
+    <!-- Spacer for footer -->
+    <div class="footer-spacer"></div>
   </body>
 </html>
