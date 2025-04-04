@@ -1,6 +1,6 @@
-import { IconButton, Menu, MenuItem, ListItemText, ListItemIcon } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { useState } from "react";
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { IconButton, Menu, MenuItem, ListItemText, ListItemIcon } from '@mui/material';
+import { useState } from 'react';
 
 interface MenuItem {
   name: string;
@@ -32,11 +32,7 @@ export default function ActionMenu({ menuItems, onMenuItemClick }: ActionMenuPro
 
   return (
     <>
-      <IconButton
-        onClick={handleClick}
-        size="small"
-        className="text-gray-600 hover:text-gray-900"
-      >
+      <IconButton onClick={handleClick} size="small" className="text-gray-600 hover:text-gray-900">
         <MoreVertIcon />
       </IconButton>
       <Menu
@@ -44,7 +40,7 @@ export default function ActionMenu({ menuItems, onMenuItemClick }: ActionMenuPro
         open={open}
         onClose={handleClose}
         PaperProps={{
-          className: "shadow-sm rounded-lg min-w-[160px] border border-gray-100",
+          className: 'shadow-sm rounded-lg min-w-[160px] border border-gray-100',
         }}
         disableScrollLock={true}
         slotProps={{
@@ -55,19 +51,17 @@ export default function ActionMenu({ menuItems, onMenuItemClick }: ActionMenuPro
           },
         }}
       >
-        {menuItems.map((item) => (
+        {menuItems.map(item => (
           <MenuItem
             key={item.name}
             onClick={() => handleMenuItemClick(item.name)}
-            className="hover:bg-gray-50/50 py-2 px-4"
+            className="px-4 py-2 hover:bg-gray-50/50"
           >
-            <ListItemIcon className="min-w-[32px]">
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText 
+            <ListItemIcon className="min-w-[32px]">{item.icon}</ListItemIcon>
+            <ListItemText
               primary={item.displayText}
               primaryTypographyProps={{
-                className: "text-sm text-gray-500"
+                className: 'text-sm text-gray-500',
               }}
             />
           </MenuItem>
@@ -75,4 +69,4 @@ export default function ActionMenu({ menuItems, onMenuItemClick }: ActionMenuPro
       </Menu>
     </>
   );
-} 
+}
