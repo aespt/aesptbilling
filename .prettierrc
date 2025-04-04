@@ -10,5 +10,6 @@
   "bracketSameLine": false,
   "jsxSingleQuote": false,
   "quoteProps": "as-needed",
-  "embeddedLanguageFormatting": "auto"
+  "embeddedLanguageFormatting": "auto",
+  "plugins": ["prettier-plugin-tailwindcss"]
 } 
