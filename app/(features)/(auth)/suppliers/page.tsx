@@ -235,7 +235,7 @@ export default function SuppliersPage() {
                     <TableCell className="font-semibold">Address</TableCell>
                     <TableCell className="font-semibold">Contact Number</TableCell>
                     <TableCell className="font-semibold">Last Updated</TableCell>
-                    <TableCell className="font-semibold">Actions</TableCell>
+                  <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

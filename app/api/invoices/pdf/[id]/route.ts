@@ -227,6 +227,34 @@ export async function GET(
       
       console.log('Setting page content');
       await page.setContent($.html(), { waitUntil: 'networkidle0' });
+      
+      // Set page size to match A4 dimensions
+      await page.setViewport({
+        width: 794, // A4 width in pixels at 96 DPI
+        height: 1123, // A4 height in pixels at 96 DPI
+        deviceScaleFactor: 1,
+      });
+      
+      // Add CSS to ensure the document fits the page completely
+      await page.addStyleTag({
+        content: `
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+          }
+          .invoice-container {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        `
+      });
+      
       console.log('Content set, generating PDF');
       
       const pdf = await page.pdf({
@@ -234,12 +262,12 @@ export async function GET(
         printBackground: true,
         preferCSSPageSize: true,
         margin: {
-          top: '15mm',
-          right: '10mm',
-          bottom: '15mm',
-          left: '10mm'
+          top: '0mm',
+          right: '0mm',
+          bottom: '0mm',
+          left: '0mm'
         },
-        scale: 0.98, // Slightly reduce scale to ensure content fits
+        scale: 1.0, // Full scale to ensure content fills the page
       });
       
       console.log('PDF generated successfully');
