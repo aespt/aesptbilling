@@ -101,9 +101,11 @@ export default function CreateInvoicePage() {
     // Calculate discount
     let discountAmount = 0;
     if (formData.discount_type === 'PERCENTAGE') {
-      discountAmount = (subtotal * formData.discount_value) / 100;
+      const discountValue = formData.discount_value === '' ? 0 : Number(formData.discount_value);
+      discountAmount = (subtotal * discountValue) / 100;
     } else if (formData.discount_type === 'FIXED') {
-      discountAmount = Math.min(formData.discount_value, subtotal);
+      const discountValue = formData.discount_value === '' ? 0 : Number(formData.discount_value);
+      discountAmount = Math.min(discountValue, subtotal);
     }
 
     // Calculate tax
@@ -128,7 +130,7 @@ export default function CreateInvoicePage() {
     };
   };
 
-  const calculateProfit = (items: InvoiceItem[], discountValue: number) => {
+  const calculateProfit = (items: InvoiceItem[], discountValue: number | string) => {
     // Calculate profit for each item
     const itemProfits = items.map(item => {
       if (!item.product_id) {
@@ -144,7 +146,8 @@ export default function CreateInvoicePage() {
     const totalProfit = itemProfits.reduce((sum, profit) => sum + profit, 0);
 
     // Apply discount to profit
-    const discountedProfit = totalProfit - discountValue;
+    const numericDiscount = discountValue === '' ? 0 : Number(discountValue);
+    const discountedProfit = totalProfit - numericDiscount;
 
     return discountedProfit;
   };

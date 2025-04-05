@@ -61,7 +61,7 @@ export default function SalesTaxDiscount({
               cgst_percentage: 0,
               sgst_percentage: 0,
               discount_type: 'PERCENTAGE' as const,
-              discount_value: 0,
+              discount_value: '',
             }));
           }
         }
@@ -80,7 +80,7 @@ export default function SalesTaxDiscount({
             cgst_percentage: 0,
             sgst_percentage: 0,
             discount_type: 'PERCENTAGE' as const,
-            discount_value: 0,
+            discount_value: '',
           }));
         }
       } finally {
@@ -114,7 +114,7 @@ export default function SalesTaxDiscount({
       ...prev,
       discount_type: value,
       // Reset discount value when changing type to avoid confusion
-      discount_value: 0,
+      discount_value: '',
     }));
 
     onTaxDiscountChange();
@@ -128,7 +128,7 @@ export default function SalesTaxDiscount({
     if (inputValue === '') {
       setFormData((prev: InvoiceFormData) => ({
         ...prev,
-        discount_value: 0, // Use 0 instead of empty string to match type
+        discount_value: '', // Store empty string to allow clearing the field
       }));
       onTaxDiscountChange();
       return;
@@ -267,7 +267,7 @@ export default function SalesTaxDiscount({
                 </Typography>
                 <TextField
                   type="number"
-                  value={formData.discount_value}
+                  value={formData.discount_value === '' ? '' : formData.discount_value}
                   onChange={handleDiscountValueChange}
                   fullWidth
                   size="small"
