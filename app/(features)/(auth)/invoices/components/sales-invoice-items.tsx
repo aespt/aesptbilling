@@ -14,23 +14,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 
-import type { Product } from '@/lib/types';
-
-interface InvoiceItem {
-  id: string;
-  product_id: number | null;
-  part_no: string;
-  qty: number;
-  rate: number;
-  total: number;
-  price: number; // Hidden price field
-  mrp: number; // MRP field
-}
-
-interface FormErrors {
-  items?: string;
-  [key: string]: string | undefined;
-}
+import type { FormErrors, InvoiceItem, Product } from '@/lib/types';
 
 interface SalesInvoiceItemsProps {
   invoiceItems: InvoiceItem[];

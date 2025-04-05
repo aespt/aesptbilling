@@ -4,21 +4,22 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/hooks/useAuth';
 
 export const metadata = {
-  metadataBase: new URL('https://postgres-drizzle.vercel.app'),
-  title: 'AESPT - Application',
-  description: 'Invoice generating application',
+  metadataBase: new URL('https://aespt.com'),
+  title: 'AESPT - Invoice Management',
+  description: 'Invoice management application for AESPT firm',
   manifest: '/manifest.json',
-  themeColor: '#000000',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'AESPT Application',
+    title: 'AESPT Invoice',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#000000',
 };
 
 const inter = Inter({

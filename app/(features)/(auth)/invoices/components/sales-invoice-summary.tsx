@@ -2,26 +2,11 @@
 
 import { Typography, Box, Paper, Divider } from '@mui/material';
 
-interface InvoiceItem {
-  id: string;
-  qty: number;
-  rate: number;
-  total: number;
-}
-
-interface CustomFormData {
-  tax_type: 'VAT' | 'GST' | 'NONE';
-  vat_percentage: number;
-  cgst_percentage: number;
-  sgst_percentage: number;
-  discount_type: 'PERCENTAGE' | 'FIXED' | 'NONE';
-  discount_value: number | string;
-  [key: string]: string | number;
-}
+import type { InvoiceFormData, InvoiceItem } from '@/lib/types';
 
 interface SalesInvoiceSummaryProps {
   invoiceItems: InvoiceItem[];
-  formData: CustomFormData;
+  formData: InvoiceFormData;
 }
 
 export default function SalesInvoiceSummary({ invoiceItems, formData }: SalesInvoiceSummaryProps) {

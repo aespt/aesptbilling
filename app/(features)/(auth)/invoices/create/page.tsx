@@ -8,23 +8,12 @@ import PageHeader from '@/app/shared/components/page-header';
 import PrimaryButton from '@/app/shared/components/primary-button';
 import Snackbar from '@/app/shared/components/snackbar';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
+import type { FormErrors, InvoiceFormData, InvoiceItem } from '@/lib/types';
 
 import SalesInvoiceDetails from '../components/sales-invoice-details';
 import SalesInvoiceItems from '../components/sales-invoice-items';
 import SalesInvoiceSummary from '../components/sales-invoice-summary';
 import SalesTaxDiscount from '../components/sales-tax-discount';
-
-// Define invoice item type
-interface CreateInvoiceItem {
-  id: string;
-  product_id: number | null;
-  part_no: string;
-  qty: number;
-  rate: number;
-  total: number;
-  mrp?: number;
-  price?: number;
-}
 
 export default function CreateInvoicePage() {
   const router = useRouter();
@@ -32,7 +21,7 @@ export default function CreateInvoicePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Helper to convert item types for component compatibility
-  const adaptInvoiceItemsForSummary = (items: CreateInvoiceItem[]) => {
+  const adaptInvoiceItemsForSummary = (items: InvoiceItem[]) => {
     return items.map(item => ({
       ...item,
       // Ensure required properties have default values
@@ -42,12 +31,12 @@ export default function CreateInvoicePage() {
   };
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<InvoiceFormData>({
     invoice_number: '',
     date: new Date(),
-    salesman_id: null as number | null,
+    salesman_id: null,
     ship_from: '',
-    customer_id: null as number | null,
+    customer_id: null,
     ship_to: '',
     status: 'DRAFT',
     // Tax and discount fields
@@ -60,7 +49,7 @@ export default function CreateInvoicePage() {
   });
 
   // Invoice items
-  const [invoiceItems, setInvoiceItems] = useState<CreateInvoiceItem[]>([
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
     {
       id: Date.now().toString(),
       product_id: null,
@@ -68,11 +57,13 @@ export default function CreateInvoicePage() {
       qty: 1,
       rate: 0,
       total: 0,
+      price: 0,
+      mrp: 0,
     },
   ]);
 
   // Form validation
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<FormErrors>({
     invoice_number: '',
     customer_id: '',
     salesman_id: '',
@@ -87,7 +78,7 @@ export default function CreateInvoicePage() {
 
   // Validate form
   const validateForm = () => {
-    const newErrors = {
+    const newErrors: FormErrors = {
       invoice_number: !formData.invoice_number ? 'Invoice number is required' : '',
       customer_id: !formData.customer_id ? 'Customer is required' : '',
       salesman_id: !formData.salesman_id ? 'Salesman is required' : '',
@@ -137,7 +128,7 @@ export default function CreateInvoicePage() {
     };
   };
 
-  const calculateProfit = (items: CreateInvoiceItem[], discountValue: number) => {
+  const calculateProfit = (items: InvoiceItem[], discountValue: number) => {
     // Calculate profit for each item
     const itemProfits = items.map(item => {
       if (!item.product_id) {

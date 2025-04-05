@@ -8,6 +8,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { useEffect, useRef, useState } from 'react';
 
 import Sidepanel from '@/app/shared/components/sidepanel';
+import type { FormErrors, InvoiceFormData } from '@/lib/types';
 
 interface Salesman {
   id: number;
@@ -22,26 +23,9 @@ interface Customer {
   phone?: string;
 }
 
-interface FormData {
-  invoice_number: string;
-  date: Date;
-  salesman_id: number | null;
-  customer_id: number | null;
-  ship_from: string;
-  ship_to: string;
-  [key: string]: string | number | Date | null | undefined;
-}
-
-interface FormErrors {
-  invoice_number?: string;
-  salesman_id?: string;
-  customer_id?: string;
-  [key: string]: string | undefined;
-}
-
 interface SalesInvoiceDetailsProps {
-  formData: FormData;
-  setFormData: (formData: FormData) => void;
+  formData: InvoiceFormData;
+  setFormData: (formData: InvoiceFormData) => void;
   errors: FormErrors;
   setErrors: (errors: FormErrors) => void;
 }
@@ -79,7 +63,7 @@ export default function SalesInvoiceDetails({
           setFormData({
             ...formData,
             invoice_number: generateInvoiceNumber(),
-          } as FormData);
+          });
           initialized.current = true;
         }
 
@@ -124,10 +108,13 @@ export default function SalesInvoiceDetails({
       return;
     }
 
+    // Handle the form update more directly based on field type
+    // For most form fields, we can safely use string values
     setFormData({
       ...formData,
-      [name]: value,
-    } as FormData);
+      // Type assertion for the specific field we're updating
+      [name]: value as string,
+    });
   };
 
   // Handle date change
@@ -135,7 +122,7 @@ export default function SalesInvoiceDetails({
     setFormData({
       ...formData,
       date: date || new Date(),
-    } as FormData);
+    });
   };
 
   // Handle salesman selection
@@ -144,7 +131,7 @@ export default function SalesInvoiceDetails({
     setFormData({
       ...formData,
       salesman_id: salesman?.id || null,
-    } as FormData);
+    });
 
     // Clear salesman error if it exists
     if (errors.salesman_id) {
@@ -162,7 +149,7 @@ export default function SalesInvoiceDetails({
       ...formData,
       customer_id: customer?.id || null,
       ship_to: customer?.address || '',
-    } as FormData);
+    });
 
     // Clear customer error if it exists
     if (errors.customer_id) {

@@ -13,31 +13,27 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 
+import type { FormErrors, InvoiceFormData } from '@/lib/types';
+
 interface VatRate {
   id: number;
   vat_percentage: number;
   description: string;
 }
 
-interface FormData {
-  tax_type: 'VAT' | 'GST' | 'NONE';
-  vat_percentage: number;
-  cgst_percentage: number;
-  sgst_percentage: number;
-  discount_type: 'PERCENTAGE' | 'FIXED' | 'NONE';
-  discount_value: number | string;
-  [key: string]: string | number;
-}
-
 interface SalesTaxDiscountProps {
-  formData: FormData;
-  setFormData: (formData: FormData) => void;
+  formData: InvoiceFormData;
+  setFormData: (formData: InvoiceFormData) => void;
+  errors: FormErrors;
+  setErrors: (errors: FormErrors) => void;
   onTaxDiscountChange: () => void;
 }
 
 export default function SalesTaxDiscount({
   formData,
   setFormData,
+  errors: _errors,
+  setErrors: _setErrors,
   onTaxDiscountChange,
 }: SalesTaxDiscountProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -105,7 +101,7 @@ export default function SalesTaxDiscount({
 
   // Handle tax type change
   const handleTaxTypeChange = (event: SelectChangeEvent) => {
-    const value = event.target.value as FormData['tax_type'];
+    const value = event.target.value as InvoiceFormData['tax_type'];
 
     setFormData({
       ...formData,
@@ -134,7 +130,7 @@ export default function SalesTaxDiscount({
 
   // Handle discount type change
   const handleDiscountTypeChange = (event: SelectChangeEvent) => {
-    const value = event.target.value as FormData['discount_type'];
+    const value = event.target.value as InvoiceFormData['discount_type'];
 
     setFormData({
       ...formData,
@@ -147,7 +143,7 @@ export default function SalesTaxDiscount({
 
   // Handle discount value change
   const handleDiscountValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+    const value = Number(event.target.value);
 
     setFormData({
       ...formData,
