@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { FiHome, FiMapPin, FiStar, FiEdit } from 'react-icons/fi';
 
 import { cardVariants, badgeVariants } from '@/app/shared/animations/card-animations';
@@ -81,13 +81,25 @@ export default function SettingsPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isPrimarySettingLoading, setIsPrimarySettingLoading] = useState<number | null>(null);
 
+  // Request reference for race condition prevention
+  const taxDataRequestIdRef = useRef(0);
+  const addressesRequestIdRef = useRef(0);
+
   // Fetch VAT and GST data on component mount
   useEffect(() => {
     const fetchTaxData = async () => {
+      const myRequestId = ++taxDataRequestIdRef.current;
+
       setIsDataLoading(true);
       try {
         // Fetch VAT data
         const vatResponse = await fetch('/api/vat-rates');
+
+        // Check for race condition
+        if (myRequestId !== taxDataRequestIdRef.current) {
+          return;
+        }
+
         if (vatResponse.ok) {
           const vatData = await vatResponse.json();
           if (vatData.vatRates && vatData.vatRates.length > 0) {
@@ -97,6 +109,12 @@ export default function SettingsPage() {
 
         // Fetch GST data
         const gstResponse = await fetch('/api/gst-rates');
+
+        // Check for race condition again
+        if (myRequestId !== taxDataRequestIdRef.current) {
+          return;
+        }
+
         if (gstResponse.ok) {
           const gstData = await gstResponse.json();
           if (gstData.gstRates && gstData.gstRates.length > 0) {
@@ -105,25 +123,48 @@ export default function SettingsPage() {
           }
         }
       } catch (error) {
-        console.error('Error fetching tax data:', error);
+        // Only update error state if this is still the most recent request
+        if (myRequestId === taxDataRequestIdRef.current) {
+          console.error('Error fetching tax data:', error);
+        }
       } finally {
-        setIsDataLoading(false);
+        // Only update loading state if this is still the most recent request
+        if (myRequestId === taxDataRequestIdRef.current) {
+          setIsDataLoading(false);
+        }
       }
     };
 
     fetchTaxData();
-  }, [showSnackbar]);
+  }, []);
 
-  // Fetch addresses on component mount and when tab changes to addresses
+  // Memoize the fetch parameters for addresses
+  const addressFetchParams = useMemo(
+    () => ({
+      tabValue,
+    }),
+    [tabValue]
+  );
+
+  // Fetch addresses when tab changes to addresses
   useEffect(() => {
     const fetchAddresses = async () => {
-      if (tabValue !== 1) {
+      // Only fetch if we're on the addresses tab
+      if (addressFetchParams.tabValue !== 1) {
         return;
       }
+
+      const myRequestId = ++addressesRequestIdRef.current;
 
       setIsAddressesLoading(true);
       try {
         const response = await fetch('/api/addresses');
+
+        // Check for race condition
+        if (myRequestId !== addressesRequestIdRef.current) {
+          return;
+        }
+
         if (response.ok) {
           const data = await response.json();
 
@@ -155,15 +196,22 @@ export default function SettingsPage() {
           showSnackbar('Failed to load addresses', 'error');
         }
       } catch (error) {
-        console.error('Error fetching addresses:', error);
-        showSnackbar('Error loading addresses', 'error');
+        // Only update error state if this is still the most recent request
+        if (myRequestId === addressesRequestIdRef.current) {
+          console.error('Error fetching addresses:', error);
+          showSnackbar('Error loading addresses', 'error');
+        }
       } finally {
-        setIsAddressesLoading(false);
+        // Only update loading state if this is still the most recent request
+        if (myRequestId === addressesRequestIdRef.current) {
+          setIsAddressesLoading(false);
+        }
       }
     };
 
     fetchAddresses();
-  }, [tabValue, showSnackbar]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addressFetchParams]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
