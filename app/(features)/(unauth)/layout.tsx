@@ -1,14 +1,10 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
-export default function UnauthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function UnauthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-800 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-800 p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -17,12 +13,12 @@ export default function UnauthLayout({
       >
         {children}
       </motion.div>
-      
+
       {/* Decorative elements */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
-        <div className="absolute top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-40 left-20 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+      <div className="pointer-events-none fixed left-0 top-0 z-0 size-full overflow-hidden">
+        <div className="animate-blob absolute -left-40 -top-40 size-80 rounded-full bg-blue-500 opacity-10 mix-blend-multiply blur-3xl" />
+        <div className="animate-blob animation-delay-2000 absolute -right-40 top-40 size-80 rounded-full bg-purple-500 opacity-10 mix-blend-multiply blur-3xl" />
+        <div className="animate-blob animation-delay-4000 absolute -bottom-40 left-20 size-80 rounded-full bg-indigo-500 opacity-10 mix-blend-multiply blur-3xl" />
       </div>
     </div>
   );
@@ -64,4 +60,4 @@ if (typeof document !== 'undefined') {
   styleSheet.type = 'text/css';
   styleSheet.innerText = styles;
   document.head.appendChild(styleSheet);
-} 
+}

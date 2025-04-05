@@ -32,7 +32,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-30 border-b border-gray-200 bg-white transition-all duration-300 md:left-[280px]">
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-gray-200 bg-white transition-all duration-300 md:left-[280px]">
       <div className="mt-1 flex h-16 items-center justify-between px-4 md:px-6">
         {/* Left side - Page title */}
         <div className="flex items-center" />
@@ -42,7 +42,7 @@ export default function Header() {
           {/* Notifications */}
           <button className="relative rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100">
             <FiBell size={20} />
-            <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
+            <span className="absolute right-1 top-1 size-2 rounded-full bg-red-500" />
           </button>
 
           {/* User profile */}
@@ -51,7 +51,7 @@ export default function Header() {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-3 rounded-md p-2 transition-colors hover:bg-gray-100"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-blue-500 font-medium text-white">
+              <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-blue-500 font-medium text-white">
                 {user?.username ? user.username.charAt(0) : '?'}
               </div>
               <div className="hidden text-left md:block">

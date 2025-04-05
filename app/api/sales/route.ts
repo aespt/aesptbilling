@@ -1,10 +1,11 @@
+import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+
 import { db } from '@/lib/drizzle';
-import { SalesTable } from '@/lib/models/sales';
 import { CustomersTable } from '@/lib/models/customers';
 import { ProductsTable } from '@/lib/models/products';
+import { SalesTable } from '@/lib/models/sales';
 import { SalesmenTable } from '@/lib/models/salesmen';
-import { eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -37,9 +38,6 @@ export async function GET() {
     return NextResponse.json({ sales: salesData }, { status: 200 });
   } catch (error) {
     console.error('Error fetching sales data:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sales data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch sales data' }, { status: 500 });
   }
-} 
+}

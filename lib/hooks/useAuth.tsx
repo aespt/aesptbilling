@@ -1,8 +1,7 @@
 'use client';
-
-import React from 'react';
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import React from 'react';
+import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
 
 interface User {
   id: number;
@@ -29,13 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check if user is logged in on mount
   useEffect(() => {
     let isMounted = true;
-    
+
     async function loadUser() {
       try {
         const response = await fetch('/api/auth/me');
-        
-        if (!isMounted) return;
-        
+
+        if (!isMounted) {
+          return;
+        }
+
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
@@ -43,7 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       } catch (err) {
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
         console.error('Failed to load user:', err);
         setUser(null);
       } finally {
@@ -54,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     loadUser();
-    
+
     return () => {
       isMounted = false;
     };
@@ -64,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string, rememberMe = false) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -73,13 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ email, password, rememberMe }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
       }
-      
+
       setUser(data.user);
       router.push('/dashboard');
     } catch (err) {
@@ -93,12 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout function
   const logout = async () => {
     setLoading(true);
-    
+
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
       });
-      
+
       setUser(null);
       router.push('/login');
     } catch (err) {
@@ -110,19 +113,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = { user, loading, error, login, logout };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  
+
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
+
   return context;
-} 
+}

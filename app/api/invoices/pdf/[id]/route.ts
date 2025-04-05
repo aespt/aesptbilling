@@ -1,46 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
-import puppeteer from 'puppeteer';
-import { db } from '@/lib/db';
-import { InvoicesTable } from '@/lib/models/invoices';
-import { InvoiceItemsTable } from '@/lib/models/invoice_items';
-import { CustomersTable } from '@/lib/models/customers';
-import { ProductsTable } from '@/lib/models/products';
-import { eq } from 'drizzle-orm';
-import format from 'date-fns/format';
-import { AddressTable } from '@/lib/models/address';
+
 import * as cheerio from 'cheerio';
-import { SalesmenTable } from '@/lib/models/salesmen';
+import { format } from 'date-fns';
+import { eq } from 'drizzle-orm';
+import { type NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
-  
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  // Use any type to avoid TypeScript errors with Puppeteer's Browser type
-  let browser: any = null;
-  
+import { launch, type Browser } from 'puppeteer';
+
+import { db } from '@/lib/drizzle';
+import { AddressTable } from '@/lib/models/address';
+import { CustomersTable } from '@/lib/models/customers';
+import { InvoiceItemsTable } from '@/lib/models/invoice_items';
+import { InvoicesTable } from '@/lib/models/invoices';
+import { ProductsTable } from '@/lib/models/products';
+import { SalesmenTable } from '@/lib/models/salesmen';
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Use proper type for Puppeteer's Browser
+  let browser: Browser | null = null;
+
   try {
-    
-    const invoiceId = parseInt(params.id);
+    const invoiceId = parseInt((await params).id);
 
     if (isNaN(invoiceId)) {
-      console.error('Invalid invoice ID:', params.id);
+      console.error('Invalid invoice ID:', (await params).id);
       return NextResponse.json({ error: 'Invalid invoice ID' }, { status: 400 });
     }
 
     // Get invoice data from database
-    const invoices = await db
-      .select()
-      .from(InvoicesTable)
-      .where(eq(InvoicesTable.id, invoiceId));
-    
+    const invoices = await db.select().from(InvoicesTable).where(eq(InvoicesTable.id, invoiceId));
+
     if (!invoices || invoices.length === 0) {
       console.error('Invoice not found:', invoiceId);
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
-    
+
     const invoice = invoices[0];
 
     // Get customer data
@@ -50,19 +45,15 @@ export async function GET(
       .where(eq(CustomersTable.id, invoice.customer_id));
 
     // Get salesperson data only if salesperson_name exists
-    const salesPerson = invoice.salesman_id ? await db
-      .select()
-      .from(SalesmenTable)
-      .where(eq(SalesmenTable.id, invoice.salesman_id)) : null;
-    
+    const salesPerson = invoice.salesman_id
+      ? await db.select().from(SalesmenTable).where(eq(SalesmenTable.id, invoice.salesman_id))
+      : null;
+
     const customer = customers.length > 0 ? customers[0] : null;
 
     // Get primary address
-    const addresses = await db
-      .select()
-      .from(AddressTable)
-      .where(eq(AddressTable.is_primary, true));
-    
+    const addresses = await db.select().from(AddressTable).where(eq(AddressTable.is_primary, true));
+
     const primaryAddress = addresses.length > 0 ? addresses[0] : null;
 
     if (!primaryAddress) {
@@ -76,18 +67,17 @@ export async function GET(
       .select()
       .from(InvoiceItemsTable)
       .where(eq(InvoiceItemsTable.invoice_id, invoiceId));
-    
 
     // Get products for invoice items
     const productsMap = new Map();
-    
+
     // Fetch products one by one
     for (const item of invoiceItems) {
       const productRows = await db
         .select()
         .from(ProductsTable)
         .where(eq(ProductsTable.id, item.product_id));
-        
+
       if (productRows.length > 0) {
         productsMap.set(item.product_id, productRows[0]);
       }
@@ -118,7 +108,9 @@ export async function GET(
     // Use a default value for tax number as it's not defined in the customer model
     const taxRegNo = 'N/A'; // Customize as needed
     $('#tax-reg-no').html(`<span style="font-weight: bold">TAX Reg No:</span> ${taxRegNo}`);
-    $('#ship-to-country').html(`<span style="font-weight: bold">Ship to Country/Emirate:</span> Emirates`);
+    $('#ship-to-country').html(
+      `<span style="font-weight: bold">Ship to Country/Emirate:</span> Emirates`
+    );
 
     // Fill in the invoice details
     $('#invoice-number').text(invoice.invoice_number);
@@ -135,56 +127,92 @@ export async function GET(
         <p style="margin: 0">${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}</p>
         <p style="margin: 0">${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}</p>
       `;
-      
+
       // Access properties safely since they might not exist in the type
-      const addressObj = primaryAddress as Record<string, any>;
-      
+      const addressObj = primaryAddress as unknown as {
+        phone_no?: string;
+        fax_no?: string;
+        transaction_no?: string;
+      };
+
       // Only add phone number if it exists
       if (addressObj.phone_no) {
         addressHtml += `<p style="margin: 0">Tel: ${addressObj.phone_no}</p>`;
       }
-      
+
       // Only add fax number if it exists
       if (addressObj.fax_no) {
         addressHtml += `<p style="margin: 0">Fax: ${addressObj.fax_no}</p>`;
       }
-      
+
       // Only add transaction number if it exists
       if (addressObj.transaction_no) {
         addressHtml += `<p style="margin: 0">TRN NO: ${addressObj.transaction_no}</p>`;
       }
-      
+
       $('#address').html(addressHtml);
     }
 
     // Clear existing invoice items placeholder
     $('#invoice-items-body').empty();
-    
+
     // Generate invoice items and append them to the table
     invoiceItems.forEach((item, index) => {
       const product = productsMap.get(item.product_id);
       const invoiceTaxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
       const unitPrice = parseFloat(item.unit_price.toString());
       const quantity = parseFloat(item.quantity.toString());
-      const vatAmount = unitPrice * invoiceTaxRate / 100 * quantity;
+      const vatAmount = ((unitPrice * invoiceTaxRate) / 100) * quantity;
       const totalAmount = parseFloat(item.total_price.toString());
-      
+
       // Create a new row with an ID for easier identification
       const rowEl = $('<tr>');
       rowEl.attr('id', `invoice-item-${item.id}`);
       rowEl.addClass('invoice-item-row');
-      
+
       // Append cells with data
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((index + 1).toString()));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.partNo || 'N/A'));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(product?.name || 'N/A'));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.quantity.toString()));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.unit_price.toString()));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text((unitPrice * quantity).toFixed(2)));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(invoiceTaxRate.toString()));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(vatAmount.toFixed(2)));
-      rowEl.append($('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(totalAmount.toFixed(2)));
-      
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text((index + 1).toString())
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(product?.partNo || 'N/A')
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(product?.name || 'N/A')
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(item.quantity.toString())
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(item.unit_price.toString())
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text((unitPrice * quantity).toFixed(2))
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(invoiceTaxRate.toString())
+      );
+      rowEl.append(
+        $('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(vatAmount.toFixed(2))
+      );
+      rowEl.append(
+        $('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(totalAmount.toFixed(2))
+      );
+
       // Append the row to the table body
       $('#invoice-items-body').append(rowEl);
     });
@@ -196,7 +224,7 @@ export async function GET(
     const subtotal = parseFloat(invoice.sub_total.toString()).toFixed(2);
     const discount = invoice.discount ? parseFloat(invoice.discount.toString()).toFixed(2) : '0.00';
     const taxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
-    const taxAmount = (parseFloat(subtotal) * taxRate / 100).toFixed(2);
+    const taxAmount = ((parseFloat(subtotal) * taxRate) / 100).toFixed(2);
     const total = parseFloat(invoice.total.toString()).toFixed(2);
 
     $('#subtotal').text(`${subtotal} AED`);
@@ -205,37 +233,31 @@ export async function GET(
     $('#tax-amount').text(`${taxAmount} AED`);
     $('#discount').text(`${discount} AED`);
     $('#invoice-total').text(`${total} AED`);
-    
+
     // Add a spacer at the end to ensure adequate space for the footer
     $('body').append('<div class="footer-spacer"></div>');
-    
 
-    
     // Launch browser with optimized settings for Apple Silicon
     const launchOptions = {
       headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-      ],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     };
 
     try {
-      browser = await puppeteer.launch(launchOptions);
-      
+      browser = await launch(launchOptions);
+
       // Generate main document PDF without footer
       const mainPage = await browser.newPage();
-      
+
       await mainPage.setContent($.html(), { waitUntil: 'networkidle0' });
-      
+
       // Set page size to match A4 dimensions
       await mainPage.setViewport({
         width: 794, // A4 width in pixels at 96 DPI
         height: 1123, // A4 height in pixels at 96 DPI
         deviceScaleFactor: 1,
       });
-      
+
       // First, manipulate the DOM to hide the footer completely for the main document
       await mainPage.evaluate(() => {
         // Find any footer elements and completely remove them from the DOM
@@ -243,7 +265,7 @@ export async function GET(
         footerElements.forEach(element => {
           element.remove();
         });
-        
+
         // Minimize the footer spacer to avoid extra blank pages
         const footerSpacer = document.querySelector('.footer-spacer');
         if (footerSpacer && footerSpacer instanceof HTMLElement) {
@@ -251,7 +273,7 @@ export async function GET(
           footerSpacer.style.display = 'none';
         }
       });
-      
+
       // Generate the main PDF without any footer
       const mainPdfBuffer = await mainPage.pdf({
         format: 'A4',
@@ -261,13 +283,13 @@ export async function GET(
           top: '10mm',
           right: '0mm',
           bottom: '20mm',
-          left: '0mm'
-        }
+          left: '0mm',
+        },
       });
-      
+
       // Now create a new page with only the footer
       const footerPage = await browser.newPage();
-      
+
       // Create a clean HTML document with only the footer
       const footerHtml = `
       <!DOCTYPE html>
@@ -332,9 +354,9 @@ export async function GET(
       </body>
       </html>
       `;
-      
+
       await footerPage.setContent(footerHtml, { waitUntil: 'networkidle0' });
-      
+
       // Generate just the footer PDF
       const footerPdfBuffer = await footerPage.pdf({
         format: 'A4',
@@ -344,34 +366,34 @@ export async function GET(
           top: '0mm',
           right: '0mm',
           bottom: '0mm',
-          left: '0mm'
-        }
+          left: '0mm',
+        },
       });
-      
+
       // Close the browser as we're done with generation
-        await browser.close();
-        browser = null;
-      
+      await browser.close();
+      browser = null;
+
       try {
         // Now use pdf-lib to create a PDF with footer on the last page
-        
+
         // Load both PDFs
         const mainPdfDoc = await PDFDocument.load(mainPdfBuffer);
         const footerPdfDoc = await PDFDocument.load(footerPdfBuffer);
-        
+
         // Get the number of pages in the main document
         const pageCount = mainPdfDoc.getPageCount();
-        
+
         // The approach depends on whether we have a single or multiple pages
         if (pageCount === 1) {
           // For a single page document, we can embed the footer content directly
           const [footerPage] = await footerPdfDoc.getPages();
           const embedFooter = await mainPdfDoc.embedPage(footerPage);
-          
+
           // Get the dimensions
           const mainPage = mainPdfDoc.getPage(0);
           const { width, height } = mainPage.getSize();
-          
+
           // Draw the footer on the main page (at the bottom)
           mainPage.drawPage(embedFooter, {
             x: 0,
@@ -380,7 +402,7 @@ export async function GET(
             height: height,
             opacity: 1,
           });
-          
+
           // Return the single page with embedded footer
           const finalPdfBytes = await mainPdfDoc.save();
           return new NextResponse(Buffer.from(finalPdfBytes), {
@@ -393,24 +415,24 @@ export async function GET(
           // For multi-page documents, we'll create a completely new PDF
           // Create the new document
           const finalPdfDoc = await PDFDocument.create();
-          
+
           // Copy all pages except the last one as-is
           for (let i = 0; i < pageCount - 1; i++) {
             const [copiedPage] = await finalPdfDoc.copyPages(mainPdfDoc, [i]);
             finalPdfDoc.addPage(copiedPage);
           }
-          
+
           // For the last page, we need to copy it, then overlay the footer
           const [lastMainPage] = await finalPdfDoc.copyPages(mainPdfDoc, [pageCount - 1]);
           const lastPageAdded = finalPdfDoc.addPage(lastMainPage);
-          
+
           // Now get the footer content
           const [footerPage] = await footerPdfDoc.getPages();
           const embedFooter = await finalPdfDoc.embedPage(footerPage);
-          
+
           // Get the dimensions
           const { width, height } = lastPageAdded.getSize();
-          
+
           // Draw the footer on the last page (at the bottom)
           lastPageAdded.drawPage(embedFooter, {
             x: 0,
@@ -419,7 +441,7 @@ export async function GET(
             height: height,
             opacity: 1,
           });
-          
+
           // Return the multi-page PDF with footer on the last page
           const finalPdfBytes = await finalPdfDoc.save();
           return new NextResponse(Buffer.from(finalPdfBytes), {
@@ -431,37 +453,47 @@ export async function GET(
         }
       } catch (pdfLibError) {
         console.error('Error in PDF-lib processing:', pdfLibError);
-        
+
         // If pdf-lib fails, return the main PDF without footer as fallback
         return new NextResponse(mainPdfBuffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
-        },
-      });
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
+          },
+        });
       }
     } catch (error) {
       console.error('Puppeteer or PDF-lib error:', error);
-      
+
       // Clean up if browser is still open
       if (browser) {
-        await browser.close();
-        browser = null;
+        try {
+          await (browser as Browser).close();
+        } catch (e) {
+          console.error('Error closing browser:', e);
+        }
       }
-      
+
       throw error; // Re-throw to be caught by the outer catch
     }
   } catch (error) {
     console.error('Error generating PDF:', error);
-    
+
     // Make sure to close browser if an error occurs
     if (browser) {
-      await browser.close();
+      try {
+        await (browser as Browser).close();
+      } catch (e) {
+        console.error('Error closing browser:', e);
+      }
     }
-    
+
     return NextResponse.json(
-      { error: 'Failed to generate PDF', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Failed to generate PDF',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
-} 
+}

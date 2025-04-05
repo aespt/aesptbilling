@@ -1,6 +1,6 @@
 'use client';
 
-import { TextField, TextFieldProps } from "@mui/material";
+import { TextField, type TextFieldProps } from '@mui/material';
 
 interface FormFieldProps extends Omit<TextFieldProps, 'onChange'> {
   name: string;
@@ -30,7 +30,7 @@ export default function FormField({
   helperText,
   required = false,
   disabled = false,
-  type = "text",
+  type = 'text',
   multiline = false,
   rows = 1,
   min,
@@ -40,16 +40,16 @@ export default function FormField({
   placeholder,
   ...rest
 }: FormFieldProps) {
-  const inputProps: any = {};
-  
-  if (type === "number") {
+  const inputProps: { inputProps?: { min?: number; max?: number; step?: number } } = {};
+
+  if (type === 'number') {
     inputProps.inputProps = {
       min,
       max,
-      step
+      step,
     };
   }
-  
+
   return (
     <TextField
       name={name}
@@ -69,4 +69,4 @@ export default function FormField({
       {...rest}
     />
   );
-} 
+}

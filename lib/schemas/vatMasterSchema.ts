@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BaseSchema, BaseCreateSchema } from './baseSchema';
+
+import { BaseCreateSchema, BaseSchema } from './baseSchema';
 
 // Zod schema for VAT master validation
 export const VatMasterSchema = BaseSchema.extend({
@@ -13,12 +14,12 @@ export const VatMasterSchema = BaseSchema.extend({
 
 // Zod schema for creating a new VAT master entry
 export const CreateVatMasterSchema = BaseCreateSchema.extend(
-  VatMasterSchema.omit({ 
-    id: true, 
-    created_at: true, 
+  VatMasterSchema.omit({
+    id: true,
+    created_at: true,
     updated_at: true,
     created_by: true,
-    updated_by: true
+    updated_by: true,
   }).shape
 );
 
@@ -27,4 +28,4 @@ export const UpdateVatMasterSchema = CreateVatMasterSchema.partial();
 
 // Types derived from Zod schema
 export type VatMasterInput = z.infer<typeof CreateVatMasterSchema>;
-export type VatMasterUpdate = z.infer<typeof UpdateVatMasterSchema>; 
+export type VatMasterUpdate = z.infer<typeof UpdateVatMasterSchema>;

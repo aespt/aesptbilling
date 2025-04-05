@@ -1,10 +1,10 @@
+import * as dotenv from 'dotenv';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as dotenv from 'dotenv';
 
 // Import all models
-import * as models from './models';
+import type * as models from './models';
 
 // Load environment variables
 dotenv.config();

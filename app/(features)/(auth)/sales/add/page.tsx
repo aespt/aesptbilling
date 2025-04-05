@@ -1,21 +1,31 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import PageHeader from "@/app/shared/components/page-header";
-import Sidepanel from "@/app/shared/components/sidepanel";
-import Snackbar from "@/app/shared/components/snackbar";
-import useSnackbar from "@/app/shared/hooks/useSnackbar";
-import { TextField, Button, MenuItem, FormControl, InputLabel, Select, FormHelperText, Autocomplete, IconButton } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import AddIcon from "@mui/icons-material/Add";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import AddCustomer from "../../customers/components/add-customer";
-import AddProduct from "../../products/components/add-product";
-import AddSalesman from "../../salesmen/components/add-salesman";
+import AddIcon from '@mui/icons-material/Add';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {
+  Autocomplete,
+  Button,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  type SelectChangeEvent,
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
+import Sidepanel from '@/app/shared/components/sidepanel';
+import Snackbar from '@/app/shared/components/snackbar';
+import useSnackbar from '@/app/shared/hooks/useSnackbar';
+
+import AddCustomer from '../../customers/components/add-customer';
+import AddProduct from '../../products/components/add-product';
+import AddSalesman from '../../salesmen/components/add-salesman';
 
 // Define types for dropdown data
 interface Customer {
@@ -49,10 +59,10 @@ export default function AddSalesPage() {
     product_id: null as number | null,
     qty: 1,
     mrp: 0,
-    discount_type: "NONE",
+    discount_type: 'NONE',
     discount_value: 0,
     salesman_id: null as number | null,
-    ship_to: "",
+    ship_to: '',
   });
 
   // Dropdown data
@@ -72,12 +82,12 @@ export default function AddSalesPage() {
 
   // Form validation
   const [errors, setErrors] = useState({
-    customer_id: "",
-    product_id: "",
-    qty: "",
-    mrp: "",
-    discount_value: "",
-    salesman_id: "",
+    customer_id: '',
+    product_id: '',
+    qty: '',
+    mrp: '',
+    discount_value: '',
+    salesman_id: '',
   });
 
   // Loading states
@@ -91,19 +101,25 @@ export default function AddSalesPage() {
       try {
         // Fetch customers
         const customersResponse = await fetch('/api/dropdown/customers');
-        if (!customersResponse.ok) throw new Error('Failed to fetch customers');
+        if (!customersResponse.ok) {
+          throw new Error('Failed to fetch customers');
+        }
         const customersData = await customersResponse.json();
         setCustomers(customersData.customers);
 
         // Fetch products
         const productsResponse = await fetch('/api/dropdown/products');
-        if (!productsResponse.ok) throw new Error('Failed to fetch products');
+        if (!productsResponse.ok) {
+          throw new Error('Failed to fetch products');
+        }
         const productsData = await productsResponse.json();
         setProducts(productsData.products);
 
         // Fetch salesmen
         const salesmenResponse = await fetch('/api/dropdown/salesmen');
-        if (!salesmenResponse.ok) throw new Error('Failed to fetch salesmen');
+        if (!salesmenResponse.ok) {
+          throw new Error('Failed to fetch salesmen');
+        }
         const salesmenData = await salesmenResponse.json();
         setSalesmen(salesmenData.salesmen);
       } catch (error) {
@@ -115,12 +131,16 @@ export default function AddSalesPage() {
     };
 
     fetchDropdownData();
-  }, []);
+  }, [showSnackbar]);
 
   // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
     const { name, value } = e.target;
-    if (!name) return;
+    if (!name) {
+      return;
+    }
 
     setFormData({
       ...formData,
@@ -131,13 +151,13 @@ export default function AddSalesPage() {
     if (name in errors) {
       setErrors({
         ...errors,
-        [name]: "",
+        [name]: '',
       });
     }
   };
 
   // Handle select change for MUI Select component
-  const handleSelectChange = (e: any) => {
+  const handleSelectChange = (e: SelectChangeEvent) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -163,7 +183,7 @@ export default function AddSalesPage() {
     });
     setErrors({
       ...errors,
-      product_id: "",
+      product_id: '',
     });
   };
 
@@ -176,7 +196,7 @@ export default function AddSalesPage() {
     });
     setErrors({
       ...errors,
-      customer_id: "",
+      customer_id: '',
     });
   };
 
@@ -189,23 +209,24 @@ export default function AddSalesPage() {
     });
     setErrors({
       ...errors,
-      salesman_id: "",
+      salesman_id: '',
     });
   };
 
   // Validate form
   const validateForm = () => {
     const newErrors = {
-      customer_id: !formData.customer_id ? "Customer is required" : "",
-      product_id: !formData.product_id ? "Product is required" : "",
-      qty: formData.qty <= 0 ? "Quantity must be greater than 0" : "",
-      mrp: formData.mrp <= 0 ? "MRP must be greater than 0" : "",
-      discount_value: formData.discount_type !== "NONE" && formData.discount_value < 0 
-        ? "Discount value cannot be negative" 
-        : formData.discount_type === "PERCENTAGE" && formData.discount_value > 100
-          ? "Percentage discount cannot exceed 100%"
-          : "",
-      salesman_id: !formData.salesman_id ? "Salesman is required" : "",
+      customer_id: !formData.customer_id ? 'Customer is required' : '',
+      product_id: !formData.product_id ? 'Product is required' : '',
+      qty: formData.qty <= 0 ? 'Quantity must be greater than 0' : '',
+      mrp: formData.mrp <= 0 ? 'MRP must be greater than 0' : '',
+      discount_value:
+        formData.discount_type !== 'NONE' && formData.discount_value < 0
+          ? 'Discount value cannot be negative'
+          : formData.discount_type === 'PERCENTAGE' && formData.discount_value > 100
+            ? 'Percentage discount cannot exceed 100%'
+            : '',
+      salesman_id: !formData.salesman_id ? 'Salesman is required' : '',
     };
 
     setErrors(newErrors);
@@ -248,9 +269,9 @@ export default function AddSalesPage() {
 
   // Calculate final price
   const calculateFinalPrice = () => {
-    if (formData.discount_type === "PERCENTAGE") {
-      return formData.mrp - (formData.mrp * (formData.discount_value / 100));
-    } else if (formData.discount_type === "FIXED") {
+    if (formData.discount_type === 'PERCENTAGE') {
+      return formData.mrp - formData.mrp * (formData.discount_value / 100);
+    } else if (formData.discount_type === 'FIXED') {
       return formData.mrp - formData.discount_value;
     }
     return formData.mrp;
@@ -260,7 +281,7 @@ export default function AddSalesPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR'
+      currency: 'INR',
     }).format(amount);
   };
 
@@ -282,7 +303,7 @@ export default function AddSalesPage() {
         }
       })
       .catch(error => console.error('Error refreshing customers:', error));
-    
+
     setIsCustomerPanelOpen(false);
     showSnackbar(`Customer "${customerName}" added successfully`, 'success');
   };
@@ -306,7 +327,7 @@ export default function AddSalesPage() {
         }
       })
       .catch(error => console.error('Error refreshing products:', error));
-    
+
     setIsProductPanelOpen(false);
     showSnackbar(`Product "${productName}" added successfully`, 'success');
   };
@@ -329,35 +350,35 @@ export default function AddSalesPage() {
         }
       })
       .catch(error => console.error('Error refreshing salesmen:', error));
-    
+
     setIsSalesmanPanelOpen(false);
     showSnackbar(`Salesman "${salesmanName}" added successfully`, 'success');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 md:ml-[280px] pt-16 px-4 md:px-6 py-8">
-      <div className="max-w-screen-2xl mx-auto">
-        <div className="flex items-center mb-6">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pt-16 md:ml-[280px] md:px-6">
+      <div className="mx-auto max-w-screen-2xl">
+        <div className="mb-6 flex items-center">
           <IconButton
-             color="primary"
-             onClick={() => router.push('/sales')}
-             className="mr-2"
-             aria-label="back to sales"
-           >
-             <ArrowBackIcon />
-           </IconButton>
+            color="primary"
+            onClick={() => router.push('/sales')}
+            className="mr-2"
+            aria-label="back to sales"
+          >
+            <ArrowBackIcon />
+          </IconButton>
           <h1 className="text-2xl font-bold text-gray-800">Add New Sale</h1>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+          <div className="flex h-64 items-center justify-center">
+            <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
           </div>
         ) : (
-          <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100 mt-6">
+          <div className="mt-6 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-md">
             <div className="p-6">
               <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {/* Date Picker */}
                   <div>
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -368,7 +389,7 @@ export default function AddSalesPage() {
                         slotProps={{
                           textField: {
                             fullWidth: true,
-                            variant: "outlined",
+                            variant: 'outlined',
                           },
                         }}
                       />
@@ -380,10 +401,10 @@ export default function AddSalesPage() {
                     <Autocomplete
                       id="customer-select"
                       options={customers}
-                      getOptionLabel={(option) => option.name}
+                      getOptionLabel={option => option.name}
                       value={selectedCustomer}
                       onChange={(_, newValue) => handleCustomerChange(newValue)}
-                      renderInput={(params) => (
+                      renderInput={params => (
                         <TextField
                           {...params}
                           label="Customer"
@@ -399,7 +420,7 @@ export default function AddSalesPage() {
                       variant="outlined"
                       color="primary"
                       onClick={() => setIsCustomerPanelOpen(true)}
-                      className="min-w-[40px] h-[56px]"
+                      className="h-[56px] min-w-[40px]"
                     >
                       <AddIcon />
                     </Button>
@@ -410,10 +431,10 @@ export default function AddSalesPage() {
                     <Autocomplete
                       id="product-select"
                       options={products}
-                      getOptionLabel={(option) => `${option.name} (${option.partNo})`}
+                      getOptionLabel={option => `${option.name} (${option.partNo})`}
                       value={selectedProduct}
                       onChange={(_, newValue) => handleProductChange(newValue)}
-                      renderInput={(params) => (
+                      renderInput={params => (
                         <TextField
                           {...params}
                           label="Product"
@@ -429,7 +450,7 @@ export default function AddSalesPage() {
                       variant="outlined"
                       color="primary"
                       onClick={() => setIsProductPanelOpen(true)}
-                      className="min-w-[40px] h-[56px]"
+                      className="h-[56px] min-w-[40px]"
                     >
                       <AddIcon />
                     </Button>
@@ -482,21 +503,23 @@ export default function AddSalesPage() {
                   {/* Discount Value */}
                   <TextField
                     name="discount_value"
-                    label={formData.discount_type === "PERCENTAGE" ? "Discount (%)" : "Discount Amount"}
+                    label={
+                      formData.discount_type === 'PERCENTAGE' ? 'Discount (%)' : 'Discount Amount'
+                    }
                     type="number"
                     value={formData.discount_value}
                     onChange={handleInputChange}
                     variant="outlined"
                     fullWidth
-                    disabled={formData.discount_type === "NONE"}
+                    disabled={formData.discount_type === 'NONE'}
                     error={!!errors.discount_value}
                     helperText={errors.discount_value}
-                    InputProps={{ 
-                      inputProps: { 
+                    InputProps={{
+                      inputProps: {
                         min: 0,
-                        max: formData.discount_type === "PERCENTAGE" ? 100 : undefined,
-                        step: formData.discount_type === "PERCENTAGE" ? 1 : 0.01
-                      } 
+                        max: formData.discount_type === 'PERCENTAGE' ? 100 : undefined,
+                        step: formData.discount_type === 'PERCENTAGE' ? 1 : 0.01,
+                      },
                     }}
                   />
 
@@ -505,10 +528,10 @@ export default function AddSalesPage() {
                     <Autocomplete
                       id="salesman-select"
                       options={salesmen}
-                      getOptionLabel={(option) => option.name}
+                      getOptionLabel={option => option.name}
                       value={selectedSalesman}
                       onChange={(_, newValue) => handleSalesmanChange(newValue)}
-                      renderInput={(params) => (
+                      renderInput={params => (
                         <TextField
                           {...params}
                           label="Salesman"
@@ -524,7 +547,7 @@ export default function AddSalesPage() {
                       variant="outlined"
                       color="primary"
                       onClick={() => setIsSalesmanPanelOpen(true)}
-                      className="min-w-[40px] h-[56px]"
+                      className="h-[56px] min-w-[40px]"
                     >
                       <AddIcon />
                     </Button>
@@ -542,36 +565,35 @@ export default function AddSalesPage() {
                 </div>
 
                 {/* Final Price Display */}
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 col-span-1 md:col-span-2 lg:col-span-3">
-                  <div className="flex justify-between items-center">
+                <div className="col-span-1 mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 md:col-span-2 lg:col-span-3">
+                  <div className="flex items-center justify-between">
                     <div className="text-gray-700">Final Price:</div>
                     <div className="text-xl font-semibold text-green-600">
                       {formatCurrency(calculateFinalPrice())}
                     </div>
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {formData.discount_type !== "NONE" && (
+                  <div className="mt-1 text-sm text-gray-500">
+                    {formData.discount_type !== 'NONE' && (
                       <>
-                        MRP: {formatCurrency(formData.mrp)} - Discount: {
-                          formData.discount_type === "PERCENTAGE" 
-                            ? `${formData.discount_value}%` 
-                            : formatCurrency(formData.discount_value)
-                        }
+                        MRP: {formatCurrency(formData.mrp)} - Discount:{' '}
+                        {formData.discount_type === 'PERCENTAGE'
+                          ? `${formData.discount_value}%`
+                          : formatCurrency(formData.discount_value)}
                       </>
                     )}
                   </div>
                 </div>
 
                 {/* Submit Button */}
-                <div className="mt-6 flex justify-end col-span-1 md:col-span-2 lg:col-span-3">
+                <div className="col-span-1 mt-6 flex justify-end md:col-span-2 lg:col-span-3">
                   <Button
                     type="submit"
                     variant="contained"
                     color="primary"
                     disabled={isSubmitting}
-                    className="bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 text-white px-6 py-3 rounded-md shadow-md transition-all duration-200"
+                    className="rounded-md bg-gradient-to-r from-blue-500 to-red-500 px-6 py-3 text-white shadow-md transition-all duration-200 hover:from-blue-600 hover:to-red-600"
                   >
-                    {isSubmitting ? "Creating..." : "Create Sale"}
+                    {isSubmitting ? 'Creating...' : 'Create Sale'}
                   </Button>
                 </div>
               </form>
@@ -581,30 +603,21 @@ export default function AddSalesPage() {
       </div>
 
       {/* Sidepanels for adding new entities */}
-      <Sidepanel
-        isOpen={isCustomerPanelOpen}
-        onClose={() => setIsCustomerPanelOpen(false)}
-      >
+      <Sidepanel isOpen={isCustomerPanelOpen} onClose={() => setIsCustomerPanelOpen(false)}>
         <AddCustomer
           onCustomerAdded={handleCustomerAdded}
           onClose={() => setIsCustomerPanelOpen(false)}
         />
       </Sidepanel>
 
-      <Sidepanel
-        isOpen={isProductPanelOpen}
-        onClose={() => setIsProductPanelOpen(false)}
-      >
+      <Sidepanel isOpen={isProductPanelOpen} onClose={() => setIsProductPanelOpen(false)}>
         <AddProduct
           onProductAdded={handleProductAdded}
           onClose={() => setIsProductPanelOpen(false)}
         />
       </Sidepanel>
 
-      <Sidepanel
-        isOpen={isSalesmanPanelOpen}
-        onClose={() => setIsSalesmanPanelOpen(false)}
-      >
+      <Sidepanel isOpen={isSalesmanPanelOpen} onClose={() => setIsSalesmanPanelOpen(false)}>
         <AddSalesman
           onSalesmanAdded={handleSalesmanAdded}
           onClose={() => setIsSalesmanPanelOpen(false)}
@@ -612,12 +625,7 @@ export default function AddSalesPage() {
       </Sidepanel>
 
       {/* Snackbar for notifications */}
-      <Snackbar
-        open={isOpen}
-        message={message}
-        type={type}
-        onClose={hideSnackbar}
-      />
+      <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
     </div>
   );
-} 
+}

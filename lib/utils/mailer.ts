@@ -1,7 +1,7 @@
-import nodemailer from 'nodemailer';
+import { createTransport } from 'nodemailer';
 
 // Create a transporter using Gmail
-const transporter = nodemailer.createTransport({
+const transporter = createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
@@ -21,20 +21,15 @@ export interface EmailOptions {
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const { to, subject, html } = options;
 
-  console.log(process.env.EMAIL_USER);
-  console.log(process.env.EMAIL_PASSWORD);
-  console.log(to, subject);
-  
   const mailOptions = {
     from: `"AESPT Support" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
   };
-  
+
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Email sent to ${to}`);
   } catch (error) {
     console.error('Failed to send email:', error);
     throw new Error('Failed to send email');
@@ -46,7 +41,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
  */
 export function generatePasswordResetEmail(to: string, token: string): EmailOptions {
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
-  
+
   return {
     to,
     subject: 'AESPT - Reset Your Password',
@@ -70,6 +65,6 @@ export function generatePasswordResetEmail(to: string, token: string): EmailOpti
           </div>
         </div>
       </div>
-    `
+    `,
   };
-} 
+}

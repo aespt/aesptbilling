@@ -1,23 +1,22 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { 
-  TextField, 
-  MenuItem, 
-  FormControl, 
-  InputLabel, 
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
   Select,
   Typography,
-  Autocomplete
-} from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import useSnackbar from "@/app/shared/hooks/useSnackbar";
-import Sidepanel from "@/app/shared/components/sidepanel";
-import AddIcon from "@mui/icons-material/Add";
-import EntitySelector from "@/app/shared/components/entity-selector";
-import FormField from "@/app/shared/components/form-field";
+  type SelectChangeEvent,
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { useEffect, useRef, useState } from 'react';
+
+import EntitySelector from '@/app/shared/components/entity-selector';
+import FormField from '@/app/shared/components/form-field';
+import Sidepanel from '@/app/shared/components/sidepanel';
+import useSnackbar from '@/app/shared/hooks/useSnackbar';
 
 interface Customer {
   id: number;
@@ -27,10 +26,31 @@ interface Customer {
   address?: string;
 }
 
+interface FormData {
+  invoice_number: string;
+  customer_id: number | null;
+  billing_address: string;
+  shipping_address: string;
+  invoice_date: Date;
+  date?: Date;
+  salesperson_name: string;
+  tax_type: 'NONE' | 'VAT' | 'GST';
+  tax_rate: number;
+  [key: string]: string | number | Date | null | undefined;
+}
+
+interface FormErrors {
+  invoice_number?: string;
+  customer_id?: string;
+  invoice_date?: string;
+  salesperson_name?: string;
+  [key: string]: string | undefined;
+}
+
 interface InvoiceDetailsSectionProps {
-  formData: any;
-  setFormData: (formData: any) => void;
-  errors: any;
+  formData: FormData;
+  setFormData: (formData: FormData) => void;
+  errors: FormErrors;
   customers?: Customer[];
 }
 
@@ -44,14 +64,13 @@ const generateInvoiceNumber = () => {
     .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
 };
 
-export default function InvoiceDetailsSection({ 
-  formData, 
-  setFormData, 
+export default function InvoiceDetailsSection({
+  formData,
+  setFormData,
   errors,
-  customers = []
 }: InvoiceDetailsSectionProps) {
   const { showSnackbar } = useSnackbar();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState(''); // Remove unused setter
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [isSidepanelOpen, setIsSidepanelOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -62,9 +81,9 @@ export default function InvoiceDetailsSection({
     name: '',
     phone: '',
     email: '',
-    address: ''
+    address: '',
   });
-  const [salespeople, setSalespeople] = useState<{id: number, name: string}[]>([]);
+  const [salespeople, setSalespeople] = useState<{ id: number; name: string }[]>([]);
   const [apiCustomers, setApiCustomers] = useState<Customer[]>([]);
 
   // Cleanup on unmount
@@ -76,15 +95,18 @@ export default function InvoiceDetailsSection({
 
   // Generate invoice number on component mount
   useEffect(() => {
-    if (initialized.current || formData.invoice_number) return;
-    
-    setFormData((prev: any) => ({
-      ...prev,
-      invoice_number: generateInvoiceNumber()
-    }));
-    
+    if (initialized.current || formData.invoice_number) {
+      return;
+    }
+
+    const newInvoiceNumber = generateInvoiceNumber();
+    setFormData({
+      ...formData,
+      invoice_number: newInvoiceNumber,
+    } as FormData);
+
     initialized.current = true;
-  }, [formData.invoice_number, setFormData]);
+  }, [formData.invoice_number, setFormData, formData]);
 
   // Fetch customers and salespeople on component mount
   useEffect(() => {
@@ -92,12 +114,14 @@ export default function InvoiceDetailsSection({
       try {
         // Fetch customers
         const customersResponse = await fetch('/api/dropdown/customers');
-        if (!customersResponse.ok) throw new Error('Failed to fetch customers');
+        if (!customersResponse.ok) {
+          throw new Error('Failed to fetch customers');
+        }
         const customersData = await customersResponse.json();
         if (isMounted.current) {
           setApiCustomers(customersData.customers || []);
         }
-        
+
         try {
           // Fetch salespeople - wrapped in separate try/catch to handle failure gracefully
           const salespeopleResponse = await fetch('/api/dropdown/salesmen');
@@ -132,9 +156,7 @@ export default function InvoiceDetailsSection({
     };
 
     fetchData();
-    // Intentionally omitting showSnackbar from dependencies to prevent infinite loop
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showSnackbar]);
 
   // Set initial filtered customers when apiCustomers changes
   useEffect(() => {
@@ -147,63 +169,69 @@ export default function InvoiceDetailsSection({
       setFilteredCustomers(apiCustomers);
       return;
     }
-    
+
     const lowercasedSearch = searchTerm.toLowerCase();
-    const filtered = apiCustomers.filter(customer => 
-      customer.name.toLowerCase().includes(lowercasedSearch) || 
-      (customer.phone && customer.phone.toLowerCase().includes(lowercasedSearch))
+    const filtered = apiCustomers.filter(
+      customer =>
+        customer.name.toLowerCase().includes(lowercasedSearch) ||
+        (customer.phone && customer.phone.toLowerCase().includes(lowercasedSearch))
     );
-    
+
     setFilteredCustomers(filtered);
   }, [searchTerm, apiCustomers]);
 
   // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
     const { name, value } = e.target;
-    if (!name) return;
+    if (!name) {
+      return;
+    }
 
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
+    setFormData({
+      ...formData,
       [name]: value,
-    }));
+    } as FormData);
   };
 
   // Handle select change for MUI Select component
-  const handleSelectChange = (e: any) => {
+  const handleSelectChange = (e: SelectChangeEvent) => {
     const { name, value } = e.target;
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
+
+    setFormData({
+      ...formData,
       [name]: value,
-    }));
+    } as FormData);
   };
 
   // Handle date change
   const handleDateChange = (date: Date | null, fieldName: string) => {
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
+    setFormData({
+      ...formData,
       [fieldName]: date || new Date(),
-    }));
+    } as FormData);
   };
 
   // Handle customer selection
   const handleCustomerChange = (customer: Customer | null) => {
     setSelectedCustomer(customer);
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
+    setFormData({
+      ...formData,
       customer_id: customer?.id || null,
-      billing_address: customer?.address || "",
-      shipping_address: customer?.address || "",
-    }));
+      billing_address: customer?.address || '',
+      shipping_address: customer?.address || '',
+    } as FormData);
   };
 
   // Handle tax type change
-  const handleTaxTypeChange = (e: any) => {
+  const handleTaxTypeChange = (e: SelectChangeEvent) => {
     const { value } = e.target;
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
-      tax_type: value,
-      tax_rate: value === 'NONE' ? 0 : prevFormData.tax_rate,
-    }));
+    setFormData({
+      ...formData,
+      tax_type: value as 'NONE' | 'VAT' | 'GST',
+      tax_rate: value === 'NONE' ? 0 : formData.tax_rate,
+    } as FormData);
   };
 
   // Open customer add sidepanel
@@ -217,35 +245,35 @@ export default function InvoiceDetailsSection({
   };
 
   // Handle customer form input changes
-  const handleCustomerFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleCustomerFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
     const { name, value } = e.target;
-    if (!name) return;
-    
-    setCustomerFormData((prev) => ({
+    if (!name) {
+      return;
+    }
+
+    setCustomerFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value as string,
     }));
   };
 
   // Handle new customer addition
   const handleAddCustomer = async () => {
     try {
-      // This would typically make an API call to add the customer
-      // and then update the customers list
-      console.log('Adding customer:', customerFormData);
-      
       // Simulate API call success
       showSnackbar('Customer added successfully', 'success');
-      
+
       // Reset form and close panel
       setCustomerFormData({
         name: '',
         phone: '',
         email: '',
-        address: ''
+        address: '',
       });
       setIsSidepanelOpen(false);
-      
+
       // Refresh customers list
       const response = await fetch('/api/dropdown/customers');
       if (response.ok) {
@@ -258,18 +286,20 @@ export default function InvoiceDetailsSection({
     }
   };
 
-  // Handle customer added from sidepanel
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCustomerAdded = async (customerName: string) => {
     setIsSidepanelOpen(false);
-    
+
     try {
       // Refresh customers list
       const response = await fetch('/api/dropdown/customers');
-      if (!response.ok) throw new Error('Failed to refresh customers');
-      
+      if (!response.ok) {
+        throw new Error('Failed to refresh customers');
+      }
+
       const data = await response.json();
       setApiCustomers(data.customers || []);
-      
+
       // Find and select the newly added customer
       const newCustomer = data.customers.find((c: Customer) => c.name === customerName);
       if (newCustomer) {
@@ -282,10 +312,12 @@ export default function InvoiceDetailsSection({
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 mb-6 border border-gray-100">
-      <Typography variant="h6" className="mb-4 text-gray-800 font-medium">Invoice Details</Typography>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="mb-6 rounded-lg border border-gray-100 bg-white p-6">
+      <Typography variant="h6" className="mb-4 font-medium text-gray-800">
+        Invoice Details
+      </Typography>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <FormField
             name="invoice_number"
@@ -301,14 +333,11 @@ export default function InvoiceDetailsSection({
             }}
           />
         </div>
-        
-       
-        
-        
+
         <div>
           <EntitySelector<Customer>
             options={filteredCustomers}
-            getOptionLabel={(option) => option.name}
+            getOptionLabel={option => option.name}
             value={selectedCustomer}
             onChange={handleCustomerChange}
             onAddClick={handleOpenAddCustomer}
@@ -318,25 +347,24 @@ export default function InvoiceDetailsSection({
             disabled={isLoading}
           />
         </div>
-        
+
         <div>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label="Invoice Date"
               value={formData.invoice_date || formData.date || new Date()}
-              onChange={(date) => handleDateChange(date, 'invoice_date')}
+              onChange={date => handleDateChange(date, 'invoice_date')}
               slotProps={{
                 textField: {
                   fullWidth: true,
                   error: !!errors.invoice_date,
-                  helperText: errors.invoice_date
-                }
+                  helperText: errors.invoice_date,
+                },
               }}
             />
           </LocalizationProvider>
         </div>
-        
-        
+
         <div>
           <FormControl fullWidth>
             <InputLabel>Salesperson</InputLabel>
@@ -349,7 +377,7 @@ export default function InvoiceDetailsSection({
               required
             >
               {salespeople.length > 0 ? (
-                salespeople.map((person) => (
+                salespeople.map(person => (
                   <MenuItem key={person.id} value={person.name}>
                     {person.name}
                   </MenuItem>
@@ -368,7 +396,7 @@ export default function InvoiceDetailsSection({
             )}
           </FormControl>
         </div>
-        
+
         <div>
           <FormControl fullWidth>
             <InputLabel>Tax Type</InputLabel>
@@ -384,7 +412,7 @@ export default function InvoiceDetailsSection({
             </Select>
           </FormControl>
         </div>
-        
+
         <div>
           <FormField
             label="Tax Rate (%)"
@@ -398,26 +426,18 @@ export default function InvoiceDetailsSection({
             step={0.01}
           />
         </div>
-        
       </div>
 
       {/* Customer Add Sidepanel */}
-      <Sidepanel 
-        isOpen={isSidepanelOpen} 
-        onClose={handleCloseAddCustomer}
-        size="small"
-      >
+      <Sidepanel isOpen={isSidepanelOpen} onClose={handleCloseAddCustomer} size="small">
         <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <Typography variant="h6">Add New Customer</Typography>
-            <button 
-              onClick={handleCloseAddCustomer}
-              className="text-gray-500 hover:text-gray-700"
-            >
+            <button onClick={handleCloseAddCustomer} className="text-gray-500 hover:text-gray-700">
               ✕
             </button>
           </div>
-          
+
           {/* Customer Add Form */}
           <div className="space-y-4">
             <FormField
@@ -449,19 +469,19 @@ export default function InvoiceDetailsSection({
               multiline
               rows={3}
             />
-            
+
             <div className="flex justify-end pt-4">
               <button
                 type="button"
                 onClick={handleCloseAddCustomer}
-                className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="mr-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleAddCustomer}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
               >
                 Add Customer
               </button>
@@ -471,4 +491,4 @@ export default function InvoiceDetailsSection({
       </Sidepanel>
     </div>
   );
-} 
+}

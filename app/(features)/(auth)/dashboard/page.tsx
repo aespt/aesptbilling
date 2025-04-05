@@ -1,6 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import type { IconType } from 'react-icons';
 import {
   FiUsers,
   FiBox,
@@ -10,8 +12,7 @@ import {
   FiArrowDown,
   FiDollarSign,
   FiShoppingCart,
-  FiShoppingBag,
-} from "react-icons/fi";
+} from 'react-icons/fi';
 import {
   AreaChart,
   Area,
@@ -23,67 +24,27 @@ import {
   BarChart,
   Bar,
   Legend,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import { motion } from "framer-motion";
+} from 'recharts';
 
-// Mock data for charts
-const salesData = [
-  { name: "Jan", value: 4000 },
-  { name: "Feb", value: 3000 },
-  { name: "Mar", value: 5000 },
-  { name: "Apr", value: 2780 },
-  { name: "May", value: 1890 },
-  { name: "Jun", value: 2390 },
-  { name: "Jul", value: 3490 },
-  { name: "Aug", value: 4000 },
-  { name: "Sep", value: 2000 },
-  { name: "Oct", value: 2780 },
-  { name: "Nov", value: 1890 },
-  { name: "Dec", value: 3490 },
-];
+// Define interfaces for data types
+interface MetricData {
+  id: string;
+  title: string;
+  count: number;
+  icon: string;
+}
 
-const purchaseData = [
-  { name: "Jan", value: 3000 },
-  { name: "Feb", value: 2000 },
-  { name: "Mar", value: 4000 },
-  { name: "Apr", value: 1780 },
-  { name: "May", value: 890 },
-  { name: "Jun", value: 1390 },
-  { name: "Jul", value: 2490 },
-  { name: "Aug", value: 3000 },
-  { name: "Sep", value: 1000 },
-  { name: "Oct", value: 1780 },
-  { name: "Nov", value: 890 },
-  { name: "Dec", value: 2490 },
-];
+interface SalesData {
+  name: string;
+  value: number;
+}
 
-const marginData = [
-  { name: "Jan", sales: 4000, purchase: 3000, margin: 1000 },
-  { name: "Feb", sales: 3000, purchase: 2000, margin: 1000 },
-  { name: "Mar", sales: 5000, purchase: 4000, margin: 1000 },
-  { name: "Apr", sales: 2780, purchase: 1780, margin: 1000 },
-  { name: "May", sales: 1890, purchase: 890, margin: 1000 },
-  { name: "Jun", sales: 2390, purchase: 1390, margin: 1000 },
-  { name: "Jul", sales: 3490, purchase: 2490, margin: 1000 },
-  { name: "Aug", sales: 4000, purchase: 3000, margin: 1000 },
-  { name: "Sep", sales: 2000, purchase: 1000, margin: 1000 },
-  { name: "Oct", sales: 2780, purchase: 1780, margin: 1000 },
-  { name: "Nov", sales: 1890, purchase: 890, margin: 1000 },
-  { name: "Dec", sales: 3490, purchase: 2490, margin: 1000 },
-];
-
-const topProductsData = [
-  { name: "Engine Parts", value: 400 },
-  { name: "Brake System", value: 300 },
-  { name: "Electrical", value: 300 },
-  { name: "Suspension", value: 200 },
-  { name: "Body Parts", value: 100 },
-];
-
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+interface MarginData {
+  name: string;
+  sales: number;
+  purchase: number;
+  margin: number;
+}
 
 // Stat card component
 const StatCard = ({
@@ -96,28 +57,28 @@ const StatCard = ({
 }: {
   title: string;
   value: string;
-  icon: any;
+  icon: IconType;
   change?: string;
-  changeType?: "increase" | "decrease";
+  changeType?: 'increase' | 'decrease';
   color: string;
 }) => {
   return (
     <motion.div
-      whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+      whileHover={{ y: -5, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
       transition={{ duration: 0.2 }}
-      className="bg-white rounded-lg shadow-md p-6 flex flex-col"
+      className="flex flex-col rounded-lg bg-white p-6 shadow-md"
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
+      <div className="mb-4 flex items-center justify-between">
+        <div className={`rounded-full p-3 ${color} bg-opacity-10`}>
           <Icon size={24} className={color} />
         </div>
         {change && (
           <div
             className={`flex items-center text-sm ${
-              changeType === "increase" ? "text-green-500" : "text-red-500"
+              changeType === 'increase' ? 'text-green-500' : 'text-red-500'
             }`}
           >
-            {changeType === "increase" ? (
+            {changeType === 'increase' ? (
               <FiArrowUp size={14} className="mr-1" />
             ) : (
               <FiArrowDown size={14} className="mr-1" />
@@ -126,7 +87,7 @@ const StatCard = ({
           </div>
         )}
       </div>
-      <h3 className="text-gray-500 text-sm font-medium mb-1">{title}</h3>
+      <h3 className="mb-1 text-sm font-medium text-gray-500">{title}</h3>
       <p className="text-2xl font-bold text-gray-800">{value}</p>
     </motion.div>
   );
@@ -136,9 +97,9 @@ export default function Dashboard() {
   // Use client-side only rendering for the loading state
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [metrics, setMetrics] = useState<any[]>([]);
-  const [salesData, setSalesData] = useState<any[]>([]);
-  const [marginData, setMarginData] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<MetricData[]>([]);
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [marginData, setMarginData] = useState<MarginData[]>([]);
 
   // Fetch dashboard metrics from API
   const fetchDashboardMetrics = async () => {
@@ -218,24 +179,24 @@ export default function Dashboard() {
 
   // Return a simple loading state during server-side rendering
   if (!mounted) {
-    return <div className="min-h-screen bg-gray-50 md:ml-[280px] pt-16"></div>;
+    return <div className="min-h-screen bg-gray-50 pt-16 md:ml-[280px]" />;
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen md:ml-[280px] pt-16">
-        <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+      <div className="flex min-h-screen items-center justify-center pt-16 md:ml-[280px]">
+        <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 md:ml-[280px] pt-16 px-4 md:px-6 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pt-16 md:ml-[280px] md:px-6">
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-screen-2xl mx-auto"
+        className="mx-auto max-w-screen-2xl"
       >
         {/* Page title */}
         <motion.div variants={itemVariants} className="mb-8">
@@ -246,9 +207,9 @@ export default function Dashboard() {
         {/* Stats cards */}
         <motion.div
           variants={itemVariants}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
         >
-          {metrics.map((metric) => (
+          {metrics.map(metric => (
             <StatCard
               key={metric.id}
               title={metric.title}
@@ -260,26 +221,20 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Sales, Purchase, and Margin Overview */}
-        <motion.div
-          variants={itemVariants}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
-        >
+        <motion.div variants={itemVariants} className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Monthly Sales Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+          <div className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center text-lg font-semibold text-gray-800">
                 <FiShoppingCart className="mr-2 text-blue-500" /> Monthly Sales
               </h2>
-              <span className="text-sm font-medium text-green-500 flex items-center">
+              <span className="flex items-center text-sm font-medium text-green-500">
                 <FiArrowUp size={14} className="mr-1" /> 12.5%
               </span>
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={salesData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
+                <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
@@ -304,21 +259,18 @@ export default function Dashboard() {
           </div>
 
           {/* Profit Margin Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+          <div className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center text-lg font-semibold text-gray-800">
                 <FiDollarSign className="mr-2 text-green-500" /> Profit Margin
               </h2>
-              <span className="text-sm font-medium text-green-500 flex items-center">
+              <span className="flex items-center text-sm font-medium text-green-500">
                 <FiArrowUp size={14} className="mr-1" /> 8.7%
               </span>
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={marginData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
+                <BarChart data={marginData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" />
                   <YAxis />

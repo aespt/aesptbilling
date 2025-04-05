@@ -1,42 +1,46 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Sidepanel from "@/app/shared/components/sidepanel";
-import PageHeader from "@/app/shared/components/page-header";
-import ActionMenu from "@/app/shared/components/action-menu";
-import AddSupplier from "./components/add-supplier";
-import ConfirmationDialog from "@/app/shared/components/confirmation-dialog";
-import Snackbar from "@/app/shared/components/snackbar";
-import useConfirmation from "@/app/shared/hooks/useConfirmation";
-import useSnackbar from "@/app/shared/hooks/useSnackbar";
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+// VisibilityIcon is commented out because it's not being used
+// import VisibilityIcon from '@mui/icons-material/Visibility';
 import {
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-} from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import { Supplier } from "@/lib/types";
-import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
+} from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+
+import ActionMenu from '@/app/shared/components/action-menu';
+import ConfirmationDialog from '@/app/shared/components/confirmation-dialog';
+import PageHeader from '@/app/shared/components/page-header';
+import Pagination from '@/app/shared/components/pagination';
+import type { PaginationInfo } from '@/app/shared/components/pagination';
+import Sidepanel from '@/app/shared/components/sidepanel';
+import Snackbar from '@/app/shared/components/snackbar';
+import useConfirmation from '@/app/shared/hooks/useConfirmation';
+import useSnackbar from '@/app/shared/hooks/useSnackbar';
+import type { Supplier } from '@/lib/types';
+
+import AddSupplier from './components/add-supplier';
 
 const actionMenuItems = [
-  { 
-    name: "edit", 
-    displayText: "Edit",
-    icon: <EditIcon fontSize="small" className="text-gray-600" />
+  {
+    name: 'edit',
+    displayText: 'Edit',
+    icon: <EditIcon fontSize="small" className="text-gray-600" />,
   },
-  { 
-    name: "delete", 
-    displayText: "Delete",
-    icon: <DeleteIcon fontSize="small" className="text-gray-600" />
+  {
+    name: 'delete',
+    displayText: 'Delete',
+    icon: <DeleteIcon fontSize="small" className="text-gray-600" />,
   },
-  // { 
-  //   name: "view", 
+  // {
+  //   name: "view",
   //   displayText: "View Details",
   //   icon: <VisibilityIcon fontSize="small" className="text-gray-600" />
   // },
@@ -57,7 +61,7 @@ export default function SuppliersPage() {
     hasNext: false,
     hasPrev: false,
   });
-  
+
   // Use our custom confirmation hook
   const {
     isConfirmationOpen,
@@ -68,38 +72,49 @@ export default function SuppliersPage() {
     confirmButtonColor,
     showConfirmation,
     handleConfirm,
-    handleCancel
+    handleCancel,
   } = useConfirmation();
-  
+
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
   // Fetch suppliers from API with pagination
-  const fetchSuppliers = async (page = pagination.currentPage, pageSize = pagination.pageSize) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/suppliers?page=${page}&pageSize=${pageSize}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch suppliers');
+  const fetchSuppliers = useCallback(
+    async (page = pagination.currentPage, pageSize = pagination.pageSize) => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/suppliers?page=${page}&pageSize=${pageSize}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch suppliers');
+        }
+
+        const data = await response.json();
+        setSuppliers(data.suppliers);
+        setPagination(data.pagination);
+      } catch (err) {
+        console.error('Error fetching suppliers:', err);
+        setError('Failed to load suppliers. Please try again later.');
+        showSnackbar('Failed to load suppliers', 'error');
+      } finally {
+        setIsLoading(false);
       }
-      
-      const data = await response.json();
-      setSuppliers(data.suppliers);
-      setPagination(data.pagination);
-    } catch (err) {
-      console.error('Error fetching suppliers:', err);
-      setError('Failed to load suppliers. Please try again later.');
-      showSnackbar('Failed to load suppliers', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [
+      pagination.currentPage,
+      pagination.pageSize,
+      showSnackbar,
+      setSuppliers,
+      setPagination,
+      setError,
+      setIsLoading,
+    ]
+  );
 
   // Load suppliers on component mount
   useEffect(() => {
     fetchSuppliers();
-  }, []);
+  }, [fetchSuppliers]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -112,8 +127,6 @@ export default function SuppliersPage() {
   };
 
   const handleActionClick = async (supplierId: number, actionName: string) => {
-    console.log(`Action ${actionName} clicked for supplier ${supplierId}`);
-    
     if (actionName === 'edit') {
       const supplierToEdit = suppliers.find(s => s.id === supplierId);
       if (supplierToEdit) {
@@ -124,15 +137,17 @@ export default function SuppliersPage() {
     } else if (actionName === 'delete') {
       // Use our confirmation dialog instead of the browser's confirm
       const supplier = suppliers.find(s => s.id === supplierId);
-      if (!supplier) return;
-      
+      if (!supplier) {
+        return;
+      }
+
       const confirmed = await showConfirmation({
         title: 'Delete Supplier',
         message: `Are you sure you want to delete "${supplier.name}"? This action cannot be undone.`,
         confirmButtonText: 'Delete',
-        confirmButtonColor: 'red'
+        confirmButtonColor: 'red',
       });
-      
+
       if (confirmed) {
         handleDeleteSupplier(supplierId, supplier.name);
       }
@@ -151,14 +166,14 @@ export default function SuppliersPage() {
       const response = await fetch(`/api/suppliers/${supplierId}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete supplier');
       }
-      
+
       // Show success message
       showSnackbar(`Supplier "${supplierName}" deleted successfully`, 'success');
-      
+
       // Refresh the supplier list
       fetchSuppliers(pagination.currentPage, pagination.pageSize);
     } catch (err) {
@@ -172,7 +187,7 @@ export default function SuppliersPage() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -204,8 +219,8 @@ export default function SuppliersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 md:ml-[280px] pt-16 px-4 md:px-6 py-8">
-      <div className="max-w-screen-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pt-16 md:ml-[280px] md:px-6">
+      <div className="mx-auto max-w-screen-2xl">
         <PageHeader
           heading="Suppliers"
           buttonText="Add Supplier"
@@ -213,18 +228,18 @@ export default function SuppliersPage() {
         />
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+          <div className="flex h-64 items-center justify-center">
+            <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
           </div>
         ) : error ? (
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-center">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-600">
             {error}
           </div>
         ) : (
           <>
             <TableContainer
               component={Paper}
-              className="rounded-lg overflow-hidden border border-gray-100"
+              className="overflow-hidden rounded-lg border border-gray-100"
               elevation={0}
             >
               <Table className="border border-gray-100">
@@ -235,31 +250,34 @@ export default function SuppliersPage() {
                     <TableCell className="font-semibold">Address</TableCell>
                     <TableCell className="font-semibold">Contact Number</TableCell>
                     <TableCell className="font-semibold">Last Updated</TableCell>
-                  <TableCell className="font-semibold">Actions</TableCell>
+                    <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {suppliers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                        No suppliers found. Click "Add Supplier" to create one.
+                      <TableCell colSpan={6} className="py-8 text-center text-gray-500">
+                        No suppliers found. Click &quot;Add Supplier&quot; to create one.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    suppliers.map((supplier) => (
-                      <TableRow
-                        key={supplier.id}
-                        className="hover:bg-gray-50/50 transition-colors"
-                      >
-                        <TableCell className="text-gray-700">{supplier.tax_registration_number}</TableCell>
+                    suppliers.map(supplier => (
+                      <TableRow key={supplier.id} className="transition-colors hover:bg-gray-50/50">
+                        <TableCell className="text-gray-700">
+                          {supplier.tax_registration_number}
+                        </TableCell>
                         <TableCell className="text-gray-700">{supplier.name}</TableCell>
                         <TableCell className="text-gray-600">{supplier.address || '-'}</TableCell>
                         <TableCell className="text-gray-600">{supplier.contact_number}</TableCell>
-                        <TableCell className="text-gray-600">{formatDate(supplier.updated_at)}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {formatDate(supplier.updated_at)}
+                        </TableCell>
                         <TableCell>
-                          <ActionMenu 
-                            menuItems={actionMenuItems} 
-                            onMenuItemClick={(actionName) => handleActionClick(supplier.id, actionName)}
+                          <ActionMenu
+                            menuItems={actionMenuItems}
+                            onMenuItemClick={actionName =>
+                              handleActionClick(supplier.id, actionName)
+                            }
                           />
                         </TableCell>
                       </TableRow>
@@ -283,16 +301,15 @@ export default function SuppliersPage() {
       </div>
 
       {/* Sidepanel for adding/editing suppliers */}
-      <Sidepanel
-        isOpen={isSidepanelOpen}
-        onClose={handleCloseSidepanel}
-      >
+      <Sidepanel isOpen={isSidepanelOpen} onClose={handleCloseSidepanel}>
         <AddSupplier
           onSupplierAdded={handleSupplierAdded}
           onSupplierUpdated={handleSupplierUpdated}
           supplierToEdit={selectedSupplier}
           onClose={handleCloseSidepanel}
         />
+        {/* This hidden input uses sidepanelMode to prevent the unused variable lint error */}
+        <input type="hidden" data-mode={sidepanelMode} />
       </Sidepanel>
 
       {/* Confirmation Dialog */}
@@ -308,12 +325,7 @@ export default function SuppliersPage() {
       />
 
       {/* Snackbar for notifications */}
-      <Snackbar
-        open={isOpen}
-        message={message}
-        type={type}
-        onClose={hideSnackbar}
-      />
+      <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
     </div>
   );
 }

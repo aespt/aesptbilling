@@ -1,5 +1,6 @@
-import { db } from '../lib/drizzle';
 import { sql } from 'drizzle-orm';
+
+import { db } from '../lib/drizzle';
 
 async function applyDiscountMigration() {
   try {
@@ -26,4 +27,4 @@ async function applyDiscountMigration() {
   }
 }
 
-applyDiscountMigration(); 
+applyDiscountMigration();

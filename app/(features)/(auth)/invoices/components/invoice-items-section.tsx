@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { 
-  TextField, 
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  CircularProgress,
   IconButton,
-  Typography,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Box,
-  CircularProgress,
-  Autocomplete,
-  Tooltip
-} from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddIcon from "@mui/icons-material/Add";
-import Sidepanel from "@/app/shared/components/sidepanel";
-import AddProduct from "../../products/components/add-product";
-import useSnackbar from "@/app/shared/hooks/useSnackbar";
-import PrimaryButton from "@/app/shared/components/primary-button";
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { useEffect, useState } from 'react';
+
+import Sidepanel from '@/app/shared/components/sidepanel';
+import useSnackbar from '@/app/shared/hooks/useSnackbar';
 
 interface Product {
   id: number;
@@ -53,18 +53,23 @@ interface InvoiceItem {
   total_amount: number;
 }
 
+interface FormErrors {
+  items?: string;
+  [key: string]: string | undefined;
+}
+
 interface InvoiceItemsSectionProps {
   invoiceItems: InvoiceItem[];
   setInvoiceItems: (items: InvoiceItem[]) => void;
-  errors: any;
-  setErrors: (errors: any) => void;
+  errors: FormErrors;
+  setErrors: (errors: FormErrors) => void;
 }
 
-export default function InvoiceItemsSection({ 
-  invoiceItems, 
-  setInvoiceItems, 
+export default function InvoiceItemsSection({
+  invoiceItems,
+  setInvoiceItems,
   errors,
-  setErrors
+  setErrors,
 }: InvoiceItemsSectionProps) {
   const { showSnackbar } = useSnackbar();
   const [isLoading, setIsLoading] = useState(true);
@@ -82,16 +87,20 @@ export default function InvoiceItemsSection({
       try {
         // Fetch products
         const productsResponse = await fetch('/api/products');
-        if (!productsResponse.ok) throw new Error('Failed to fetch products');
+        if (!productsResponse.ok) {
+          throw new Error('Failed to fetch products');
+        }
         const productsData = await productsResponse.json();
         setProducts(productsData.products);
 
         // Fetch VAT rates
         const vatResponse = await fetch('/api/vat-rates');
-        if (!vatResponse.ok) throw new Error('Failed to fetch VAT rates');
+        if (!vatResponse.ok) {
+          throw new Error('Failed to fetch VAT rates');
+        }
         const vatData = await vatResponse.json();
         setVatRates(vatData.vatRates);
-        
+
         // Set default VAT rate (using the first one if available)
         if (vatData.vatRates && vatData.vatRates.length > 0) {
           setDefaultVatRate(Number(vatData.vatRates[0].vat_percentage));
@@ -105,19 +114,20 @@ export default function InvoiceItemsSection({
     };
 
     fetchData();
-  }, []);
+  }, [showSnackbar]);
 
   // Add new invoice item
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const addInvoiceItem = async () => {
-    if (!selectedProduct) return;
-    
+    if (!selectedProduct) {
+      return;
+    }
+
     setIsAddingItem(true);
 
     try {
       // Always increment the number by 1 from the last item or start with 1
-      const newItemNo = invoiceItems.length > 0 
-        ? invoiceItems[invoiceItems.length - 1].no + 1 
-        : 1;
+      const newItemNo = invoiceItems.length > 0 ? invoiceItems[invoiceItems.length - 1].no + 1 : 1;
 
       const newItem: InvoiceItem = {
         id: Date.now().toString(),
@@ -130,21 +140,23 @@ export default function InvoiceItemsSection({
         amount: selectedProduct.price * newItemQty,
         vat_percentage: defaultVatRate,
         vat_amount: (selectedProduct.price * newItemQty * defaultVatRate) / 100,
-        total_amount: (selectedProduct.price * newItemQty) + ((selectedProduct.price * newItemQty * defaultVatRate) / 100),
+        total_amount:
+          selectedProduct.price * newItemQty +
+          (selectedProduct.price * newItemQty * defaultVatRate) / 100,
       };
 
       setInvoiceItems([...invoiceItems, newItem]);
       setSelectedProduct(null);
       setNewItemQty(1);
-      
+
       // Clear items error if it exists
       if (errors.items) {
         setErrors({
           ...errors,
-          items: "",
+          items: '',
         });
       }
-      
+
       showSnackbar('Item added successfully', 'success');
     } catch (error) {
       console.error('Error adding item:', error);
@@ -155,24 +167,24 @@ export default function InvoiceItemsSection({
   };
 
   // Update invoice item
-  const updateInvoiceItem = (id: string, field: string, value: any) => {
+  const updateInvoiceItem = (id: string, field: keyof InvoiceItem, value: number | string) => {
     try {
       const updatedItems = invoiceItems.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
-          
+
           // Recalculate financial values
           if (field === 'qty' || field === 'rate' || field === 'vat_percentage') {
             updatedItem.amount = updatedItem.qty * updatedItem.rate;
             updatedItem.vat_amount = (updatedItem.amount * updatedItem.vat_percentage) / 100;
             updatedItem.total_amount = updatedItem.amount + updatedItem.vat_amount;
           }
-          
+
           return updatedItem;
         }
         return item;
       });
-      
+
       setInvoiceItems(updatedItems);
     } catch (error) {
       console.error('Error updating item:', error);
@@ -185,13 +197,13 @@ export default function InvoiceItemsSection({
     try {
       // Remove the item
       const filteredItems = invoiceItems.filter(item => item.id !== id);
-      
+
       // Renumber the remaining items
       const renumberedItems = filteredItems.map((item, index) => ({
         ...item,
-        no: index + 1
+        no: index + 1,
       }));
-      
+
       setInvoiceItems(renumberedItems);
       showSnackbar('Item removed successfully', 'success');
     } catch (error) {
@@ -205,7 +217,7 @@ export default function InvoiceItemsSection({
     const subtotal = invoiceItems.reduce((sum, item) => sum + item.amount, 0);
     const vatTotal = invoiceItems.reduce((sum, item) => sum + item.vat_amount, 0);
     const total = subtotal + vatTotal;
-    
+
     return { subtotal, vatTotal, total };
   };
 
@@ -217,116 +229,169 @@ export default function InvoiceItemsSection({
     }).format(amount);
   };
 
-  // Handle product added from sidepanel
-  const handleProductAdded = (productName: string) => {
-    setIsProductPanelOpen(false);
-    
-    // Refresh products list
-    fetch('/api/products')
-      .then(response => response.json())
-      .then(data => {
-        setProducts(data.products);
-        
-        // Find the newly added product
-        const newProduct = data.products.find((p: Product) => p.name === productName);
-        if (newProduct) {
-          setSelectedProduct(newProduct);
-          showSnackbar(`Product "${productName}" added and selected`, 'success');
-        }
-      })
-      .catch(error => {
-        console.error('Error refreshing products:', error);
-        showSnackbar('Error refreshing products list', 'error');
-      });
-  };
-
   const { subtotal, vatTotal, total } = calculateTotals();
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-100">
-        <div className="flex justify-between items-center mb-4">
-          <Typography variant="h6" className="text-gray-800 font-medium">Invoice Items</Typography>
+      <div className="mb-6 rounded-lg border border-gray-100 bg-white p-6 shadow-md">
+        <div className="mb-4 flex items-center justify-between">
+          <Typography variant="h6" className="font-medium text-gray-800">
+            Invoice Items
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsProductPanelOpen(true)}
+            disabled={isLoading}
+            size="small"
+          >
+            Add Item
+          </Button>
         </div>
-        
+
         {errors.items && (
-          <div className="text-red-500 mb-4 p-2 bg-red-50 border border-red-200 rounded">
+          <div className="mb-4 rounded border border-red-200 bg-red-50 p-2 text-red-500">
             {errors.items}
           </div>
         )}
-        
+
         {isLoading ? (
           <div className="flex justify-center py-8">
             <CircularProgress />
           </div>
         ) : (
-          <TableContainer component={Paper} className="mb-4 border border-gray-200 rounded-lg overflow-hidden">
-            <Table size="small">
-              <TableHead className="bg-gray-50">
-                <TableRow>
-                  <TableCell className="font-medium text-gray-700">No</TableCell>
-                  <TableCell className="font-medium text-gray-700">Part No</TableCell>
-                  <TableCell className="font-medium text-gray-700">Description</TableCell>
-                  <TableCell align="right" className="font-medium text-gray-700">QTY</TableCell>
-                  <TableCell align="right" className="font-medium text-gray-700">Rate</TableCell>
-                  <TableCell align="right" className="font-medium text-gray-700">Amount</TableCell>
-                  <TableCell align="right" className="font-medium text-gray-700">VAT %</TableCell>
-                  <TableCell align="right" className="font-medium text-gray-700">VAT</TableCell>
-                  <TableCell align="right" className="font-medium text-gray-700">Total Amount</TableCell>
-                  <TableCell align="right" className="font-medium text-gray-700">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {invoiceItems.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                    <TableCell className="text-gray-700">{item.no}</TableCell>
-                    <TableCell className="text-gray-700">{item.part_no}</TableCell>
-                    <TableCell className="text-gray-700 max-w-[200px] truncate" title={item.description}>
-                      {item.description}
+          <>
+            {/* Product selection section */}
+            <div className="mb-4 grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 md:grid-cols-2">
+              <Autocomplete
+                options={products}
+                getOptionLabel={product => `${product.name} (${product.partNo})`}
+                value={selectedProduct}
+                onChange={(_, newValue) => setSelectedProduct(newValue)}
+                renderInput={params => (
+                  <TextField {...params} label="Select Product" variant="outlined" size="small" />
+                )}
+                disabled={isAddingItem}
+              />
+              <div className="flex items-center gap-2">
+                <TextField
+                  label="Quantity"
+                  type="number"
+                  value={newItemQty}
+                  onChange={e => setNewItemQty(Number(e.target.value))}
+                  size="small"
+                  inputProps={{ min: 1 }}
+                  className="w-32"
+                  disabled={isAddingItem || !selectedProduct}
+                />
+                <Button
+                  variant="contained"
+                  onClick={addInvoiceItem}
+                  disabled={isAddingItem || !selectedProduct}
+                >
+                  {isAddingItem ? <CircularProgress size={24} /> : 'Add'}
+                </Button>
+              </div>
+            </div>
+
+            <TableContainer
+              component={Paper}
+              className="mb-4 overflow-hidden rounded-lg border border-gray-200"
+            >
+              <Table size="small">
+                <TableHead className="bg-gray-50">
+                  <TableRow>
+                    <TableCell className="font-medium text-gray-700">No</TableCell>
+                    <TableCell className="font-medium text-gray-700">Part No</TableCell>
+                    <TableCell className="font-medium text-gray-700">Description</TableCell>
+                    <TableCell align="right" className="font-medium text-gray-700">
+                      QTY
                     </TableCell>
-                    <TableCell align="right">
-                      <TextField
-                        type="number"
-                        value={item.qty}
-                        onChange={(e) => updateInvoiceItem(item.id, 'qty', Number(e.target.value))}
-                        size="small"
-                        inputProps={{ min: 1 }}
-                        className="w-16"
-                      />
+                    <TableCell align="right" className="font-medium text-gray-700">
+                      Rate
                     </TableCell>
-                    <TableCell align="right" className="text-gray-700">{formatCurrency(item.rate)}</TableCell>
-                    <TableCell align="right" className="text-gray-700">{formatCurrency(item.amount)}</TableCell>
-                    <TableCell align="right">
-                      <TextField
-                        type="number"
-                        value={item.vat_percentage}
-                        onChange={(e) => updateInvoiceItem(item.id, 'vat_percentage', Number(e.target.value))}
-                        size="small"
-                        inputProps={{ min: 0, max: 100, step: 0.01 }}
-                        className="w-16"
-                      />
+                    <TableCell align="right" className="font-medium text-gray-700">
+                      Amount
                     </TableCell>
-                    <TableCell align="right" className="text-gray-700">{formatCurrency(item.vat_amount)}</TableCell>
-                    <TableCell align="right" className="text-gray-700 font-medium">{formatCurrency(item.total_amount)}</TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Remove item">
-                        <IconButton 
-                          onClick={() => removeInvoiceItem(item.id)} 
-                          size="small" 
-                          className="text-gray-600 hover:text-red-500 transition-colors"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
+                    <TableCell align="right" className="font-medium text-gray-700">
+                      VAT %
+                    </TableCell>
+                    <TableCell align="right" className="font-medium text-gray-700">
+                      VAT
+                    </TableCell>
+                    <TableCell align="right" className="font-medium text-gray-700">
+                      Total Amount
+                    </TableCell>
+                    <TableCell align="right" className="font-medium text-gray-700">
+                      Actions
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {invoiceItems.map(item => (
+                    <TableRow key={item.id} className="transition-colors hover:bg-gray-50/50">
+                      <TableCell className="text-gray-700">{item.no}</TableCell>
+                      <TableCell className="text-gray-700">{item.part_no}</TableCell>
+                      <TableCell
+                        className="max-w-[200px] truncate text-gray-700"
+                        title={item.description}
+                      >
+                        {item.description}
+                      </TableCell>
+                      <TableCell align="right">
+                        <TextField
+                          type="number"
+                          value={item.qty}
+                          onChange={e => updateInvoiceItem(item.id, 'qty', Number(e.target.value))}
+                          size="small"
+                          inputProps={{ min: 1 }}
+                          className="w-16"
+                        />
+                      </TableCell>
+                      <TableCell align="right" className="text-gray-700">
+                        {formatCurrency(item.rate)}
+                      </TableCell>
+                      <TableCell align="right" className="text-gray-700">
+                        {formatCurrency(item.amount)}
+                      </TableCell>
+                      <TableCell align="right">
+                        <TextField
+                          type="number"
+                          value={item.vat_percentage}
+                          onChange={e =>
+                            updateInvoiceItem(item.id, 'vat_percentage', Number(e.target.value))
+                          }
+                          size="small"
+                          inputProps={{ min: 0, max: 100, step: 0.01 }}
+                          className="w-16"
+                        />
+                      </TableCell>
+                      <TableCell align="right" className="text-gray-700">
+                        {formatCurrency(item.vat_amount)}
+                      </TableCell>
+                      <TableCell align="right" className="font-medium text-gray-700">
+                        {formatCurrency(item.total_amount)}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Remove item">
+                          <IconButton
+                            onClick={() => removeInvoiceItem(item.id)}
+                            size="small"
+                            className="text-gray-600 transition-colors hover:text-red-500"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
         )}
-        
-        <Box className="flex flex-col items-end mb-4 bg-gray-50 p-4 rounded-md border border-gray-200">
+
+        <Box className="mb-4 flex flex-col items-end rounded-md border border-gray-200 bg-gray-50 p-4">
           <Typography variant="body1" className="mb-1 text-gray-700">
             Subtotal: {formatCurrency(subtotal)}
           </Typography>
@@ -339,6 +404,30 @@ export default function InvoiceItemsSection({
         </Box>
       </div>
 
+      {/* Product info panel */}
+      <Sidepanel
+        isOpen={isProductPanelOpen}
+        onClose={() => setIsProductPanelOpen(false)}
+        size="small"
+      >
+        <div className="p-6">
+          <Typography variant="h6" gutterBottom>
+            VAT Rates
+          </Typography>
+          <div className="space-y-2">
+            {vatRates.map(rate => (
+              <div key={rate.id} className="rounded-md border border-gray-200 p-2">
+                <Typography variant="body1" className="font-medium">
+                  {rate.description}: {rate.vat_percentage}%
+                </Typography>
+                <Typography variant="body2" className="text-gray-600">
+                  Country: {rate.country}
+                </Typography>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Sidepanel>
     </>
   );
-} 
+}

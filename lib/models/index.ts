@@ -8,4 +8,4 @@ export * from './vat_master';
 export * from './gst_master';
 export * from './suppliers';
 export * from './salesmen';
-export * from './sales'; 
+export * from './sales';
