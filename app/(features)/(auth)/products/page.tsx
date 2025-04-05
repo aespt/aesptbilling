@@ -11,7 +11,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 import ActionMenu from '@/app/shared/components/action-menu';
 import ConfirmationDialog from '@/app/shared/components/confirmation-dialog';
@@ -83,37 +83,68 @@ export default function ProductsPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch products from API
-  const fetchProducts = useCallback(
-    async (pageNumber = page, pageSize = rowsPerPage, search = searchQuery) => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(
-          `/api/products?page=${pageNumber}&limit=${pageSize}&search=${encodeURIComponent(search)}`
-        );
+  // Create a reference for the current request to handle race conditions
+  const currentRequestIdRef = useRef(0);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
-        }
-
-        const data = await response.json();
-        setProducts(data.products);
-        setPaginationInfo(data.pagination);
-      } catch (err) {
-        console.error('Error fetching products:', err);
-        setError('Failed to load products. Please try again later.');
-        showSnackbar('Failed to load products', 'error');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [page, rowsPerPage, searchQuery, showSnackbar]
+  // Memoize the fetch parameters to prevent unnecessary rerenders
+  const fetchParams = useMemo(
+    () => ({
+      page,
+      rowsPerPage,
+      searchQuery,
+    }),
+    [page, rowsPerPage, searchQuery]
   );
 
-  // Load products on component mount
+  // Define the fetch function within the component
+  const fetchProducts = async () => {
+    const myRequestId = ++currentRequestIdRef.current;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const url = `/api/products?page=${fetchParams.page}&limit=${fetchParams.rowsPerPage}&search=${encodeURIComponent(fetchParams.searchQuery)}`;
+      const response = await fetch(url);
+
+      // If a newer request has started, abandon this one
+      if (myRequestId !== currentRequestIdRef.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+
+      const data = await response.json();
+
+      // Only update state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setProducts(data.products);
+        setPaginationInfo(data.pagination);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error(`Error fetching products (request ID: ${myRequestId}):`, err);
+      // Only update error state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setError('Failed to load products. Please try again later.');
+        showSnackbar('Failed to load products', 'error');
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Fetch products only when fetch parameters change
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchParams]);
+
+  // Simple refresh trigger function
+  const triggerRefresh = () => {
+    fetchProducts();
+  };
 
   const handleActionClick = async (productId: number, actionName: string) => {
     if (actionName === 'edit') {
@@ -175,7 +206,7 @@ export default function ProductsPage() {
       showSnackbar(`Product "${productName}" deleted successfully`, 'success');
 
       // Refresh the product list
-      fetchProducts();
+      triggerRefresh();
     } catch (err) {
       console.error('Error deleting product:', err);
       showSnackbar('Failed to delete product', 'error');
@@ -219,16 +250,18 @@ export default function ProductsPage() {
 
   // Handle product added
   const handleProductAdded = (productName: string) => {
-    fetchProducts();
     setIsSidepanelOpen(false);
     showSnackbar(`Product "${productName}" added successfully`, 'success');
+    // Refresh products
+    triggerRefresh();
   };
 
   // Handle product updated
   const handleProductUpdated = (productName: string) => {
-    fetchProducts();
     setIsSidepanelOpen(false);
     showSnackbar(`Product "${productName}" updated successfully`, 'success');
+    // Refresh products
+    triggerRefresh();
   };
 
   // Add search handler

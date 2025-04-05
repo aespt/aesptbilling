@@ -11,7 +11,7 @@ import {
   TableRow,
   Paper,
 } from '@mui/material';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 import ActionMenu from '@/app/shared/components/action-menu';
 import ConfirmationDialog from '@/app/shared/components/confirmation-dialog';
@@ -75,44 +75,80 @@ export default function CustomersPage() {
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
-  // Fetch customers from API with pagination
-  const fetchCustomers = useCallback(
-    async (page = pagination.currentPage, pageSize = pagination.pageSize) => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/customers?page=${page}&pageSize=${pageSize}`);
+  // Create a reference for the current request to handle race conditions
+  const currentRequestIdRef = useRef(0);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch customers');
-        }
-
-        const data = await response.json();
-        setCustomers(data.customers);
-        setPagination(data.pagination);
-      } catch (err) {
-        console.error('Error fetching customers:', err);
-        setError('Failed to load customers. Please try again later.');
-        showSnackbar('Failed to load customers', 'error');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [showSnackbar, pagination.currentPage, pagination.pageSize]
+  // Memoize the fetch parameters to prevent unnecessary rerenders
+  const fetchParams = useMemo(
+    () => ({
+      page: pagination.currentPage,
+      pageSize: pagination.pageSize,
+    }),
+    [pagination.currentPage, pagination.pageSize]
   );
 
-  // Load customers on component mount
+  // Fetch customers from API with pagination
+  const fetchCustomers = async () => {
+    const myRequestId = ++currentRequestIdRef.current;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/customers?page=${fetchParams.page}&pageSize=${fetchParams.pageSize}`
+      );
+
+      // If a newer request has started, abandon this one
+      if (myRequestId !== currentRequestIdRef.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers');
+      }
+
+      const data = await response.json();
+
+      // Only update state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setCustomers(data.customers);
+        setPagination(data.pagination);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+
+      // Only update error state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setError('Failed to load customers. Please try again later.');
+        showSnackbar('Failed to load customers', 'error');
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Load customers on component mount and when fetch parameters change
   useEffect(() => {
     fetchCustomers();
-  }, [fetchCustomers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchParams]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
-    fetchCustomers(page, pagination.pageSize);
+    setPagination(prev => ({
+      ...prev,
+      currentPage: page,
+    }));
   };
 
   // Handle page size change
   const handlePageSizeChange = (pageSize: number) => {
-    fetchCustomers(1, pageSize);
+    setPagination(prev => ({
+      ...prev,
+      pageSize: pageSize,
+      currentPage: 1, // Reset to first page when changing page size
+    }));
   };
 
   const handleActionClick = async (customerId: number, actionName: string) => {
@@ -164,7 +200,7 @@ export default function CustomersPage() {
       showSnackbar(`Customer "${customerName}" deleted successfully`, 'success');
 
       // Refresh the customer list
-      fetchCustomers(pagination.currentPage, pagination.pageSize);
+      fetchCustomers();
     } catch (err) {
       console.error('Error deleting customer:', err);
       showSnackbar('Failed to delete customer', 'error');
@@ -195,14 +231,14 @@ export default function CustomersPage() {
 
   // Handle customer added
   const handleCustomerAdded = (customerName: string) => {
-    fetchCustomers(pagination.currentPage, pagination.pageSize);
+    fetchCustomers();
     setIsSidepanelOpen(false);
     showSnackbar(`Customer "${customerName}" added successfully`, 'success');
   };
 
   // Handle customer updated
   const handleCustomerUpdated = (customerName: string) => {
-    fetchCustomers(pagination.currentPage, pagination.pageSize);
+    fetchCustomers();
     setIsSidepanelOpen(false);
     showSnackbar(`Customer "${customerName}" updated successfully`, 'success');
   };

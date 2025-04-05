@@ -13,7 +13,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 import ActionMenu from '@/app/shared/components/action-menu';
 import ConfirmationDialog from '@/app/shared/components/confirmation-dialog';
@@ -78,52 +78,80 @@ export default function SuppliersPage() {
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
-  // Fetch suppliers from API with pagination
-  const fetchSuppliers = useCallback(
-    async (page = pagination.currentPage, pageSize = pagination.pageSize) => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/suppliers?page=${page}&pageSize=${pageSize}`);
+  // Create a reference for the current request to handle race conditions
+  const currentRequestIdRef = useRef(0);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch suppliers');
-        }
-
-        const data = await response.json();
-        setSuppliers(data.suppliers);
-        setPagination(data.pagination);
-      } catch (err) {
-        console.error('Error fetching suppliers:', err);
-        setError('Failed to load suppliers. Please try again later.');
-        showSnackbar('Failed to load suppliers', 'error');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [
-      pagination.currentPage,
-      pagination.pageSize,
-      showSnackbar,
-      setSuppliers,
-      setPagination,
-      setError,
-      setIsLoading,
-    ]
+  // Memoize the fetch parameters to prevent unnecessary rerenders
+  const fetchParams = useMemo(
+    () => ({
+      page: pagination.currentPage,
+      pageSize: pagination.pageSize,
+    }),
+    [pagination.currentPage, pagination.pageSize]
   );
 
-  // Load suppliers on component mount
+  // Fetch suppliers from API with pagination
+  const fetchSuppliers = async () => {
+    const myRequestId = ++currentRequestIdRef.current;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/suppliers?page=${fetchParams.page}&pageSize=${fetchParams.pageSize}`
+      );
+
+      // If a newer request has started, abandon this one
+      if (myRequestId !== currentRequestIdRef.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch suppliers');
+      }
+
+      const data = await response.json();
+
+      // Only update state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setSuppliers(data.suppliers);
+        setPagination(data.pagination);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error('Error fetching suppliers:', err);
+
+      // Only update error state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setError('Failed to load suppliers. Please try again later.');
+        showSnackbar('Failed to load suppliers', 'error');
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Load suppliers on component mount and when fetch parameters change
   useEffect(() => {
     fetchSuppliers();
-  }, [fetchSuppliers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchParams]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
-    fetchSuppliers(page, pagination.pageSize);
+    setPagination(prev => ({
+      ...prev,
+      currentPage: page,
+    }));
   };
 
   // Handle page size change
   const handlePageSizeChange = (pageSize: number) => {
-    fetchSuppliers(1, pageSize);
+    setPagination(prev => ({
+      ...prev,
+      pageSize: pageSize,
+      currentPage: 1, // Reset to first page when changing page size
+    }));
   };
 
   const handleActionClick = async (supplierId: number, actionName: string) => {
@@ -175,7 +203,7 @@ export default function SuppliersPage() {
       showSnackbar(`Supplier "${supplierName}" deleted successfully`, 'success');
 
       // Refresh the supplier list
-      fetchSuppliers(pagination.currentPage, pagination.pageSize);
+      fetchSuppliers();
     } catch (err) {
       console.error('Error deleting supplier:', err);
       showSnackbar('Failed to delete supplier', 'error');
@@ -206,14 +234,14 @@ export default function SuppliersPage() {
 
   // Handle supplier added
   const handleSupplierAdded = (supplierName: string) => {
-    fetchSuppliers(pagination.currentPage, pagination.pageSize);
+    fetchSuppliers();
     setIsSidepanelOpen(false);
     showSnackbar(`Supplier "${supplierName}" added successfully`, 'success');
   };
 
   // Handle supplier updated
   const handleSupplierUpdated = (supplierName: string) => {
-    fetchSuppliers(pagination.currentPage, pagination.pageSize);
+    fetchSuppliers();
     setIsSidepanelOpen(false);
     showSnackbar(`Supplier "${supplierName}" updated successfully`, 'success');
   };
