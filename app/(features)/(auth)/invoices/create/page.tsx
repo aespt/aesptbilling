@@ -200,7 +200,6 @@ export default function CreateInvoicePage() {
       }
 
       showSnackbar('Invoice created successfully', 'success');
-      router.push('/invoices');
     } catch (error: unknown) {
       console.error('Error creating invoice:', error);
       showSnackbar(error instanceof Error ? error.message : 'Failed to create invoice', 'error');

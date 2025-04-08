@@ -35,6 +35,7 @@ interface AddProductProps {
   onProductUpdated?: (productName: string) => void;
   productToEdit?: Product | null;
   onClose: () => void;
+  useFormTag?: boolean;
 }
 
 export default function AddProduct({
@@ -42,6 +43,7 @@ export default function AddProduct({
   onProductUpdated,
   productToEdit,
   onClose,
+  useFormTag = true,
 }: AddProductProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -180,8 +182,8 @@ export default function AddProduct({
     return <p className="mt-1 text-sm text-red-600">{message}</p>;
   };
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col pb-3" noValidate>
+  const formContent = (
+    <div className="flex h-full flex-col pb-3">
       {/* Content wrapper */}
       <div className="flex-1 overflow-y-auto">
         {/* Header */}
@@ -367,14 +369,23 @@ export default function AddProduct({
             Cancel
           </button>
           <button
-            type="submit"
+            type={useFormTag ? 'submit' : 'button'}
             className="flex-1 cursor-pointer overflow-hidden rounded-md bg-gradient-to-r from-red-500 to-blue-500 px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
             disabled={isSubmitting}
+            onClick={useFormTag ? undefined : handleSubmit(onSubmit)}
           >
             {isSubmitting ? 'Saving...' : isEditMode ? 'Update' : 'Submit'}
           </button>
         </div>
       </div>
+    </div>
+  );
+
+  return useFormTag ? (
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      {formContent}
     </form>
+  ) : (
+    <>{formContent}</>
   );
 }
