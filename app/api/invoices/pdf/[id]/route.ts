@@ -108,19 +108,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Add some spacing after the table for a cleaner look
       $('.table-container').css('margin-bottom', '30px');
 
-      // Add a simple signature section for delivery notes
-      const signatureSection = `
-        <div class="delivery-signature" style="margin-top: 50px; margin-left: 20px; margin-right: 20px; display: flex; justify-content: space-between;">
-          <div style="width: 45%;">
-            <p style="border-top: 1px dotted #000; padding-top: 10px; font-size: 14px;">Received By (Signature & Stamp)</p>
-          </div>
-          <div style="width: 45%;">
-            <p style="border-top: 1px dotted #000; padding-top: 10px; font-size: 14px;">For Arabian Auto Equipments and Parts Trading (FZC)</p>
-          </div>
-        </div>
-      `;
-      $('.table-container').after(signatureSection);
-
       // Change document title
       $('title').text('Delivery Note');
 
