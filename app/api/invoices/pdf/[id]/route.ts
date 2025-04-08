@@ -93,6 +93,41 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Load HTML template into cheerio
     const $ = cheerio.load(htmlTemplate);
 
+    // Check if it's a delivery invoice and modify the table
+    if (invoice.invoice_type === 'DELIVERY') {
+      // Remove pricing columns from the invoice table header
+      $('table.invoice-items-table th:nth-child(5)').remove(); // Rate
+      $('table.invoice-items-table th:nth-child(5)').remove(); // Amount
+      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT %
+      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT
+      $('table.invoice-items-table th:nth-child(5)').remove(); // Total Amount
+
+      // Hide the totals container entirely, including Terms & Conditions
+      $('.invoice-footer').css('display', 'none');
+
+      // Add some spacing after the table for a cleaner look
+      $('.table-container').css('margin-bottom', '30px');
+
+      // Add a simple signature section for delivery notes
+      const signatureSection = `
+        <div class="delivery-signature" style="margin-top: 50px; margin-left: 20px; margin-right: 20px; display: flex; justify-content: space-between;">
+          <div style="width: 45%;">
+            <p style="border-top: 1px dotted #000; padding-top: 10px; font-size: 14px;">Received By (Signature & Stamp)</p>
+          </div>
+          <div style="width: 45%;">
+            <p style="border-top: 1px dotted #000; padding-top: 10px; font-size: 14px;">For Arabian Auto Equipments and Parts Trading (FZC)</p>
+          </div>
+        </div>
+      `;
+      $('.table-container').after(signatureSection);
+
+      // Change document title
+      $('title').text('Delivery Note');
+
+      // Change invoice title - use the new ID
+      $('#invoice-title').text('Delivery Note');
+    }
+
     // Replace the logo path with data URL to ensure it works in Puppeteer
     const logoPath = path.join(process.cwd(), 'public/logo.png');
     if (fs.existsSync(logoPath)) {
@@ -105,9 +140,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Fill in the customer details
     $('#customer-address').text(customer?.name || 'N/A');
+
     // Use a default value for tax number as it's not defined in the customer model
     const taxRegNo = 'N/A'; // Customize as needed
-    $('#tax-reg-no').html(`<span style="font-weight: bold">TAX Reg No:</span> ${taxRegNo}`);
+
+    // For delivery notes, we don't show tax registration
+    if (invoice.invoice_type !== 'DELIVERY') {
+      $('#tax-reg-no').html(`<span style="font-weight: bold">TAX Reg No:</span> ${taxRegNo}`);
+    } else {
+      // Hide the tax registration number row
+      $('#tax-reg-no').css('display', 'none');
+    }
+
     $('#ship-to-country').html(
       `<span style="font-weight: bold">Ship to Country/Emirate:</span> Emirates`
     );
@@ -191,27 +235,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           .attr('style', 'padding: 8px; border: 1px solid #ddd')
           .text(item.quantity.toString())
       );
-      rowEl.append(
-        $('<td>')
-          .attr('style', 'padding: 8px; border: 1px solid #ddd')
-          .text(item.unit_price.toString())
-      );
-      rowEl.append(
-        $('<td>')
-          .attr('style', 'padding: 8px; border: 1px solid #ddd')
-          .text((unitPrice * quantity).toFixed(2))
-      );
-      rowEl.append(
-        $('<td>')
-          .attr('style', 'padding: 8px; border: 1px solid #ddd')
-          .text(invoiceTaxRate.toString())
-      );
-      rowEl.append(
-        $('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(vatAmount.toFixed(2))
-      );
-      rowEl.append(
-        $('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(totalAmount.toFixed(2))
-      );
+
+      // Only add pricing columns if not a delivery invoice
+      if (invoice.invoice_type !== 'DELIVERY') {
+        rowEl.append(
+          $('<td>')
+            .attr('style', 'padding: 8px; border: 1px solid #ddd')
+            .text(item.unit_price.toString())
+        );
+        rowEl.append(
+          $('<td>')
+            .attr('style', 'padding: 8px; border: 1px solid #ddd')
+            .text((unitPrice * quantity).toFixed(2))
+        );
+        rowEl.append(
+          $('<td>')
+            .attr('style', 'padding: 8px; border: 1px solid #ddd')
+            .text(invoiceTaxRate.toString())
+        );
+        rowEl.append(
+          $('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(vatAmount.toFixed(2))
+        );
+        rowEl.append(
+          $('<td>')
+            .attr('style', 'padding: 8px; border: 1px solid #ddd')
+            .text(totalAmount.toFixed(2))
+        );
+      }
 
       // Append the row to the table body
       $('#invoice-items-body').append(rowEl);
@@ -405,10 +455,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
           // Return the single page with embedded footer
           const finalPdfBytes = await mainPdfDoc.save();
+          const filename =
+            invoice.invoice_type === 'DELIVERY'
+              ? `delivery-note-${invoice.invoice_number}.pdf`
+              : `invoice-${invoice.invoice_number}.pdf`;
+
           return new NextResponse(Buffer.from(finalPdfBytes), {
             headers: {
               'Content-Type': 'application/pdf',
-              'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
+              'Content-Disposition': `inline; filename="${filename}"`,
             },
           });
         } else {
@@ -444,10 +499,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
           // Return the multi-page PDF with footer on the last page
           const finalPdfBytes = await finalPdfDoc.save();
+          const filename =
+            invoice.invoice_type === 'DELIVERY'
+              ? `delivery-note-${invoice.invoice_number}.pdf`
+              : `invoice-${invoice.invoice_number}.pdf`;
+
           return new NextResponse(Buffer.from(finalPdfBytes), {
             headers: {
               'Content-Type': 'application/pdf',
-              'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
+              'Content-Disposition': `inline; filename="${filename}"`,
             },
           });
         }
@@ -455,10 +515,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         console.error('Error in PDF-lib processing:', pdfLibError);
 
         // If pdf-lib fails, return the main PDF without footer as fallback
+        const filename =
+          invoice.invoice_type === 'DELIVERY'
+            ? `delivery-note-${invoice.invoice_number}.pdf`
+            : `invoice-${invoice.invoice_number}.pdf`;
+
         return new NextResponse(mainPdfBuffer, {
           headers: {
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.pdf"`,
+            'Content-Disposition': `inline; filename="${filename}"`,
           },
         });
       }
