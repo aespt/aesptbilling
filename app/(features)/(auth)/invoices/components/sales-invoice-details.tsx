@@ -7,6 +7,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { useEffect, useRef, useState } from 'react';
 
+import AddCustomer from '@/app/(features)/(auth)/customers/components/add-customer';
 import Sidepanel from '@/app/shared/components/sidepanel';
 import type { FormErrors, InvoiceFormData } from '@/lib/types';
 
@@ -417,10 +418,11 @@ export default function SalesInvoiceDetails({
         onClose={() => setIsCustomerPanelOpen(false)}
         size="small"
       >
-        <div className="h-screen p-4">
-          <Typography variant="h6">Add Customer</Typography>
-          <Typography>Customer add form would go here</Typography>
-        </div>
+        <AddCustomer
+          onCustomerAdded={handleCustomerAdded}
+          onClose={() => setIsCustomerPanelOpen(false)}
+          useFormTag={false}
+        />
       </Sidepanel>
     </>
   );
