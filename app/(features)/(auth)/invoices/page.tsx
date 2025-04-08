@@ -19,6 +19,7 @@ import {
   TextField,
   InputAdornment,
   Autocomplete,
+  MenuItem,
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -116,6 +117,14 @@ export default function InvoicesListPage() {
     customer: null,
     invoiceType: null,
   });
+  const [tempFilters, setTempFilters] = useState<FilterOptions>({
+    dateFrom: null,
+    dateTo: null,
+    invoiceNumber: '',
+    salesPerson: null,
+    customer: null,
+    invoiceType: null,
+  });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
@@ -149,74 +158,81 @@ export default function InvoicesListPage() {
     };
 
     if (filterDrawerOpen) {
+      setTempFilters(filters);
       fetchDropdownData();
     }
   }, [filterDrawerOpen]);
 
-  const fetchInvoices = useCallback(async () => {
-    setLoading(true);
+  const fetchInvoices = useCallback(
+    async (overrideFilters?: FilterOptions) => {
+      setLoading(true);
 
-    try {
-      // Build query parameters with null checks and default values
-      const params = new URLSearchParams({
-        page: (pagination?.currentPage ?? 1).toString(),
-        limit: (pagination?.pageSize ?? 10).toString(),
-        sortField: sort.field,
-        sortOrder: sort.direction,
-      });
+      // Use override filters if provided, otherwise use state filters
+      const filtersToUse = overrideFilters || filters;
 
-      // Add date filters if set
-      if (filters.dateFrom) {
-        params.append('dateFrom', filters.dateFrom.format('YYYY-MM-DD'));
+      try {
+        // Build query parameters with null checks and default values
+        const params = new URLSearchParams({
+          page: (pagination?.currentPage ?? 1).toString(),
+          limit: (pagination?.pageSize ?? 10).toString(),
+          sortField: sort.field,
+          sortOrder: sort.direction,
+        });
+
+        // Add date filters if set
+        if (filtersToUse.dateFrom) {
+          params.append('dateFrom', filtersToUse.dateFrom.format('YYYY-MM-DD'));
+        }
+
+        if (filtersToUse.dateTo) {
+          params.append('dateTo', filtersToUse.dateTo.format('YYYY-MM-DD'));
+        }
+
+        // Add text filters if set
+        if (filtersToUse.invoiceNumber.trim()) {
+          params.append('invoiceNumber', filtersToUse.invoiceNumber.trim());
+        }
+
+        // Add salesPerson filter if set
+        if (filtersToUse.salesPerson) {
+          params.append('salesPerson', filtersToUse.salesPerson.name);
+        }
+
+        // Add customer filter if set
+        if (filtersToUse.customer) {
+          params.append('customer', filtersToUse.customer.name);
+        }
+
+        // Add invoice type filter if set
+        if (filtersToUse.invoiceType) {
+          params.append('invoiceType', filtersToUse.invoiceType);
+        }
+
+        const response = await fetch(`/api/invoices?${params.toString()}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch invoices');
+        }
+
+        const data = await response.json();
+        setInvoices(data.invoices);
+        // Ensure pagination data has all required fields
+        setPagination({
+          total: data.pagination.total ?? 0,
+          totalPages: data.pagination.totalPages ?? 1,
+          currentPage: data.pagination.currentPage ?? 1,
+          pageSize: data.pagination.pageSize ?? 10,
+          hasNext: data.pagination.hasNext ?? false,
+          hasPrev: data.pagination.hasPrev ?? false,
+        });
+      } catch (error) {
+        console.error('Error fetching invoices:', error);
+      } finally {
+        setLoading(false);
       }
-
-      if (filters.dateTo) {
-        params.append('dateTo', filters.dateTo.format('YYYY-MM-DD'));
-      }
-
-      // Add text filters if set
-      if (filters.invoiceNumber.trim()) {
-        params.append('invoiceNumber', filters.invoiceNumber.trim());
-      }
-
-      // Add salesPerson filter if set
-      if (filters.salesPerson) {
-        params.append('salesPerson', filters.salesPerson.name);
-      }
-
-      // Add customer filter if set
-      if (filters.customer) {
-        params.append('customer', filters.customer.name);
-      }
-
-      // Add invoice type filter if set
-      if (filters.invoiceType) {
-        params.append('invoiceType', filters.invoiceType);
-      }
-
-      const response = await fetch(`/api/invoices?${params.toString()}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch invoices');
-      }
-
-      const data = await response.json();
-      setInvoices(data.invoices);
-      // Ensure pagination data has all required fields
-      setPagination({
-        total: data.pagination.total ?? 0,
-        totalPages: data.pagination.totalPages ?? 1,
-        currentPage: data.pagination.currentPage ?? 1,
-        pageSize: data.pagination.pageSize ?? 10,
-        hasNext: data.pagination.hasNext ?? false,
-        hasPrev: data.pagination.hasPrev ?? false,
-      });
-    } catch (error) {
-      console.error('Error fetching invoices:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.currentPage, pagination.pageSize, sort, filters]);
+    },
+    [pagination.currentPage, pagination.pageSize, sort, filters]
+  );
 
   // Load invoices on initial page load and when filters change
   useEffect(() => {
@@ -249,7 +265,7 @@ export default function InvoicesListPage() {
     key: keyof FilterOptions,
     value: Customer | Salesman | DayJS.Dayjs | string | null
   ) => {
-    setFilters(prev => ({
+    setTempFilters(prev => ({
       ...prev,
       [key]: value,
     }));
@@ -261,25 +277,38 @@ export default function InvoicesListPage() {
       ...prev,
       currentPage: 1,
     }));
-    fetchInvoices();
+
+    // First fetch with the temp filters directly
+    fetchInvoices(tempFilters);
+
+    // Then update the state filters
+    setFilters(tempFilters);
+
     setFilterDrawerOpen(false);
   };
 
   const handleResetFilters = () => {
-    setFilters({
+    const emptyFilters = {
       dateFrom: null,
       dateTo: null,
       invoiceNumber: '',
       salesPerson: null,
       customer: null,
       invoiceType: null,
-    });
+    };
+
+    setTempFilters(emptyFilters);
     setPagination(prev => ({
       ...prev,
       currentPage: 1,
     }));
-    // Wait for state to update before fetching
-    setTimeout(fetchInvoices, 0);
+
+    // First fetch with empty filters
+    fetchInvoices(emptyFilters);
+
+    // Then update the state
+    setFilters(emptyFilters);
+
     setFilterDrawerOpen(false);
   };
 
@@ -436,7 +465,7 @@ export default function InvoicesListPage() {
                   Date From
                 </Typography>
                 <DatePicker
-                  value={filters.dateFrom}
+                  value={tempFilters.dateFrom}
                   onChange={newValue => handleFilterChange('dateFrom', newValue)}
                   slotProps={{
                     textField: {
@@ -454,7 +483,7 @@ export default function InvoicesListPage() {
                   Date To
                 </Typography>
                 <DatePicker
-                  value={filters.dateTo}
+                  value={tempFilters.dateTo}
                   onChange={newValue => handleFilterChange('dateTo', newValue)}
                   slotProps={{
                     textField: {
@@ -474,7 +503,7 @@ export default function InvoicesListPage() {
                 <TextField
                   fullWidth
                   size="small"
-                  value={filters.invoiceNumber}
+                  value={tempFilters.invoiceNumber}
                   onChange={e => handleFilterChange('invoiceNumber', e.target.value)}
                   placeholder="Search by invoice number"
                   className="rounded bg-white"
@@ -497,7 +526,7 @@ export default function InvoicesListPage() {
                   options={salesmen}
                   loading={loadingDropdowns}
                   getOptionLabel={option => option.name}
-                  value={filters.salesPerson}
+                  value={tempFilters.salesPerson}
                   onChange={(_, newValue) => handleFilterChange('salesPerson', newValue)}
                   renderInput={params => (
                     <TextField
@@ -530,7 +559,7 @@ export default function InvoicesListPage() {
                   options={customers}
                   loading={loadingDropdowns}
                   getOptionLabel={option => option.name}
-                  value={filters.customer}
+                  value={tempFilters.customer}
                   onChange={(_, newValue) => handleFilterChange('customer', newValue)}
                   renderInput={params => (
                     <TextField
@@ -559,19 +588,22 @@ export default function InvoicesListPage() {
                 <Typography variant="subtitle2" className="mb-2 text-gray-600">
                   Invoice Type
                 </Typography>
-                <Autocomplete
-                  options={invoiceTypeOptions}
-                  value={filters.invoiceType}
-                  onChange={(_, newValue) => handleFilterChange('invoiceType', newValue)}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      placeholder="Select invoice type"
-                      size="small"
-                      className="rounded bg-white"
-                    />
-                  )}
-                />
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  className="rounded bg-white"
+                  value={tempFilters.invoiceType || ''}
+                  onChange={e => handleFilterChange('invoiceType', e.target.value || null)}
+                  placeholder="Select invoice type"
+                >
+                  <MenuItem value="">All Types</MenuItem>
+                  {invoiceTypeOptions.map(option => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </div>
 
               <div className="flex flex-col gap-3 pt-4">
