@@ -14,7 +14,9 @@ const connectionString = 'postgres://postgres:postgres@localhost:5432/aespt_db';
 
 // For migrations - don't use SSL for local development
 const migrationClient = postgres(connectionString, {
-  max: 1,
+  max: 3, // Limit connections for migrations
+  idle_timeout: 30,
+  connect_timeout: 15,
   ssl: false,
 });
 

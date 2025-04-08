@@ -10,10 +10,21 @@ import type * as models from './models';
 dotenv.config();
 
 // Connection string with explicit credentials
-const connectionString = 'postgres://postgres:postgres@localhost:5432/aespt_db';
+const connectionString =
+  process.env.POSTGRES_URL || 'postgres://postgres:postgres@localhost:5432/aespt_db';
 
-// For local development, don't use SSL
-const sql = postgres(connectionString, { ssl: false });
+// Configure connection pool
+const sql = postgres(connectionString, {
+  ssl: false,
+  // Connection pool configuration
+  max: 10, // Maximum number of connections in the pool
+  idle_timeout: 30, // Close idle connections after 30 seconds
+  connect_timeout: 10, // Connection timeout after 10 seconds
+  // Advanced configuration for high traffic
+  max_lifetime: 60 * 30, // Connection lifetime max 30 minutes
+  // Debug mode (remove in production)
+  debug: process.env.NODE_ENV === 'development',
+});
 
 // Connect to Postgres
 export const db = drizzle(sql);
