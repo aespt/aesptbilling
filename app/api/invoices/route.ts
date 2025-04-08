@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     const invoiceNumber = searchParams.get('invoiceNumber');
     const salesPerson = searchParams.get('salesPerson');
     const customer = searchParams.get('customer');
+    const invoiceType = searchParams.get('invoiceType');
 
     // Calculate offset based on page and pageSize
     const offset = (page - 1) * pageSize;
@@ -82,6 +83,11 @@ export async function GET(request: NextRequest) {
       conditions.push(sql`${InvoicesTable.salesman_id} ILIKE ${`%${salesPerson}%`}`);
     }
 
+    // Add invoice type filter if provided
+    if (invoiceType && ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'].includes(invoiceType)) {
+      conditions.push(sql`${InvoicesTable.invoice_type} = ${invoiceType}`);
+    }
+
     // Get total count for pagination
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
@@ -107,6 +113,7 @@ export async function GET(request: NextRequest) {
         created_at: InvoicesTable.created_at,
         ship_from: InvoicesTable.ship_from,
         ship_to: InvoicesTable.ship_to,
+        invoice_type: InvoicesTable.invoice_type,
       })
       .from(InvoicesTable)
       .where(conditions.length ? and(...conditions) : undefined)

@@ -1,11 +1,11 @@
 'use client';
 
-import { Button } from '@mui/material';
+import { Button, Menu, MenuItem } from '@mui/material';
+import { usePopupState, bindTrigger, bindMenu } from 'material-ui-popup-state/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import PageHeader from '@/app/shared/components/page-header';
-import PrimaryButton from '@/app/shared/components/primary-button';
 import Snackbar from '@/app/shared/components/snackbar';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
 import type { FormErrors, InvoiceFormData, InvoiceItem } from '@/lib/types';
@@ -19,6 +19,7 @@ export default function CreateInvoicePage() {
   const router = useRouter();
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const popupState = usePopupState({ variant: 'popover', popupId: 'invoiceActions' });
 
   // Helper to convert item types for component compatibility
   const adaptInvoiceItemsForSummary = (items: InvoiceItem[]) => {
@@ -153,7 +154,7 @@ export default function CreateInvoicePage() {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false) => {
+  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false, invoiceType = 'INVOICE') => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -169,6 +170,7 @@ export default function CreateInvoicePage() {
       const invoiceData = {
         ...formData,
         status: saveAsDraft ? 'DRAFT' : 'PENDING',
+        type: invoiceType,
         items: invoiceItems.filter(item => item.product_id), // Only send items with a product selected
         subtotal: totals.subtotal,
         discount: totals.discount,
@@ -253,7 +255,49 @@ export default function CreateInvoicePage() {
             >
               Save as Draft
             </Button>
-            <PrimaryButton label="Create Invoice" type="submit" disabled={isSubmitting} />
+
+            <Button
+              variant="contained"
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-300 hover:scale-105"
+              {...bindTrigger(popupState)}
+            >
+              Create Invoice
+            </Button>
+            <Menu {...bindMenu(popupState)}>
+              <MenuItem
+                onClick={e => {
+                  popupState.close();
+                  handleSubmit(e, false, 'TAX');
+                }}
+              >
+                Tax Invoice
+              </MenuItem>
+              <MenuItem
+                onClick={e => {
+                  popupState.close();
+                  handleSubmit(e, false, 'PROFORMA');
+                }}
+              >
+                Proforma Invoice
+              </MenuItem>
+              <MenuItem
+                onClick={e => {
+                  popupState.close();
+                  handleSubmit(e, false, 'DELIVERY');
+                }}
+              >
+                Delivery Note
+              </MenuItem>
+              <MenuItem
+                onClick={e => {
+                  popupState.close();
+                  handleSubmit(e, false, 'QUOTATION');
+                }}
+              >
+                Quotation
+              </MenuItem>
+            </Menu>
           </div>
         </form>
       </div>

@@ -64,6 +64,7 @@ interface Invoice {
   salesman_id: number;
   ship_from: string;
   ship_to: string;
+  invoice_type: string;
   customer: {
     id: number;
     name: string;
@@ -88,6 +89,7 @@ interface FilterOptions {
   invoiceNumber: string;
   salesPerson: Salesman | null;
   customer: Customer | null;
+  invoiceType: string | null;
 }
 
 export default function InvoicesListPage() {
@@ -112,10 +114,14 @@ export default function InvoicesListPage() {
     invoiceNumber: '',
     salesPerson: null,
     customer: null,
+    invoiceType: null,
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+
+  // Define invoice type options
+  const invoiceTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
 
   // Fetch dropdown data
   useEffect(() => {
@@ -181,6 +187,11 @@ export default function InvoicesListPage() {
       // Add customer filter if set
       if (filters.customer) {
         params.append('customer', filters.customer.name);
+      }
+
+      // Add invoice type filter if set
+      if (filters.invoiceType) {
+        params.append('invoiceType', filters.invoiceType);
       }
 
       const response = await fetch(`/api/invoices?${params.toString()}`);
@@ -261,6 +272,7 @@ export default function InvoicesListPage() {
       invoiceNumber: '',
       salesPerson: null,
       customer: null,
+      invoiceType: null,
     });
     setPagination(prev => ({
       ...prev,
@@ -339,6 +351,15 @@ export default function InvoicesListPage() {
                       </TableSortLabel>
                     </TableCell>
                     <TableCell className="font-medium">Customer</TableCell>
+                    <TableCell className="font-medium">
+                      <TableSortLabel
+                        active={sort.field === 'invoice_type'}
+                        direction={sort.field === 'invoice_type' ? sort.direction : 'asc'}
+                        onClick={() => handleSortChange('invoice_type')}
+                      >
+                        Invoice Type
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell className="font-medium">Ship From</TableCell>
                     <TableCell className="font-medium">Ship To</TableCell>
                     <TableCell align="right" className="font-medium">
@@ -373,6 +394,7 @@ export default function InvoicesListPage() {
                         </TableCell>
                         <TableCell>{invoice.salesman.name}</TableCell>
                         <TableCell>{invoice.customer.name}</TableCell>
+                        <TableCell className="capitalize">{invoice.invoice_type}</TableCell>
                         <TableCell>{invoice.ship_from}</TableCell>
                         <TableCell>{invoice.ship_to}</TableCell>
                         <TableCell align="right" className="font-bold">
@@ -382,7 +404,7 @@ export default function InvoicesListPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-8 text-center text-gray-500">
+                      <TableCell colSpan={8} className="py-8 text-center text-gray-500">
                         No invoices found. Please try adjusting your filters.
                       </TableCell>
                     </TableRow>
@@ -527,6 +549,26 @@ export default function InvoicesListPage() {
                           </>
                         ),
                       }}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Invoice Type Filter - Dropdown */}
+              <div>
+                <Typography variant="subtitle2" className="mb-2 text-gray-600">
+                  Invoice Type
+                </Typography>
+                <Autocomplete
+                  options={invoiceTypeOptions}
+                  value={filters.invoiceType}
+                  onChange={(_, newValue) => handleFilterChange('invoiceType', newValue)}
+                  renderInput={params => (
+                    <TextField
+                      {...params}
+                      placeholder="Select invoice type"
+                      size="small"
+                      className="rounded bg-white"
                     />
                   )}
                 />

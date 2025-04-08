@@ -5,6 +5,9 @@ import { BaseSchema, BaseCreateSchema } from './baseSchema';
 // Enum for tax types
 export const TaxTypeEnum = z.enum(['VAT', 'GST', 'NONE']);
 
+// Enum for invoice types
+export const InvoiceTypeEnum = z.enum(['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION']);
+
 // Zod schema for invoice validation
 export const InvoiceSchema = BaseSchema.extend({
   id: z.number().optional(),
@@ -14,6 +17,7 @@ export const InvoiceSchema = BaseSchema.extend({
   customer_id: z.number(),
   salesmen_id: z.number().min(1, { message: 'Salesperson name is required' }),
   tax_type: TaxTypeEnum.default('NONE'),
+  invoice_type: InvoiceTypeEnum.default('TAX'),
   tax_rate: z.number().nonnegative().default(0),
   discount: z.number().nonnegative().default(0),
   profit: z.number().nonnegative().default(0),
