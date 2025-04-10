@@ -13,6 +13,7 @@ const customerFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 characters")
     .max(20, "Phone number must not exceed 20 characters"),
+    trn: z.string().min(3, "TRN must be at least 3 characters"),
     address: z.string().optional().or(z.literal(''))
   });
 
@@ -48,7 +49,8 @@ export default function AddCustomer({
       name: '',
       email: '',
       phone: '',
-      address: ''
+      address: '',
+      trn: ''
     },
     mode: 'onChange' // Validate on change for immediate feedback
   });
@@ -60,7 +62,8 @@ export default function AddCustomer({
         name: customerToEdit.name,
         email: customerToEdit.email,
         phone: customerToEdit.phone || '',
-        address: customerToEdit.address || ''
+        address: customerToEdit.address || '',
+        trn: customerToEdit.trn || ''
       });
     }
   }, [customerToEdit, reset]);
@@ -76,7 +79,8 @@ export default function AddCustomer({
         name: data.name,
         email: data.email,
         phone: data.phone || '',
-        address: data.address || ''
+        address: data.address || '',
+        trn: data.trn || ''
       };
       
       // If in edit mode, add the ID and use PUT method
@@ -115,6 +119,7 @@ export default function AddCustomer({
         
         if (!response.ok) {
           const errorData = await response.json();
+          console.log(errorData);
           throw new Error(errorData.error || 'Failed to create customer');
         }
         
@@ -226,6 +231,26 @@ export default function AddCustomer({
               )}
             />
             <ErrorMessage message={errors.phone?.message} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">TRN</label>
+            <Controller
+              name="trn"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  variant="outlined"
+                  fullWidth
+                  error={!!errors.trn}
+                  size="small"
+                  placeholder="Enter TRN"
+                  disabled={isSubmitting}
+                  className="bg-white"
+                />
+              )}
+            />
+            <ErrorMessage message={errors.trn?.message} />
           </div>
           
           <div className="space-y-1">

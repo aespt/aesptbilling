@@ -289,7 +289,7 @@ export default function AddProduct({
               <ErrorMessage message={errors.price?.message} />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">MRP</label>
+              <label className="text-sm font-medium text-gray-700">Selling Price</label>
               <Controller
                 name="mrp"
                 control={control}
@@ -298,7 +298,7 @@ export default function AddProduct({
                     {...field}
                     fullWidth
                     type="number"
-                    placeholder="Enter MRP"
+                    placeholder="Enter selling price"
                     variant="outlined"
                     size="small"
                     inputProps={{ step: 0.01 }}

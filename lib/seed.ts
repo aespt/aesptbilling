@@ -68,6 +68,7 @@ export async function seed() {
       name: 'John Smith',
       email: 'john.smith@example.com',
       phone: '+971501234567',
+      trn: '1234567890',
       address: 'Downtown Dubai, UAE',
       created_by: 'system',
       updated_by: 'system'
@@ -76,6 +77,7 @@ export async function seed() {
       name: 'Sarah Johnson',
       email: 'sarah.j@example.com',
       phone: '+971502345678',
+      trn: '1234567891',
       address: 'Sharjah City, UAE',
       created_by: 'system',
       updated_by: 'system'
@@ -83,6 +85,7 @@ export async function seed() {
     db.insert(CustomersTable).values({
       name: 'Mohammed Al-Farsi',
       email: 'mohammed.af@example.com',
+      trn: '1234567892',
       phone: '+971503456789',
       address: 'Abu Dhabi Marina, UAE',
       created_by: 'system',
@@ -91,6 +94,7 @@ export async function seed() {
     db.insert(CustomersTable).values({
       name: 'Priya Patel',
       email: 'priya.p@example.com',
+      trn: '1234567893',
       phone: '+971504567890',
       address: 'Silicon Oasis, Dubai, UAE',
       created_by: 'system',
@@ -99,6 +103,7 @@ export async function seed() {
     db.insert(CustomersTable).values({
       name: 'Ali Hassan',
       email: 'ali.h@example.com',
+      trn: '1234567894',
       phone: '+971505678901',
       address: 'Ajman Corniche, UAE',
       created_by: 'system',
@@ -164,24 +169,28 @@ export async function seed() {
       name: 'Raj Kumar',
       contact_number: '+971551234567',
       created_by: 'system',
+      email: 'raj.kumar@example.com',
       updated_by: 'system'
     }).onConflictDoNothing().returning(),
     db.insert(SalesmenTable).values({
       name: 'Ahmed Al-Mansouri',
       contact_number: '+971552345678',
       created_by: 'system',
+      email: 'ahmed.almansouri@example.com',
       updated_by: 'system'
     }).onConflictDoNothing().returning(),
     db.insert(SalesmenTable).values({
       name: 'Lisa Chen',
       contact_number: '+971553456789',
       created_by: 'system',
+      email: 'lisa.chen@example.com',
       updated_by: 'system'
     }).onConflictDoNothing().returning(),
     db.insert(SalesmenTable).values({
       name: 'Fahad Al-Otaibi',
       contact_number: '+971554567890',
       created_by: 'system',
+      email: '',
       updated_by: 'system'
     }).onConflictDoNothing().returning(),
     db.insert(SalesmenTable).values({

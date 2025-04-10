@@ -23,6 +23,7 @@ export interface Customer extends BaseModel {
   email: string;
   phone: string | null;
   address: string | null;
+  trn: string | null;
 }
 
 // Supplier interface
@@ -37,6 +38,7 @@ export interface Supplier extends BaseModel {
 export interface Salesman extends BaseModel {
   name: string;
   contact_number: string;
+  email: string;
 }
 
 // User interface

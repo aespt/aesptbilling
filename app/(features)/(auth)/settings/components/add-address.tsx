@@ -361,7 +361,7 @@ export default function AddAddress({
           
           {/* Transaction No */}
           <TextField
-            label="Transaction No (TRN)"
+            label="Tax Registration Number (TRN)"
             name="transaction_no"
             value={address.transaction_no || ''}
             onChange={handleChange}

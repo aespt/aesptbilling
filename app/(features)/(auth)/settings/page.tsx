@@ -5,10 +5,11 @@ import { Tabs, Tab, Box, TextField, Typography, Paper, Button, Chip, IconButton 
 import PageHeader from "@/app/shared/components/page-header";
 import PrimaryButton from "@/app/shared/components/primary-button";
 import Sidepanel from "@/app/shared/components/sidepanel";
-import { FiHome, FiMapPin, FiCheck, FiStar, FiEdit } from "react-icons/fi";
+import { FiHome, FiMapPin, FiCheck, FiStar, FiEdit, FiCreditCard } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { cardVariants, badgeVariants } from "@/app/shared/animations/card-animations";
 import AddAddress from "./components/add-address";
+import AddBankDetails from "./components/add-bank-details";
 import Snackbar from "@/app/shared/components/snackbar";
 import useSnackbar from "@/app/shared/hooks/useSnackbar";
 
@@ -28,6 +29,9 @@ interface Address {
   country: string;
   postalCode: string;
   isPrimary: boolean;
+  transactionNo: string;
+  phoneNo: string;
+  faxNo: string;
 }
 
 // API representation of address
@@ -39,6 +43,26 @@ interface ApiAddress {
   state: string;
   country: string;
   postal_code: string;
+  is_primary: boolean;
+  created_by?: string;
+  updated_by?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+// UI representation of bank details
+interface BankDetails {
+  id: number;
+  name: string;
+  details: string;
+  isPrimary: boolean;
+}
+
+// API representation of bank details
+interface ApiBankDetails {
+  id: number;
+  name: string;
+  details: string;
   is_primary: boolean;
   created_by?: string;
   updated_by?: string;
@@ -74,6 +98,7 @@ export default function SettingsPage() {
   const [isGstLoading, setIsGstLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isAddressesLoading, setIsAddressesLoading] = useState(true);
+  const [isBankDetailsLoading, setIsBankDetailsLoading] = useState(true);
   
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
@@ -87,6 +112,14 @@ export default function SettingsPage() {
   const [addressToEdit, setAddressToEdit] = useState<Address | null>(null);
   const [isAddressDrawerOpen, setIsAddressDrawerOpen] = useState(false);
   const [isPrimarySettingLoading, setIsPrimarySettingLoading] = useState<number | null>(null);
+  
+  // Bank Details panel state
+  const [isBankDetailsPanelOpen, setIsBankDetailsPanelOpen] = useState(false);
+  const [selectedBankDetails, setSelectedBankDetails] = useState<BankDetails | null>(null);
+  
+  // Bank Details data
+  const [bankDetails, setBankDetails] = useState<BankDetails[]>([]);
+  const [isPrimaryBankDetailsLoading, setIsPrimaryBankDetailsLoading] = useState<number | null>(null);
 
   // Fetch VAT and GST data on component mount
   useEffect(() => {
@@ -141,7 +174,10 @@ export default function SettingsPage() {
             state: address.state || '',
             country: address.country,
             postalCode: address.postal_code,
-            isPrimary: address.is_primary
+            isPrimary: address.is_primary,
+            transactionNo: address.transaction_no || '',
+            phoneNo: address.phone_no || '',
+            faxNo: address.fax_no || ''
           }));
           
           setAddresses(formattedAddresses);
@@ -157,6 +193,40 @@ export default function SettingsPage() {
     };
 
     fetchAddresses();
+  }, [tabValue]);
+  
+  // Fetch bank details on component mount and when tab changes to bank details
+  useEffect(() => {
+    const fetchBankDetails = async () => {
+      if (tabValue !== 2) return;
+      
+      setIsBankDetailsLoading(true);
+      try {
+        const response = await fetch('/api/bank-details');
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Convert API format to component format
+          const formattedBankDetails = data.bankDetails.map((details: any) => ({
+            id: details.id,
+            name: details.name,
+            details: details.details,
+            isPrimary: details.is_primary
+          }));
+          
+          setBankDetails(formattedBankDetails);
+        } else {
+          showSnackbar('Failed to load bank details', 'error');
+        }
+      } catch (error) {
+        console.error('Error fetching bank details:', error);
+        showSnackbar('Error loading bank details', 'error');
+      } finally {
+        setIsBankDetailsLoading(false);
+      }
+    };
+
+    fetchBankDetails();
   }, [tabValue]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -308,6 +378,89 @@ export default function SettingsPage() {
     );
     showSnackbar('Address updated successfully', 'success');
   };
+  
+  const setAsPrimaryBankDetails = async (id: number) => {
+    try {
+      setIsPrimaryBankDetailsLoading(id);
+      
+      // Get the bank details to update
+      const bankDetailsToUpdate = bankDetails.find(details => details.id === id);
+      if (!bankDetailsToUpdate) return;
+      
+      // Update the bank details on the server
+      const response = await fetch(`/api/bank-details/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_primary: true
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update bank details');
+      }
+      
+      // Get the previously primary bank details
+      const previousPrimaryBankDetails = bankDetails.find(details => details.isPrimary);
+      
+      // If there was a primary bank details and it's different from the one we're updating
+      if (previousPrimaryBankDetails && previousPrimaryBankDetails.id !== id) {
+        // Update the previous primary bank details on the server to not be primary
+        const updatePreviousResponse = await fetch(`/api/bank-details/${previousPrimaryBankDetails.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            is_primary: false
+          }),
+        });
+        
+        if (!updatePreviousResponse.ok) {
+          console.warn('Failed to update previous primary bank details, but continuing');
+        }
+      }
+      
+      // Update the local state
+      setBankDetails(bankDetails.map(details => ({
+        ...details,
+        isPrimary: details.id === id
+      })));
+      
+      showSnackbar('Primary bank details updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating primary bank details:', error);
+      showSnackbar('Failed to update primary bank details', 'error');
+    } finally {
+      setIsPrimaryBankDetailsLoading(null);
+    }
+  };
+  
+  const openAddBankDetailsPanel = () => {
+    setSelectedBankDetails(null);
+    setIsBankDetailsPanelOpen(true);
+  };
+  
+  const openEditBankDetailsPanel = (details: BankDetails) => {
+    setSelectedBankDetails(details);
+    setIsBankDetailsPanelOpen(true);
+  };
+  
+  const handleBankDetailsAdded = (newBankDetails: BankDetails) => {
+    setBankDetails(prev => [...prev, newBankDetails]);
+    showSnackbar('Bank details added successfully', 'success');
+  };
+  
+  const handleBankDetailsUpdated = (updatedBankDetails: BankDetails) => {
+    setBankDetails(prev => 
+      prev.map(details => 
+        details.id === updatedBankDetails.id ? updatedBankDetails : details
+      )
+    );
+    showSnackbar('Bank details updated successfully', 'success');
+  };
 
   return (
     <div className="px-6 md:ml-72 pt-16 py-8">
@@ -327,6 +480,7 @@ export default function SettingsPage() {
           >
             <Tab label="Tax" id="settings-tab-0" aria-controls="settings-tabpanel-0" />
             <Tab label="Address" id="settings-tab-1" aria-controls="settings-tabpanel-1" />
+            <Tab label="Bank Details" id="settings-tab-2" aria-controls="settings-tabpanel-2" />
           </Tabs>
         </Box>
 
@@ -547,6 +701,121 @@ export default function SettingsPage() {
             )}
           </div>
         </TabPanel>
+        
+        <TabPanel value={tabValue} index={2}>
+          <div className="px-6 py-4">
+            <div className="mb-6 flex justify-between items-center">
+              <Typography variant="h6" className="font-medium text-gray-800">
+                Saved Bank Details
+              </Typography>
+              <Button 
+                variant="outlined" 
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                startIcon={<FiCreditCard />}
+                onClick={openAddBankDetailsPanel}
+              >
+                Add New Bank Details
+              </Button>
+            </div>
+            
+            {isBankDetailsLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+              </div>
+            ) : bankDetails.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Typography variant="body1" className="text-gray-600">
+                  No bank details found. Click "Add New Bank Details" to create one.
+                </Typography>
+              </div>
+            ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {bankDetails.map((details) => (
+                <motion.div
+                  key={details.id}
+                  initial={details.isPrimary ? "primary" : "notPrimary"}
+                  animate={details.isPrimary ? "primary" : "notPrimary"}
+                  variants={cardVariants}
+                  transition={{ duration: 0.3 }}
+                  className="rounded-lgb"
+                  layout
+                >
+                  <Paper 
+                    className={`p-4 rounded-lg border h-full ${details.isPrimary ? 'bg-blue-100 border-blue-500' : 'bg-white'}`}
+                    elevation={0}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center">
+                        <FiCreditCard className="text-gray-600 mr-2" />
+                        <Typography variant="subtitle1" className="font-medium">
+                          {details.name}
+                        </Typography>
+                      </div>
+                      <div className="flex items-center">
+                        <IconButton 
+                          size="small"
+                          className="text-gray-500 mr-1"
+                          aria-label="Edit bank details"
+                          onClick={() => openEditBankDetailsPanel(details)}
+                        >
+                          <FiEdit size={16} />
+                        </IconButton>
+                        <AnimatePresence>
+                          {details.isPrimary && (
+                            <motion.div
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              variants={badgeVariants}
+                            >
+                              <Chip
+                                icon={<FiStar className="text-blue-500" />}
+                                label="Primary"
+                                size="small"
+                                className="bg-blue-50 text-blue-700"
+                              />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 text-gray-700">
+                      <Typography variant="body2" className="whitespace-pre-wrap">
+                        {details.details}
+                      </Typography>
+                    </div>
+                    
+                    <div className="mt-4 flex justify-end">
+                      {/* Bank details actions */}
+                      <div className="flex items-center space-x-2">
+                        {!details.isPrimary && (
+                          <Button 
+                            size="small"
+                            variant="outlined"
+                            className="text-xs border-blue-500 text-blue-500 hover:bg-blue-50"
+                            onClick={() => setAsPrimaryBankDetails(details.id)}
+                            disabled={isPrimaryBankDetailsLoading === details.id}
+                          >
+                            {isPrimaryBankDetailsLoading === details.id ? (
+                              <div className="flex items-center">
+                                <div className="w-4 h-4 border-2 border-t-transparent border-blue-500 rounded-full animate-spin mr-2"></div>
+                                <span>Setting...</span>
+                              </div>
+                            ) : (
+                              'Set as Primary'
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Paper>
+                </motion.div>
+              ))}
+            </div>
+            )}
+          </div>
+        </TabPanel>
       </Paper>
       
       {/* Snackbar for notifications */}
@@ -568,6 +837,20 @@ export default function SettingsPage() {
           onAddressAdded={handleAddressAdded}
           onAddressUpdated={handleAddressUpdated}
           addressToEdit={selectedAddress}
+        />
+      </Sidepanel>
+      
+      {/* Sidepanel for adding/editing bank details */}
+      <Sidepanel
+        isOpen={isBankDetailsPanelOpen}
+        onClose={() => setIsBankDetailsPanelOpen(false)}
+        size="medium"
+      >
+        <AddBankDetails
+          onClose={() => setIsBankDetailsPanelOpen(false)}
+          onBankDetailsAdded={handleBankDetailsAdded}
+          onBankDetailsUpdated={handleBankDetailsUpdated}
+          bankDetailsToEdit={selectedBankDetails}
         />
       </Sidepanel>
     </div>

@@ -203,6 +203,7 @@ export default function SalesmenPage() {
                   <TableRow className="bg-gray-100">
                     <TableCell className="font-semibold">Name</TableCell>
                     <TableCell className="font-semibold">Contact Number</TableCell>
+                    <TableCell className="font-semibold">Email</TableCell>
                     <TableCell className="font-semibold">Created At</TableCell>
                     <TableCell className="font-semibold">Last Updated</TableCell>
                     <TableCell className="font-semibold">Actions</TableCell>
@@ -223,6 +224,7 @@ export default function SalesmenPage() {
                       >
                         <TableCell className="text-gray-700">{salesman.name}</TableCell>
                         <TableCell className="text-gray-600">{salesman.contact_number}</TableCell>
+                        <TableCell className="text-gray-600">{salesman.email || '-'}</TableCell>
                         <TableCell className="text-gray-600">{formatDate(salesman.created_at)}</TableCell>
                         <TableCell className="text-gray-600">{formatDate(salesman.updated_at)}</TableCell>
                         <TableCell>

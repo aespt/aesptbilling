@@ -65,6 +65,7 @@ export async function POST(request: Request) {
     const newSalesman = await db.insert(SalesmenTable).values({
       name: validatedData.name,
       contact_number: validatedData.contact_number,
+      email: validatedData.email,
       created_at: new Date(),
       updated_at: new Date(),
     }).returning();
@@ -114,6 +115,7 @@ export async function PUT(request: Request) {
     
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.contact_number !== undefined) updateData.contact_number = validatedData.contact_number;
+    if (validatedData.email !== undefined) updateData.email = validatedData.email;
     
     // Update the salesman in the database
     const updatedSalesman = await db.update(SalesmenTable)

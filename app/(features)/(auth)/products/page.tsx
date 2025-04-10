@@ -272,7 +272,7 @@ export default function ProductsPage() {
                     <TableCell className="font-semibold">Name</TableCell>
                     <TableCell className="font-semibold">Description</TableCell>
                     <TableCell className="font-semibold">Price</TableCell>
-                    <TableCell className="font-semibold">MRP</TableCell>
+                    <TableCell className="font-semibold">Selling Price</TableCell>
                     <TableCell className="font-semibold">Last Updated</TableCell>
                     <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>

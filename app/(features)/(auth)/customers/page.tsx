@@ -233,6 +233,7 @@ export default function CustomersPage() {
                     <TableCell className="font-semibold">Name</TableCell>
                     <TableCell className="font-semibold">Email</TableCell>
                     <TableCell className="font-semibold">Phone</TableCell>
+                    <TableCell className="font-semibold">TRN</TableCell>
                     <TableCell className="font-semibold">Address</TableCell>
                     <TableCell className="font-semibold">Last Updated</TableCell>
                     <TableCell className="font-semibold">Actions</TableCell>
@@ -254,6 +255,7 @@ export default function CustomersPage() {
                         <TableCell className="text-gray-700">{customer.name}</TableCell>
                         <TableCell className="text-gray-700">{customer.email}</TableCell>
                         <TableCell className="text-gray-600">{customer.phone || '-'}</TableCell>
+                        <TableCell className="text-gray-600">{customer.trn}</TableCell>
                         <TableCell className="text-gray-600">{customer.address || '-'}</TableCell>
                         <TableCell className="text-gray-600">{formatDate(customer.updated_at)}</TableCell>
                         <TableCell>

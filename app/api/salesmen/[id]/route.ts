@@ -78,6 +78,7 @@ export async function PUT(
       .set({
         name: body.name,
         contact_number: body.contact_number,
+        email: body.email,
         updated_at: new Date()
       })
       .where(eq(SalesmenTable.id, salesmanId))
