@@ -9,8 +9,5 @@ export * from './gst_master';
 export * from './suppliers';
 export * from './salesmen';
 export * from './sales';
-<<<<<<< HEAD
 export * from './address';
 export * from './bank_details'; 
-=======
->>>>>>> 354392129986e762b9d2dbabbdbd525ab3894428

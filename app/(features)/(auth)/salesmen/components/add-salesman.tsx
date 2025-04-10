@@ -64,6 +64,7 @@ export default function AddSalesman({
       reset({
         name: salesmanToEdit.name,
         contact_number: salesmanToEdit.contact_number,
+        email: salesmanToEdit.email,
       });
     }
   }, [salesmanToEdit, reset]);
