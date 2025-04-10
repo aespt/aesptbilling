@@ -106,6 +106,9 @@ export async function PUT(request: Request) {
     if (validatedData.address !== undefined) {
       updateData.address = validatedData.address || '';
     }
+    if (validatedData.trn !== undefined) {
+      updateData.trn = validatedData.trn || '';
+    }
 
     // Always update the updated_at timestamp
     updateData.updated_at = new Date();

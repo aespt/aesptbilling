@@ -93,6 +93,8 @@ export default function AddCustomer({
           ...customerData,
         };
 
+        console.log(updateData);
+
         const response = await fetch('/api/customers', {
           method: 'PUT',
           headers: {
