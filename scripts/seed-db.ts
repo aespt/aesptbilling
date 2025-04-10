@@ -1,5 +1,6 @@
-import { seed } from '../lib/seed';
 import dotenv from 'dotenv';
+
+import { seed } from '../lib/seed';
 
 // Load environment variables
 dotenv.config();
@@ -23,4 +24,4 @@ async function main() {
   }
 }
 
-main(); 
+main();

@@ -19,4 +19,4 @@ export const CustomersTable = pgTable(
       emailIdx: uniqueIndex('customers_email_idx').on(customers.email),
     };
   }
-); 
+);

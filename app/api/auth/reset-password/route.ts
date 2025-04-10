@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-// Import using relative paths - more reliable than aliases in some cases
-import { db } from '../../../../lib/db';
+import { hash } from 'bcrypt';
 import { eq, and, gt } from 'drizzle-orm';
+import { type NextRequest, NextResponse } from 'next/server';
+
+import { db } from '../../../../lib/drizzle';
+import type { User } from '../../../../lib/drizzle';
 import { UsersTable } from '../../../../lib/models/users';
-import bcrypt from 'bcrypt';
-import { User } from '../../../../lib/drizzle';
 
 /**
  * Reset a password using a valid token
@@ -14,10 +14,7 @@ export async function POST(request: NextRequest) {
     const { token, password } = await request.json();
 
     if (!token || !password) {
-      return NextResponse.json(
-        { error: 'Token and password are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token and password are required' }, { status: 400 });
     }
 
     // Find the user by token
@@ -27,22 +24,19 @@ export async function POST(request: NextRequest) {
       .where(
         and(
           eq(UsersTable.password_reset_token, token),
-          gt(UsersTable.token_expiration as any, new Date()) // Token is not expired
+          gt(UsersTable.token_expiration, new Date()) // Token is not expired
         )
       )
       .limit(1)
       .then((users: User[]) => users[0] || null);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
     }
 
     // Hash the new password
     const saltRounds = 10;
-    const password_hash = await bcrypt.hash(password, saltRounds);
+    const password_hash = await hash(password, saltRounds);
 
     // Update the user's password and clear the reset token
     await db
@@ -55,10 +49,7 @@ export async function POST(request: NextRequest) {
       })
       .where(eq(UsersTable.id, user.id));
 
-    return NextResponse.json(
-      { message: 'Password has been reset successfully' },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: 'Password has been reset successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error resetting password:', error);
     return NextResponse.json(
@@ -66,4 +57,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

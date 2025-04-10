@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
 import SearchIcon from '@mui/icons-material/Search';
 import { TextField, InputAdornment } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
 
 interface SearchProps {
   onSearch: (query: string) => void;
@@ -16,7 +16,7 @@ export default function Search({
   className = '',
 }: SearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Clear previous timeout
@@ -43,7 +43,7 @@ export default function Search({
       variant="outlined"
       placeholder={placeholder}
       value={searchQuery}
-      onChange={(e) => setSearchQuery(e.target.value)}
+      onChange={e => setSearchQuery(e.target.value)}
       className={className}
       InputProps={{
         startAdornment: (
@@ -54,4 +54,4 @@ export default function Search({
       }}
     />
   );
-} 
+}

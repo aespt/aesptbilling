@@ -1,4 +1,5 @@
-import jwt from 'jsonwebtoken';
+import { sign, verify } from 'jsonwebtoken';
+
 import { type TokenPayload } from '../schemas/authSchema';
 
 // Environment variables for JWT configuration
@@ -11,14 +12,14 @@ export const REFRESH_COOKIE_NAME = 'aespt_refresh_token';
  * Generate a JWT token for the user
  */
 export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET);
+  return sign(payload, JWT_SECRET);
 }
 
 /**
  * Generate a refresh token for the user
  */
 export function generateRefreshToken(userId: number): string {
-  return jwt.sign({ userId }, JWT_SECRET);
+  return sign({ userId }, JWT_SECRET);
 }
 
 /**
@@ -26,8 +27,8 @@ export function generateRefreshToken(userId: number): string {
  */
 export function verifyToken<T>(token: string): T | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as T;
-  } catch (error) {
+    return verify(token, JWT_SECRET) as T;
+  } catch {
     return null;
   }
 }

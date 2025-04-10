@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Tabs, Tab, Box, TextField, Typography, Paper, Button, Chip, IconButton } from "@mui/material";
 import PageHeader from "@/app/shared/components/page-header";
 import PrimaryButton from "@/app/shared/components/primary-button";
@@ -89,10 +89,10 @@ function TabPanel(props: TabPanelProps) {
 
 export default function SettingsPage() {
   const [tabValue, setTabValue] = useState(0);
-  const [uaeVat, setUaeVat] = useState("");
-  const [indiaCgst, setIndiaCgst] = useState("");
-  const [indiaSgst, setIndiaSgst] = useState("");
-  
+  const [uaeVat, setUaeVat] = useState('');
+  const [indiaCgst, setIndiaCgst] = useState('');
+  const [indiaSgst, setIndiaSgst] = useState('');
+
   // Loading states
   const [isVatLoading, setIsVatLoading] = useState(false);
   const [isGstLoading, setIsGstLoading] = useState(false);
@@ -102,15 +102,13 @@ export default function SettingsPage() {
   
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
-  
+
   // Address panel state
   const [isAddressPanelOpen, setIsAddressPanelOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  
+
   // Address data
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [addressToEdit, setAddressToEdit] = useState<Address | null>(null);
-  const [isAddressDrawerOpen, setIsAddressDrawerOpen] = useState(false);
   const [isPrimarySettingLoading, setIsPrimarySettingLoading] = useState<number | null>(null);
   
   // Bank Details panel state
@@ -121,22 +119,40 @@ export default function SettingsPage() {
   const [bankDetails, setBankDetails] = useState<BankDetails[]>([]);
   const [isPrimaryBankDetailsLoading, setIsPrimaryBankDetailsLoading] = useState<number | null>(null);
 
+  // Request reference for race condition prevention
+  const taxDataRequestIdRef = useRef(0);
+  const addressesRequestIdRef = useRef(0);
+
   // Fetch VAT and GST data on component mount
   useEffect(() => {
     const fetchTaxData = async () => {
+      const myRequestId = ++taxDataRequestIdRef.current;
+
       setIsDataLoading(true);
       try {
         // Fetch VAT data
         const vatResponse = await fetch('/api/vat-rates');
+
+        // Check for race condition
+        if (myRequestId !== taxDataRequestIdRef.current) {
+          return;
+        }
+
         if (vatResponse.ok) {
           const vatData = await vatResponse.json();
           if (vatData.vatRates && vatData.vatRates.length > 0) {
             setUaeVat(vatData.vatRates[0].vat_percentage);
           }
         }
-        
+
         // Fetch GST data
         const gstResponse = await fetch('/api/gst-rates');
+
+        // Check for race condition again
+        if (myRequestId !== taxDataRequestIdRef.current) {
+          return;
+        }
+
         if (gstResponse.ok) {
           const gstData = await gstResponse.json();
           if (gstData.gstRates && gstData.gstRates.length > 0) {
@@ -145,50 +161,89 @@ export default function SettingsPage() {
           }
         }
       } catch (error) {
-        console.error('Error fetching tax data:', error);
+        // Only update error state if this is still the most recent request
+        if (myRequestId === taxDataRequestIdRef.current) {
+          console.error('Error fetching tax data:', error);
+        }
       } finally {
-        setIsDataLoading(false);
+        // Only update loading state if this is still the most recent request
+        if (myRequestId === taxDataRequestIdRef.current) {
+          setIsDataLoading(false);
+        }
       }
     };
 
     fetchTaxData();
   }, []);
 
-  // Fetch addresses on component mount and when tab changes to addresses
+  // Memoize the fetch parameters for addresses
+  const addressFetchParams = useMemo(
+    () => ({
+      tabValue,
+    }),
+    [tabValue]
+  );
+
+  // Fetch addresses when tab changes to addresses
   useEffect(() => {
     const fetchAddresses = async () => {
-      if (tabValue !== 1) return;
-      
+      // Only fetch if we're on the addresses tab
+      if (addressFetchParams.tabValue !== 1) {
+        return;
+      }
+
+      const myRequestId = ++addressesRequestIdRef.current;
+
       setIsAddressesLoading(true);
       try {
         const response = await fetch('/api/addresses');
+
+        // Check for race condition
+        if (myRequestId !== addressesRequestIdRef.current) {
+          return;
+        }
+
         if (response.ok) {
           const data = await response.json();
-          
+
           // Convert API format to component format
-          const formattedAddresses = data.addresses.map((address: any) => ({
-            id: address.id,
-            type: address.type,
-            street: address.street,
-            city: address.city,
-            state: address.state || '',
-            country: address.country,
-            postalCode: address.postal_code,
-            isPrimary: address.is_primary,
-            transactionNo: address.transaction_no || '',
-            phoneNo: address.phone_no || '',
-            faxNo: address.fax_no || ''
-          }));
-          
+          const formattedAddresses = data.addresses.map(
+            (address: {
+              id: number;
+              type: string;
+              street: string;
+              city: string;
+              state?: string;
+              country: string;
+              postal_code: string;
+              is_primary: boolean;
+            }) => ({
+              id: address.id,
+              type: address.type,
+              street: address.street,
+              city: address.city,
+              state: address.state || '',
+              country: address.country,
+              postalCode: address.postal_code,
+              isPrimary: address.is_primary,
+            })
+          );
+
           setAddresses(formattedAddresses);
         } else {
           showSnackbar('Failed to load addresses', 'error');
         }
       } catch (error) {
-        console.error('Error fetching addresses:', error);
-        showSnackbar('Error loading addresses', 'error');
+        // Only update error state if this is still the most recent request
+        if (myRequestId === addressesRequestIdRef.current) {
+          console.error('Error fetching addresses:', error);
+          showSnackbar('Error loading addresses', 'error');
+        }
       } finally {
-        setIsAddressesLoading(false);
+        // Only update loading state if this is still the most recent request
+        if (myRequestId === addressesRequestIdRef.current) {
+          setIsAddressesLoading(false);
+        }
       }
     };
 
@@ -236,7 +291,7 @@ export default function SettingsPage() {
   const handleSubmitVat = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsVatLoading(true);
-    
+
     try {
       const response = await fetch('/api/vat-rates', {
         method: 'POST',
@@ -244,13 +299,11 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          vat_percentage: parseFloat(uaeVat)
+          vat_percentage: parseFloat(uaeVat),
         }),
       });
-      
+
       if (response.ok) {
-        const result = await response.json();
-        console.log('VAT updated successfully:', result);
         showSnackbar('VAT settings saved successfully', 'success');
       } else {
         console.error('Failed to update VAT');
@@ -263,11 +316,11 @@ export default function SettingsPage() {
       setIsVatLoading(false);
     }
   };
-  
+
   const handleSubmitGst = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGstLoading(true);
-    
+
     try {
       const response = await fetch('/api/gst-rates', {
         method: 'POST',
@@ -276,13 +329,11 @@ export default function SettingsPage() {
         },
         body: JSON.stringify({
           cgst_percentage: parseFloat(indiaCgst),
-          sgst_percentage: parseFloat(indiaSgst)
+          sgst_percentage: parseFloat(indiaSgst),
         }),
       });
-      
+
       if (response.ok) {
-        const result = await response.json();
-        console.log('GST updated successfully:', result);
         showSnackbar('GST settings saved successfully', 'success');
       } else {
         console.error('Failed to update GST');
@@ -299,11 +350,13 @@ export default function SettingsPage() {
   const setAsPrimary = async (id: number) => {
     try {
       setIsPrimarySettingLoading(id);
-      
+
       // Get the address to update
       const addressToUpdate = addresses.find(address => address.id === id);
-      if (!addressToUpdate) return;
-      
+      if (!addressToUpdate) {
+        return;
+      }
+
       // Update the address on the server
       const response = await fetch(`/api/addresses/${id}`, {
         method: 'PUT',
@@ -311,17 +364,17 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          is_primary: true
+          is_primary: true,
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update address');
       }
-      
+
       // Get the previously primary address
       const previousPrimaryAddress = addresses.find(address => address.isPrimary);
-      
+
       // If there was a primary address and it's different from the one we're updating
       if (previousPrimaryAddress && previousPrimaryAddress.id !== id) {
         // Update the previous primary address on the server to not be primary
@@ -331,21 +384,23 @@ export default function SettingsPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            is_primary: false
+            is_primary: false,
           }),
         });
-        
+
         if (!updatePreviousResponse.ok) {
           console.warn('Failed to update previous primary address, but continuing');
         }
       }
-      
+
       // Update the local state
-    setAddresses(addresses.map(address => ({
-      ...address,
-      isPrimary: address.id === id
-    })));
-      
+      setAddresses(
+        addresses.map(address => ({
+          ...address,
+          isPrimary: address.id === id,
+        }))
+      );
+
       showSnackbar('Primary address updated successfully', 'success');
     } catch (error) {
       console.error('Error updating primary address:', error);
@@ -354,27 +409,25 @@ export default function SettingsPage() {
       setIsPrimarySettingLoading(null);
     }
   };
-  
+
   const openAddAddressPanel = () => {
     setSelectedAddress(null);
     setIsAddressPanelOpen(true);
   };
-  
+
   const openEditAddressPanel = (address: Address) => {
     setSelectedAddress(address);
     setIsAddressPanelOpen(true);
   };
-  
+
   const handleAddressAdded = (newAddress: Address) => {
     setAddresses(prev => [...prev, newAddress]);
     showSnackbar('Address added successfully', 'success');
   };
-  
+
   const handleAddressUpdated = (updatedAddress: Address) => {
-    setAddresses(prev => 
-      prev.map(address => 
-        address.id === updatedAddress.id ? updatedAddress : address
-      )
+    setAddresses(prev =>
+      prev.map(address => (address.id === updatedAddress.id ? updatedAddress : address))
     );
     showSnackbar('Address updated successfully', 'success');
   };
@@ -463,18 +516,14 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="px-6 md:ml-72 pt-16 py-8">
-      <PageHeader 
-        heading="Settings" 
-        buttonText="" 
-        onButtonClick={() => {}} 
-      />
-      
+    <div className="px-6 py-8 pt-16 md:ml-72">
+      <PageHeader heading="Settings" buttonText="" onButtonClick={() => {}} />
+
       <Paper className="mb-6">
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange} 
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
             aria-label="settings tabs"
             className="px-4 pt-2"
           >
@@ -486,24 +535,24 @@ export default function SettingsPage() {
 
         <TabPanel value={tabValue} index={0}>
           {isDataLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+            <div className="flex h-64 items-center justify-center">
+              <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
             </div>
           ) : (
-            <div className="px-6 pb-6 space-y-6">
+            <div className="space-y-6 px-6 pb-6">
               {/* UAE Section */}
-              <form onSubmit={handleSubmitVat} className="p-4 bg-gray-100 rounded-lg">
+              <form onSubmit={handleSubmitVat} className="rounded-lg bg-gray-100 p-4">
                 <Typography variant="h6" className="mb-4 font-medium text-gray-800">
                   UAE
                 </Typography>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+                <div className="grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
                   <TextField
                     label="VAT %"
                     variant="outlined"
                     fullWidth
                     value={uaeVat}
                     size="small"
-                    onChange={(e) => setUaeVat(e.target.value)}
+                    onChange={e => setUaeVat(e.target.value)}
                     type="number"
                     InputProps={{
                       endAdornment: <Typography variant="body2">%</Typography>,
@@ -511,36 +560,38 @@ export default function SettingsPage() {
                     className="bg-white"
                   />
                 </div>
-                <div className="flex justify-end mt-4">
-                  <Button 
-                    variant="contained" 
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    variant="contained"
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4"
+                    className="bg-blue-600 px-4 text-white hover:bg-blue-700"
                     disabled={isVatLoading}
                   >
                     {isVatLoading ? (
                       <div className="flex items-center">
-                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                        <div className="mr-2 size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         <span>Saving...</span>
                       </div>
-                    ) : 'Save VAT Settings'}
+                    ) : (
+                      'Save VAT Settings'
+                    )}
                   </Button>
-              </div>
+                </div>
               </form>
 
               {/* India Section */}
-              <form onSubmit={handleSubmitGst} className="p-4 bg-gray-100 rounded-lg">
+              <form onSubmit={handleSubmitGst} className="rounded-lg bg-gray-100 p-4">
                 <Typography variant="h6" className="mb-4 font-medium text-gray-800">
                   India
                 </Typography>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+                <div className="grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
                   <TextField
                     label="CGST %"
                     variant="outlined"
                     fullWidth
                     value={indiaCgst}
                     size="small"
-                    onChange={(e) => setIndiaCgst(e.target.value)}
+                    onChange={e => setIndiaCgst(e.target.value)}
                     type="number"
                     InputProps={{
                       endAdornment: <Typography variant="body2">%</Typography>,
@@ -553,7 +604,7 @@ export default function SettingsPage() {
                     fullWidth
                     value={indiaSgst}
                     size="small"
-                    onChange={(e) => setIndiaSgst(e.target.value)}
+                    onChange={e => setIndiaSgst(e.target.value)}
                     type="number"
                     InputProps={{
                       endAdornment: <Typography variant="body2">%</Typography>,
@@ -561,21 +612,23 @@ export default function SettingsPage() {
                     className="bg-white"
                   />
                 </div>
-                <div className="flex justify-end mt-4">
-                  <Button 
-                    variant="contained" 
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    variant="contained"
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4"
+                    className="bg-blue-600 px-4 text-white hover:bg-blue-700"
                     disabled={isGstLoading}
                   >
                     {isGstLoading ? (
                       <div className="flex items-center">
-                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                        <div className="mr-2 size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         <span>Saving...</span>
-              </div>
-                    ) : 'Save GST Settings'}
+                      </div>
+                    ) : (
+                      'Save GST Settings'
+                    )}
                   </Button>
-              </div>
+                </div>
               </form>
             </div>
           )}
@@ -583,12 +636,12 @@ export default function SettingsPage() {
 
         <TabPanel value={tabValue} index={1}>
           <div className="px-6 py-4">
-            <div className="mb-6 flex justify-between items-center">
+            <div className="mb-6 flex items-center justify-between">
               <Typography variant="h6" className="font-medium text-gray-800">
                 Saved Addresses
               </Typography>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
                 startIcon={<FiMapPin />}
                 onClick={openAddAddressPanel}
@@ -596,108 +649,109 @@ export default function SettingsPage() {
                 Add New Address
               </Button>
             </div>
-            
+
             {isAddressesLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+              <div className="flex h-64 items-center justify-center">
+                <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
               </div>
             ) : addresses.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <div className="rounded-lg bg-gray-50 py-12 text-center">
                 <Typography variant="body1" className="text-gray-600">
-                  No addresses found. Click "Add New Address" to create one.
+                  No addresses found. Click &quot;Add New Address&quot; to create one.
                 </Typography>
               </div>
             ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {addresses.map((address) => (
-                <motion.div
-                  key={address.id}
-                  initial={address.isPrimary ? "primary" : "notPrimary"}
-                  animate={address.isPrimary ? "primary" : "notPrimary"}
-                  variants={cardVariants}
-                  transition={{ duration: 0.3 }}
-                  className="rounded-lgb"
-                  layout
-                >
-                  <Paper 
-                    className={`p-4 rounded-lg border h-full ${address.isPrimary ? 'bg-blue-100 border-blue-500' : 'bg-white'}`}
-                    elevation={0}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {addresses.map(address => (
+                  <motion.div
+                    key={address.id}
+                    initial={address.isPrimary ? 'primary' : 'notPrimary'}
+                    animate={address.isPrimary ? 'primary' : 'notPrimary'}
+                    variants={cardVariants}
+                    transition={{ duration: 0.3 }}
+                    className="rounded-lgb"
+                    layout
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center">
-                        <FiHome className="text-gray-600 mr-2" />
-                        <Typography variant="subtitle1" className="font-medium">
-                          {address.type}
+                    <Paper
+                      className={`h-full rounded-lg border p-4 ${address.isPrimary ? 'border-blue-500 bg-blue-100' : 'bg-white'}`}
+                      elevation={0}
+                    >
+                      <div className="mb-2 flex items-start justify-between">
+                        <div className="flex items-center">
+                          <FiHome className="mr-2 text-gray-600" />
+                          <Typography variant="subtitle1" className="font-medium">
+                            {address.type}
+                          </Typography>
+                        </div>
+                        <div className="flex items-center">
+                          <IconButton
+                            size="small"
+                            className="mr-1 text-gray-500"
+                            aria-label="Edit address"
+                            onClick={() => openEditAddressPanel(address)}
+                          >
+                            <FiEdit size={16} />
+                          </IconButton>
+                          <AnimatePresence>
+                            {address.isPrimary && (
+                              <motion.div
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                variants={badgeVariants}
+                              >
+                                <Chip
+                                  icon={<FiStar className="text-blue-500" />}
+                                  label="Primary"
+                                  size="small"
+                                  className="bg-blue-50 text-blue-700"
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 text-gray-700">
+                        <Typography variant="body2" className="mb-1">
+                          {address.street}
+                        </Typography>
+                        <Typography variant="body2" className="mb-1">
+                          {address.city}
+                          {address.state ? `, ${address.state}` : ''}
+                        </Typography>
+                        <Typography variant="body2" className="mb-1">
+                          {address.country}, {address.postalCode}
                         </Typography>
                       </div>
-                      <div className="flex items-center">
-                        <IconButton 
-                          size="small"
-                          className="text-gray-500 mr-1"
-                          aria-label="Edit address"
-                          onClick={() => openEditAddressPanel(address)}
-                        >
-                          <FiEdit size={16} />
-                        </IconButton>
-                        <AnimatePresence>
-                          {address.isPrimary && (
-                            <motion.div
-                              initial="hidden"
-                              animate="visible"
-                              exit="exit"
-                              variants={badgeVariants}
-                            >
-                              <Chip
-                                  icon={<FiStar className="text-blue-500" />}
-                                label="Primary"
-                                size="small"
-                                  className="bg-blue-50 text-blue-700"
-                              />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 text-gray-700">
-                      <Typography variant="body2" className="mb-1">
-                        {address.street}
-                      </Typography>
-                      <Typography variant="body2" className="mb-1">
-                        {address.city}{address.state ? `, ${address.state}` : ''}
-                      </Typography>
-                      <Typography variant="body2" className="mb-1">
-                        {address.country}, {address.postalCode}
-                      </Typography>
-                    </div>
-                    
-                    <div className="mt-4 flex justify-end">
+
+                      <div className="mt-4 flex justify-end">
                         {/* Address actions */}
                         <div className="flex items-center space-x-2">
-                      {!address.isPrimary && (
-                        <Button 
-                          size="small"
+                          {!address.isPrimary && (
+                            <Button
+                              size="small"
                               variant="outlined"
-                              className="text-xs border-blue-500 text-blue-500 hover:bg-blue-50"
-                          onClick={() => setAsPrimary(address.id)}
+                              className="border-blue-500 text-xs text-blue-500 hover:bg-blue-50"
+                              onClick={() => setAsPrimary(address.id)}
                               disabled={isPrimarySettingLoading === address.id}
                             >
                               {isPrimarySettingLoading === address.id ? (
                                 <div className="flex items-center">
-                                  <div className="w-4 h-4 border-2 border-t-transparent border-blue-500 rounded-full animate-spin mr-2"></div>
+                                  <div className="mr-2 size-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
                                   <span>Setting...</span>
                                 </div>
                               ) : (
                                 'Set as Primary'
                               )}
-                        </Button>
-                      )}
+                            </Button>
+                          )}
                         </div>
-                    </div>
-                  </Paper>
-                </motion.div>
-              ))}
-            </div>
+                      </div>
+                    </Paper>
+                  </motion.div>
+                ))}
+              </div>
             )}
           </div>
         </TabPanel>
@@ -817,15 +871,10 @@ export default function SettingsPage() {
           </div>
         </TabPanel>
       </Paper>
-      
+
       {/* Snackbar for notifications */}
-      <Snackbar
-        open={isOpen}
-        message={message}
-        type={type}
-        onClose={hideSnackbar}
-      />
-      
+      <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
+
       {/* Sidepanel for adding/editing addresses */}
       <Sidepanel
         isOpen={isAddressPanelOpen}

@@ -1,5 +1,4 @@
-
-import PrimaryButton from "./primary-button";
+import PrimaryButton from './primary-button';
 
 interface PageHeaderProps {
   heading: string;
@@ -9,7 +8,7 @@ interface PageHeaderProps {
 
 export default function PageHeader({ heading, buttonText, onButtonClick }: PageHeaderProps) {
   return (
-    <div className="flex justify-between items-center mb-6">
+    <div className="mb-6 flex items-center justify-between">
       <h1 className="text-2xl font-bold text-gray-800">{heading}</h1>
       {/* <Button
         variant="contained"
@@ -22,4 +21,4 @@ export default function PageHeader({ heading, buttonText, onButtonClick }: PageH
       {/* <PrimaryButton label={buttonText} onClick={onButtonClick} /> */}
     </div>
   );
-} 
+}

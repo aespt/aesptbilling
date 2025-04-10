@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BaseSchema, BaseCreateSchema } from './baseSchema';
+
+import { BaseCreateSchema, BaseSchema } from './baseSchema';
 
 // Zod schema for invoice item validation
 export const InvoiceItemSchema = BaseSchema.extend({
@@ -13,12 +14,12 @@ export const InvoiceItemSchema = BaseSchema.extend({
 
 // Zod schema for creating a new invoice item
 export const CreateInvoiceItemSchema = BaseCreateSchema.extend(
-  InvoiceItemSchema.omit({ 
-    id: true, 
-    created_at: true, 
+  InvoiceItemSchema.omit({
+    id: true,
+    created_at: true,
     updated_at: true,
     created_by: true,
-    updated_by: true
+    updated_by: true,
   }).shape
 );
 
@@ -27,4 +28,4 @@ export const UpdateInvoiceItemSchema = CreateInvoiceItemSchema.partial();
 
 // Types derived from Zod schema
 export type InvoiceItemInput = z.infer<typeof CreateInvoiceItemSchema>;
-export type InvoiceItemUpdate = z.infer<typeof UpdateInvoiceItemSchema>; 
+export type InvoiceItemUpdate = z.infer<typeof UpdateInvoiceItemSchema>;

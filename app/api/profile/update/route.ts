@@ -1,14 +1,15 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { UsersTable } from "@/lib/models/users";
-import { eq } from "drizzle-orm";
-import { getCurrentUser } from "@/lib/utils/auth";
+import { eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/drizzle';
+import { UsersTable } from '@/lib/models/users';
+import { getCurrentUser } from '@/lib/utils/auth';
 
 export async function PUT(request: Request) {
   try {
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     if (!user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -22,10 +23,7 @@ export async function PUT(request: Request) {
       .limit(1);
 
     if (existingUser.length > 0 && existingUser[0].email !== user.email) {
-      return NextResponse.json(
-        { error: "Email is already taken" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email is already taken' }, { status: 400 });
     }
 
     // Update user profile
@@ -38,12 +36,9 @@ export async function PUT(request: Request) {
       })
       .where(eq(UsersTable.email, user.email));
 
-    return NextResponse.json({ message: "Profile updated successfully" });
+    return NextResponse.json({ message: 'Profile updated successfully' });
   } catch (error) {
-    console.error("Profile update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update profile" },
-      { status: 500 }
-    );
+    console.error('Profile update error:', error);
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
-} 
+}

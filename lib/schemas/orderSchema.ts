@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BaseSchema, BaseCreateSchema } from './baseSchema';
+
+import { BaseCreateSchema, BaseSchema } from './baseSchema';
 
 // Enum for order status
 export const OrderStatusEnum = z.enum([
@@ -7,7 +8,7 @@ export const OrderStatusEnum = z.enum([
   'processing',
   'shipped',
   'delivered',
-  'cancelled'
+  'cancelled',
 ]);
 
 // Zod schema for order validation
@@ -26,12 +27,12 @@ export const OrderSchema = BaseSchema.extend({
 
 // Zod schema for creating a new order
 export const CreateOrderSchema = BaseCreateSchema.extend(
-  OrderSchema.omit({ 
-    id: true, 
-    created_at: true, 
+  OrderSchema.omit({
+    id: true,
+    created_at: true,
     updated_at: true,
     created_by: true,
-    updated_by: true
+    updated_by: true,
   }).shape
 );
 
@@ -40,4 +41,4 @@ export const UpdateOrderSchema = CreateOrderSchema.partial();
 
 // Types derived from Zod schema
 export type OrderInput = z.infer<typeof CreateOrderSchema>;
-export type OrderUpdate = z.infer<typeof UpdateOrderSchema>; 
+export type OrderUpdate = z.infer<typeof UpdateOrderSchema>;

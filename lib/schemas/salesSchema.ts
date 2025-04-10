@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BaseSchema, BaseCreateSchema } from './baseSchema';
+
+import { BaseCreateSchema, BaseSchema } from './baseSchema';
 
 // Enum for discount types
 export const DiscountTypeEnum = z.enum(['PERCENTAGE', 'FIXED', 'NONE']);
@@ -21,12 +22,12 @@ export const SalesSchema = BaseSchema.extend({
 
 // Zod schema for creating a new sales record
 export const CreateSalesSchema = BaseCreateSchema.extend(
-  SalesSchema.omit({ 
-    id: true, 
-    created_at: true, 
+  SalesSchema.omit({
+    id: true,
+    created_at: true,
     updated_at: true,
     created_by: true,
-    updated_by: true
+    updated_by: true,
   }).shape
 );
 
@@ -35,4 +36,4 @@ export const UpdateSalesSchema = CreateSalesSchema.partial();
 
 // Types derived from Zod schema
 export type SalesInput = z.infer<typeof CreateSalesSchema>;
-export type SalesUpdate = z.infer<typeof UpdateSalesSchema>; 
+export type SalesUpdate = z.infer<typeof UpdateSalesSchema>;

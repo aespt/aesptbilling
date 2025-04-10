@@ -1,42 +1,51 @@
+import { count, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+
 import { db } from '@/lib/drizzle';
+import { CustomersTable } from '@/lib/models/customers';
+import { InvoicesTable } from '@/lib/models/invoices';
 import { ProductsTable } from '@/lib/models/products';
 import { SalesmenTable } from '@/lib/models/salesmen';
-import { CustomersTable } from '@/lib/models/customers';
 import { SuppliersTable } from '@/lib/models/suppliers';
-import { InvoicesTable } from '@/lib/models/invoices';
-import { count, sql } from 'drizzle-orm';
 
 export async function GET() {
   try {
     // Query counts from all tables in parallel for better performance
-    const [
-      productsCount,
-      salesmenCount,
-      customersCount,
-      suppliersCount
-    ] = await Promise.all([
+    const [productsCount, salesmenCount, customersCount, suppliersCount] = await Promise.all([
       db.select({ count: count() }).from(ProductsTable),
       db.select({ count: count() }).from(SalesmenTable),
       db.select({ count: count() }).from(CustomersTable),
-      db.select({ count: count() }).from(SuppliersTable)
+      db.select({ count: count() }).from(SuppliersTable),
     ]);
 
     // Default data for all months
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
     // Initialize default sales data with 0 values
     const salesData = monthNames.map(name => ({
       name,
-      value: 0
+      value: 0,
     }));
-    
+
     // Initialize default margin data with 0 values
     const marginData = monthNames.map(name => ({
       name,
       sales: 0,
       purchase: 0,
-      margin: 0
+      margin: 0,
     }));
 
     try {
@@ -50,13 +59,11 @@ export async function GET() {
         .groupBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`)
         .orderBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`);
 
-      console.log("Sales results:", JSON.stringify(monthlySalesResults));
-
       // Update sales data with actual values
       if (monthlySalesResults && monthlySalesResults.length > 0) {
         monthlySalesResults.forEach(result => {
-          const monthIndex = monthNames.findIndex(name => 
-            name.toLowerCase() === result.month.substring(0, 3).toLowerCase()
+          const monthIndex = monthNames.findIndex(
+            name => name.toLowerCase() === result.month.substring(0, 3).toLowerCase()
           );
           if (monthIndex !== -1) {
             salesData[monthIndex].value = parseFloat(String(result.total));
@@ -76,13 +83,11 @@ export async function GET() {
         .groupBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`)
         .orderBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`);
 
-      console.log("Margin results:", JSON.stringify(monthlyMarginResults));
-
       // Update margin data with actual values
       if (monthlyMarginResults && monthlyMarginResults.length > 0) {
         monthlyMarginResults.forEach(result => {
-          const monthIndex = monthNames.findIndex(name => 
-            name.toLowerCase() === result.month.substring(0, 3).toLowerCase()
+          const monthIndex = monthNames.findIndex(
+            name => name.toLowerCase() === result.month.substring(0, 3).toLowerCase()
           );
           if (monthIndex !== -1) {
             marginData[monthIndex].sales = parseFloat(String(result.sales));
@@ -102,38 +107,38 @@ export async function GET() {
         id: 'products',
         title: 'Products',
         count: productsCount[0].count,
-        icon: 'inventory'
+        icon: 'inventory',
       },
       {
         id: 'salesmen',
         title: 'Salesmen',
         count: salesmenCount[0].count,
-        icon: 'salesman'
+        icon: 'salesman',
       },
       {
         id: 'customers',
         title: 'Customers',
         count: customersCount[0].count,
-        icon: 'business'
+        icon: 'business',
       },
       {
         id: 'suppliers',
         title: 'Suppliers',
         count: suppliersCount[0].count,
-        icon: 'local_shipping'
-      }
+        icon: 'local_shipping',
+      },
     ];
 
-    return NextResponse.json({ 
-      metrics,
-      salesData,
-      marginData
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        metrics,
+        salesData,
+        marginData,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error fetching dashboard metrics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard metrics' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch dashboard metrics' }, { status: 500 });
   }
 }

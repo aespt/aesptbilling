@@ -1,6 +1,7 @@
-import { pgTable, serial, text, timestamp, uniqueIndex, varchar, integer, type PgTableWithColumns, type IndexBuilder } from 'drizzle-orm/pg-core';
+import { pgTable, serial, timestamp, uniqueIndex, varchar, integer } from 'drizzle-orm/pg-core';
 
-export const UsersTable: PgTableWithColumns<any> = pgTable(
+// Define the table
+export const UsersTable = pgTable(
   'users',
   {
     id: serial('id').primaryKey(),
@@ -9,15 +10,19 @@ export const UsersTable: PgTableWithColumns<any> = pgTable(
     password_hash: varchar('password_hash', { length: 255 }).notNull(),
     password_reset_token: varchar('password_reset_token', { length: 255 }),
     token_expiration: timestamp('token_expiration'),
-    created_by: integer('created_by').references(() => UsersTable.id),
-    updated_by: integer('updated_by').references(() => UsersTable.id),
+    created_by: integer('created_by'),
+    updated_by: integer('updated_by'),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (users): { emailIdx: IndexBuilder, usernameIdx: IndexBuilder } => {
+  users => {
     return {
       emailIdx: uniqueIndex('users_email_idx').on(users.email),
       usernameIdx: uniqueIndex('users_username_idx').on(users.username),
     };
   }
-); 
+);
+
+// Add self-references manually after the table is defined
+// These need to be defined in a separate file to avoid circular references
+// or managed through a migration

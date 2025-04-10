@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { SnackbarType } from '../components/snackbar';
+
+import type { SnackbarType } from '../components/snackbar';
 
 interface UseSnackbarReturn {
   isOpen: boolean;
@@ -29,6 +30,6 @@ export default function useSnackbar(): UseSnackbarReturn {
     message,
     type,
     showSnackbar,
-    hideSnackbar
+    hideSnackbar,
   };
-} 
+}

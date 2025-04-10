@@ -1,5 +1,5 @@
-import postgres from 'postgres';
 import * as dotenv from 'dotenv';
+import postgres from 'postgres';
 
 // Load environment variables
 dotenv.config();
@@ -9,21 +9,21 @@ const connectionString = 'postgres://postgres:postgres@localhost:5432/postgres';
 
 async function main() {
   console.log('🔄 Resetting database...');
-  
-  const client = postgres(connectionString, { 
+
+  const client = postgres(connectionString, {
     max: 1,
-    ssl: false
+    ssl: false,
   });
-  
+
   try {
     // Drop the database if it exists
     await client.unsafe(`DROP DATABASE IF EXISTS aespt_db;`);
     console.log('✅ Dropped database if it existed');
-    
+
     // Create the database
     await client.unsafe(`CREATE DATABASE aespt_db;`);
     console.log('✅ Created fresh database');
-    
+
     console.log('🎉 Database reset completed successfully');
     console.log('');
     console.log('Now run:');
@@ -38,4 +38,4 @@ async function main() {
   }
 }
 
-main(); 
+main();

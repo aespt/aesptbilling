@@ -1,23 +1,18 @@
+import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+
 import { db } from '@/lib/drizzle';
-import { SalesTable } from '@/lib/models/sales';
 import { CustomersTable } from '@/lib/models/customers';
 import { ProductsTable } from '@/lib/models/products';
+import { SalesTable } from '@/lib/models/sales';
 import { SalesmenTable } from '@/lib/models/salesmen';
-import { eq } from 'drizzle-orm';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id);
 
     if (isNaN(id)) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
     }
 
     // Fetch sale with joined data from related tables
@@ -47,18 +42,12 @@ export async function GET(
       .where(eq(SalesTable.id, id));
 
     if (salesData.length === 0) {
-      return NextResponse.json(
-        { error: 'Sale not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Sale not found' }, { status: 404 });
     }
 
     return NextResponse.json({ sale: salesData[0] }, { status: 200 });
   } catch (error) {
     console.error('Error fetching sale data:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sale data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch sale data' }, { status: 500 });
   }
-} 
+}

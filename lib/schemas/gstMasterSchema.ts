@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BaseSchema, BaseCreateSchema } from './baseSchema';
+
+import { BaseCreateSchema, BaseSchema } from './baseSchema';
 
 // Zod schema for GST master validation
 export const GstMasterSchema = BaseSchema.extend({
@@ -14,12 +15,12 @@ export const GstMasterSchema = BaseSchema.extend({
 
 // Zod schema for creating a new GST master entry
 export const CreateGstMasterSchema = BaseCreateSchema.extend(
-  GstMasterSchema.omit({ 
-    id: true, 
-    created_at: true, 
+  GstMasterSchema.omit({
+    id: true,
+    created_at: true,
     updated_at: true,
     created_by: true,
-    updated_by: true
+    updated_by: true,
   }).shape
 );
 
@@ -28,4 +29,4 @@ export const UpdateGstMasterSchema = CreateGstMasterSchema.partial();
 
 // Types derived from Zod schema
 export type GstMasterInput = z.infer<typeof CreateGstMasterSchema>;
-export type GstMasterUpdate = z.infer<typeof UpdateGstMasterSchema>; 
+export type GstMasterUpdate = z.infer<typeof UpdateGstMasterSchema>;

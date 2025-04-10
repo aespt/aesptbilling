@@ -37,6 +37,31 @@ cp .env.example .env
 
 This project uses PostgreSQL with Docker for easy setup and Drizzle ORM for database interactions.
 
+### Connection Pooling
+
+The application uses connection pooling to efficiently manage database connections. This helps prevent the "too many clients already" error that can occur when too many simultaneous connections are made to PostgreSQL.
+
+Connection pool configuration is defined in `lib/drizzle.ts`:
+
+```typescript
+const sql = postgres(connectionString, {
+  ssl: false,
+  max: 10, // Maximum number of connections in the pool
+  idle_timeout: 30, // Close idle connections after 30 seconds
+  connect_timeout: 10, // Connection timeout after 10 seconds
+  max_lifetime: 60 * 30, // Connection lifetime max 30 minutes
+});
+```
+
+#### Troubleshooting Connection Issues
+
+If you encounter a "too many clients already" error:
+
+1. Check your connection pool settings and consider lowering the `max` value if your PostgreSQL server has a low connection limit
+2. Ensure all database connections are properly closed when no longer needed
+3. Set `POSTGRES_URL` in your .env file to use a connection string with pooling if provided by your database host
+4. Verify your PostgreSQL server configuration allows enough connections (`max_connections` setting)
+
 ### Starting the Database
 
 1. Start the PostgreSQL database using Docker:

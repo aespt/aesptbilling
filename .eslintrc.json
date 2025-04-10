@@ -62,8 +62,9 @@
     "curly": ["error", "all"],
 
     // Tailwind rules
-    "tailwindcss/no-custom-classname": "warn",
-    "tailwindcss/classnames-order": "warn"
+    "tailwindcss/no-custom-classname": "off",
+    "tailwindcss/classnames-order": "warn",
+    "tailwindcss/migration-from-tailwind-2": "off"
   },
   "settings": {
     "react": {

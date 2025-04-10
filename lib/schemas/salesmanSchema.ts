@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BaseSchema, BaseCreateSchema } from './baseSchema';
+
+import { BaseCreateSchema, BaseSchema } from './baseSchema';
 
 // Zod schema for salesman validation
 export const SalesmanSchema = BaseSchema.extend({
@@ -11,12 +12,12 @@ export const SalesmanSchema = BaseSchema.extend({
 
 // Zod schema for creating a new salesman
 export const CreateSalesmanSchema = BaseCreateSchema.extend(
-  SalesmanSchema.omit({ 
-    id: true, 
-    created_at: true, 
+  SalesmanSchema.omit({
+    id: true,
+    created_at: true,
     updated_at: true,
     created_by: true,
-    updated_by: true
+    updated_by: true,
   }).shape
 );
 
@@ -25,4 +26,4 @@ export const UpdateSalesmanSchema = CreateSalesmanSchema.partial();
 
 // Types derived from Zod schema
 export type SalesmanInput = z.infer<typeof CreateSalesmanSchema>;
-export type SalesmanUpdate = z.infer<typeof UpdateSalesmanSchema>; 
+export type SalesmanUpdate = z.infer<typeof UpdateSalesmanSchema>;

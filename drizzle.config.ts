@@ -1,5 +1,5 @@
-import type { Config } from 'drizzle-kit';
 import * as dotenv from 'dotenv';
+import type { Config } from 'drizzle-kit';
 
 dotenv.config();
 
@@ -16,4 +16,4 @@ export default {
   },
   verbose: true,
   strict: true,
-} satisfies Config; 
+} satisfies Config;

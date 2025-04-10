@@ -9,10 +9,10 @@ export const BaseSchema = z.object({
 });
 
 // Base schema for creating new entities (without timestamps)
-export const BaseCreateSchema = BaseSchema.omit({ 
-  created_at: true, 
-  updated_at: true 
+export const BaseCreateSchema = BaseSchema.omit({
+  created_at: true,
+  updated_at: true,
 });
 
 // Base schema for updating entities
-export const BaseUpdateSchema = BaseCreateSchema.partial(); 
+export const BaseUpdateSchema = BaseCreateSchema.partial();

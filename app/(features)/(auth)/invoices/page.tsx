@@ -1,35 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  Typography, 
-  Box, 
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import SearchIcon from '@mui/icons-material/Search';
+import {
+  Typography,
+  Box,
   Paper,
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  TablePagination, 
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TableSortLabel,
   Drawer,
   IconButton,
   Button,
-  CircularProgress,
   TextField,
   InputAdornment,
-  Autocomplete
+  Autocomplete,
+  MenuItem,
 } from '@mui/material';
-import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import SearchIcon from '@mui/icons-material/Search';
-import dayjs from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import type * as DayJS from 'dayjs';
+import { useState, useEffect, useCallback } from 'react';
+
+import Pagination from '@/app/shared/components/pagination';
+import type { PaginationInfo } from '@/app/shared/components/pagination';
 import PrimaryButton from '@/app/shared/components/primary-button';
-import { useRouter } from 'next/navigation';
-import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
 
 // Add custom CSS for animations
 const tableRowAnimation = `
@@ -65,6 +65,7 @@ interface Invoice {
   salesman_id: number;
   ship_from: string;
   ship_to: string;
+  invoice_type: string;
   customer: {
     id: number;
     name: string;
@@ -84,15 +85,15 @@ interface SortConfig {
 }
 
 interface FilterOptions {
-  dateFrom: dayjs.Dayjs | null;
-  dateTo: dayjs.Dayjs | null;
+  dateFrom: DayJS.Dayjs | null;
+  dateTo: DayJS.Dayjs | null;
   invoiceNumber: string;
   salesPerson: Salesman | null;
   customer: Customer | null;
+  invoiceType: string | null;
 }
 
 export default function InvoicesListPage() {
-  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -101,11 +102,11 @@ export default function InvoicesListPage() {
     currentPage: 1,
     pageSize: 10,
     hasNext: false,
-    hasPrev: false
+    hasPrev: false,
   });
   const [sort, setSort] = useState<SortConfig>({
     field: 'invoice_date',
-    direction: 'desc'
+    direction: 'desc',
   });
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
@@ -113,11 +114,23 @@ export default function InvoicesListPage() {
     dateTo: null,
     invoiceNumber: '',
     salesPerson: null,
-    customer: null
+    customer: null,
+    invoiceType: null,
+  });
+  const [tempFilters, setTempFilters] = useState<FilterOptions>({
+    dateFrom: null,
+    dateTo: null,
+    invoiceNumber: '',
+    salesPerson: null,
+    customer: null,
+    invoiceType: null,
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+
+  // Define invoice type options
+  const invoiceTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
 
   // Fetch dropdown data
   useEffect(() => {
@@ -145,79 +158,91 @@ export default function InvoicesListPage() {
     };
 
     if (filterDrawerOpen) {
+      setTempFilters(filters);
       fetchDropdownData();
     }
   }, [filterDrawerOpen]);
 
-  const fetchInvoices = async () => {
-    setLoading(true);
-    
-    try {
-      // Build query parameters with null checks and default values
-      const params = new URLSearchParams({
-        page: (pagination?.currentPage ?? 1).toString(),
-        limit: (pagination?.pageSize ?? 10).toString(),
-        sortField: sort.field,
-        sortOrder: sort.direction,
-      });
-      
-      // Add date filters if set
-      if (filters.dateFrom) {
-        params.append('dateFrom', filters.dateFrom.format('YYYY-MM-DD'));
-      }
-      
-      if (filters.dateTo) {
-        params.append('dateTo', filters.dateTo.format('YYYY-MM-DD'));
-      }
+  const fetchInvoices = useCallback(
+    async (overrideFilters?: FilterOptions) => {
+      setLoading(true);
 
-      // Add text filters if set
-      if (filters.invoiceNumber.trim()) {
-        params.append('invoiceNumber', filters.invoiceNumber.trim());
-      }
+      // Use override filters if provided, otherwise use state filters
+      const filtersToUse = overrideFilters || filters;
 
-      // Add salesPerson filter if set
-      if (filters.salesPerson) {
-        params.append('salesPerson', filters.salesPerson.name);
-      }
+      try {
+        // Build query parameters with null checks and default values
+        const params = new URLSearchParams({
+          page: (pagination?.currentPage ?? 1).toString(),
+          limit: (pagination?.pageSize ?? 10).toString(),
+          sortField: sort.field,
+          sortOrder: sort.direction,
+        });
 
-      // Add customer filter if set
-      if (filters.customer) {
-        params.append('customer', filters.customer.name);
+        // Add date filters if set
+        if (filtersToUse.dateFrom) {
+          params.append('dateFrom', filtersToUse.dateFrom.format('YYYY-MM-DD'));
+        }
+
+        if (filtersToUse.dateTo) {
+          params.append('dateTo', filtersToUse.dateTo.format('YYYY-MM-DD'));
+        }
+
+        // Add text filters if set
+        if (filtersToUse.invoiceNumber.trim()) {
+          params.append('invoiceNumber', filtersToUse.invoiceNumber.trim());
+        }
+
+        // Add salesPerson filter if set
+        if (filtersToUse.salesPerson) {
+          params.append('salesPerson', filtersToUse.salesPerson.name);
+        }
+
+        // Add customer filter if set
+        if (filtersToUse.customer) {
+          params.append('customer', filtersToUse.customer.name);
+        }
+
+        // Add invoice type filter if set
+        if (filtersToUse.invoiceType) {
+          params.append('invoiceType', filtersToUse.invoiceType);
+        }
+
+        const response = await fetch(`/api/invoices?${params.toString()}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch invoices');
+        }
+
+        const data = await response.json();
+        setInvoices(data.invoices);
+        // Ensure pagination data has all required fields
+        setPagination({
+          total: data.pagination.total ?? 0,
+          totalPages: data.pagination.totalPages ?? 1,
+          currentPage: data.pagination.currentPage ?? 1,
+          pageSize: data.pagination.pageSize ?? 10,
+          hasNext: data.pagination.hasNext ?? false,
+          hasPrev: data.pagination.hasPrev ?? false,
+        });
+      } catch (error) {
+        console.error('Error fetching invoices:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      const response = await fetch(`/api/invoices?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch invoices');
-      }
-      
-      const data = await response.json();
-      setInvoices(data.invoices);
-      // Ensure pagination data has all required fields
-      setPagination({
-        total: data.pagination.total ?? 0,
-        totalPages: data.pagination.totalPages ?? 1,
-        currentPage: data.pagination.currentPage ?? 1,
-        pageSize: data.pagination.pageSize ?? 10,
-        hasNext: data.pagination.hasNext ?? false,
-        hasPrev: data.pagination.hasPrev ?? false
-      });
-    } catch (error) {
-      console.error('Error fetching invoices:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [pagination.currentPage, pagination.pageSize, sort, filters]
+  );
 
   // Load invoices on initial page load and when filters change
   useEffect(() => {
     fetchInvoices();
-  }, [pagination.currentPage, pagination.pageSize, sort]);
+  }, [fetchInvoices]);
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({
       ...prev,
-      currentPage: newPage
+      currentPage: newPage,
     }));
   };
 
@@ -225,21 +250,24 @@ export default function InvoicesListPage() {
     setPagination(prev => ({
       ...prev,
       currentPage: 1,
-      pageSize: newPageSize
+      pageSize: newPageSize,
     }));
   };
 
   const handleSortChange = (field: string) => {
     setSort(prev => ({
       field,
-      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
     }));
   };
 
-  const handleFilterChange = (key: keyof FilterOptions, value: any) => {
-    setFilters(prev => ({
+  const handleFilterChange = (
+    key: keyof FilterOptions,
+    value: Customer | Salesman | DayJS.Dayjs | string | null
+  ) => {
+    setTempFilters(prev => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
@@ -247,26 +275,40 @@ export default function InvoicesListPage() {
     // Reset to page 1 when applying new filters
     setPagination(prev => ({
       ...prev,
-      currentPage: 1
+      currentPage: 1,
     }));
-    fetchInvoices();
+
+    // First fetch with the temp filters directly
+    fetchInvoices(tempFilters);
+
+    // Then update the state filters
+    setFilters(tempFilters);
+
     setFilterDrawerOpen(false);
   };
 
   const handleResetFilters = () => {
-    setFilters({
+    const emptyFilters = {
       dateFrom: null,
       dateTo: null,
       invoiceNumber: '',
       salesPerson: null,
-      customer: null
-    });
+      customer: null,
+      invoiceType: null,
+    };
+
+    setTempFilters(emptyFilters);
     setPagination(prev => ({
       ...prev,
-      currentPage: 1
+      currentPage: 1,
     }));
-    // Wait for state to update before fetching
-    setTimeout(fetchInvoices, 0);
+
+    // First fetch with empty filters
+    fetchInvoices(emptyFilters);
+
+    // Then update the state
+    setFilters(emptyFilters);
+
     setFilterDrawerOpen(false);
   };
 
@@ -281,13 +323,13 @@ export default function InvoicesListPage() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="px-4 md:px-6 pt-16 pb-6 md:ml-[280px]">
-        <style jsx global>{tableRowAnimation}</style>
-        <Box className="flex justify-between items-center mb-6">
+      <div className="px-4 pb-6 pt-16 md:ml-[280px] md:px-6">
+        <style>{tableRowAnimation}</style>
+        <Box className="mb-6 flex items-center justify-between">
           <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
             Sales History
           </Typography>
-          <IconButton 
+          <IconButton
             onClick={() => setFilterDrawerOpen(true)}
             color="primary"
             className="bg-blue-50 hover:bg-blue-100"
@@ -298,11 +340,14 @@ export default function InvoicesListPage() {
         </Box>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+          <div className="flex h-64 items-center justify-center">
+            <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
           </div>
         ) : (
-          <Paper elevation={2} className="overflow-hidden shadow-md rounded-lg border border-gray-100">
+          <Paper
+            elevation={2}
+            className="overflow-hidden rounded-lg border border-gray-100 shadow-md"
+          >
             <TableContainer>
               <Table>
                 <TableHead className="bg-gray-100">
@@ -335,6 +380,15 @@ export default function InvoicesListPage() {
                       </TableSortLabel>
                     </TableCell>
                     <TableCell className="font-medium">Customer</TableCell>
+                    <TableCell className="font-medium">
+                      <TableSortLabel
+                        active={sort.field === 'invoice_type'}
+                        direction={sort.field === 'invoice_type' ? sort.direction : 'asc'}
+                        onClick={() => handleSortChange('invoice_type')}
+                      >
+                        Invoice Type
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell className="font-medium">Ship From</TableCell>
                     <TableCell className="font-medium">Ship To</TableCell>
                     <TableCell align="right" className="font-medium">
@@ -351,27 +405,35 @@ export default function InvoicesListPage() {
                 <TableBody>
                   {invoices.length > 0 ? (
                     invoices.map((invoice, index) => (
-                      <TableRow 
-                        key={invoice.id} 
+                      <TableRow
+                        key={invoice.id}
                         hover
                         className="transition-all duration-150 hover:bg-gray-50"
-                        style={{ 
+                        style={{
                           animationDelay: `${index * 30}ms`,
-                          animation: 'fadeIn 0.5s ease-in-out forwards'
+                          animation: 'fadeIn 0.5s ease-in-out forwards',
                         }}
                       >
                         <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
-                        <TableCell className="font-medium text-blue-600 cursor-pointer" onClick={() => handleInvoiceClick(invoice.id)}>{invoice.invoice_number}</TableCell>
+                        <TableCell
+                          className="cursor-pointer font-medium text-blue-600"
+                          onClick={() => handleInvoiceClick(invoice.id)}
+                        >
+                          {invoice.invoice_number}
+                        </TableCell>
                         <TableCell>{invoice.salesman.name}</TableCell>
                         <TableCell>{invoice.customer.name}</TableCell>
+                        <TableCell className="capitalize">{invoice.invoice_type}</TableCell>
                         <TableCell>{invoice.ship_from}</TableCell>
                         <TableCell>{invoice.ship_to}</TableCell>
-                        <TableCell align="right" className="font-bold">{parseFloat(invoice.total).toFixed(2)} AED</TableCell>
+                        <TableCell align="right" className="font-bold">
+                          {parseFloat(invoice.total).toFixed(2)} AED
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={8} className="py-8 text-center text-gray-500">
                         No invoices found. Please try adjusting your filters.
                       </TableCell>
                     </TableRow>
@@ -390,49 +452,45 @@ export default function InvoicesListPage() {
         )}
 
         {/* Enhanced Filter Drawer */}
-        <Drawer
-          anchor="right"
-          open={filterDrawerOpen}
-          onClose={() => setFilterDrawerOpen(false)}
-        >
+        <Drawer anchor="right" open={filterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
           <Box className="w-[400px] p-6">
             <Typography variant="h6" className="mb-6 font-semibold">
               Filter Invoices
             </Typography>
-            
+
             <div className="space-y-6">
               {/* Date From Filter */}
               <div>
                 <Typography variant="subtitle2" className="mb-2 text-gray-600">
                   Date From
                 </Typography>
-                <DatePicker 
-                  value={filters.dateFrom}
-                  onChange={(newValue) => handleFilterChange('dateFrom', newValue)}
-                  slotProps={{ 
-                    textField: { 
+                <DatePicker
+                  value={tempFilters.dateFrom}
+                  onChange={newValue => handleFilterChange('dateFrom', newValue)}
+                  slotProps={{
+                    textField: {
                       fullWidth: true,
-                      size: "small",
-                      className: "bg-white rounded" 
-                    } 
+                      size: 'small',
+                      className: 'bg-white rounded',
+                    },
                   }}
                 />
               </div>
-              
+
               {/* Date To Filter */}
               <div>
                 <Typography variant="subtitle2" className="mb-2 text-gray-600">
                   Date To
                 </Typography>
-                <DatePicker 
-                  value={filters.dateTo}
-                  onChange={(newValue) => handleFilterChange('dateTo', newValue)}
-                  slotProps={{ 
-                    textField: { 
+                <DatePicker
+                  value={tempFilters.dateTo}
+                  onChange={newValue => handleFilterChange('dateTo', newValue)}
+                  slotProps={{
+                    textField: {
                       fullWidth: true,
-                      size: "small",
-                      className: "bg-white rounded" 
-                    } 
+                      size: 'small',
+                      className: 'bg-white rounded',
+                    },
                   }}
                 />
               </div>
@@ -445,10 +503,10 @@ export default function InvoicesListPage() {
                 <TextField
                   fullWidth
                   size="small"
-                  value={filters.invoiceNumber}
-                  onChange={(e) => handleFilterChange('invoiceNumber', e.target.value)}
+                  value={tempFilters.invoiceNumber}
+                  onChange={e => handleFilterChange('invoiceNumber', e.target.value)}
                   placeholder="Search by invoice number"
-                  className="bg-white rounded"
+                  className="rounded bg-white"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -467,15 +525,15 @@ export default function InvoicesListPage() {
                 <Autocomplete
                   options={salesmen}
                   loading={loadingDropdowns}
-                  getOptionLabel={(option) => option.name}
-                  value={filters.salesPerson}
+                  getOptionLabel={option => option.name}
+                  value={tempFilters.salesPerson}
                   onChange={(_, newValue) => handleFilterChange('salesPerson', newValue)}
-                  renderInput={(params) => (
+                  renderInput={params => (
                     <TextField
                       {...params}
                       placeholder="Select a sales person"
                       size="small"
-                      className="bg-white rounded"
+                      className="rounded bg-white"
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
@@ -500,15 +558,15 @@ export default function InvoicesListPage() {
                 <Autocomplete
                   options={customers}
                   loading={loadingDropdowns}
-                  getOptionLabel={(option) => option.name}
-                  value={filters.customer}
+                  getOptionLabel={option => option.name}
+                  value={tempFilters.customer}
                   onChange={(_, newValue) => handleFilterChange('customer', newValue)}
-                  renderInput={(params) => (
+                  renderInput={params => (
                     <TextField
                       {...params}
                       placeholder="Select a customer"
                       size="small"
-                      className="bg-white rounded"
+                      className="rounded bg-white"
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
@@ -524,17 +582,37 @@ export default function InvoicesListPage() {
                   )}
                 />
               </div>
-              
+
+              {/* Invoice Type Filter - Dropdown */}
+              <div>
+                <Typography variant="subtitle2" className="mb-2 text-gray-600">
+                  Invoice Type
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  className="rounded bg-white"
+                  value={tempFilters.invoiceType || ''}
+                  onChange={e => handleFilterChange('invoiceType', e.target.value || null)}
+                  placeholder="Select invoice type"
+                >
+                  <MenuItem value="">All Types</MenuItem>
+                  {invoiceTypeOptions.map(option => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </div>
+
               <div className="flex flex-col gap-3 pt-4">
-                <PrimaryButton 
-                  label="Apply Filters"
-                  onClick={handleApplyFilters}
-                />
-                
-                <Button 
-                  variant="outlined" 
+                <PrimaryButton label="Apply Filters" onClick={handleApplyFilters} />
+
+                <Button
+                  variant="outlined"
                   onClick={handleResetFilters}
-                  className="w-full normal-case mt-2"
+                  className="mt-2 w-full normal-case"
                 >
                   Reset Filters
                 </Button>
@@ -545,4 +623,4 @@ export default function InvoicesListPage() {
       </div>
     </LocalizationProvider>
   );
-} 
+}

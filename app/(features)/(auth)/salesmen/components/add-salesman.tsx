@@ -1,11 +1,12 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { TextField } from '@mui/material';
-import { useState, useEffect } from 'react';
-import { Salesman } from "@/lib/types";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+import type { Salesman } from '@/lib/types';
 
 // Define the validation schema using Zod
 const salesmanFormSchema = z.object({
@@ -27,32 +28,34 @@ interface AddSalesmanProps {
 
 // Error message component
 const ErrorMessage = ({ message }: { message?: string }) => {
-  if (!message) return null;
-  return <p className="text-sm text-red-600 mt-1">{message}</p>;
+  if (!message) {
+    return null;
+  }
+  return <p className="mt-1 text-sm text-red-600">{message}</p>;
 };
 
-export default function AddSalesman({ 
-  onSalesmanAdded, 
+export default function AddSalesman({
+  onSalesmanAdded,
   onSalesmanUpdated,
   salesmanToEdit,
-  onClose
+  onClose,
 }: AddSalesmanProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const isEditMode = !!salesmanToEdit;
 
   // Initialize React Hook Form
-  const { 
-    control, 
-    handleSubmit, 
-    reset, 
-    formState: { errors, isSubmitted } 
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
   } = useForm<SalesmanFormData>({
     resolver: zodResolver(salesmanFormSchema),
     defaultValues: {
       name: '',
       contact_number: '',
-    }
+    },
   });
 
   // Set form values when editing an existing salesman
@@ -110,39 +113,42 @@ export default function AddSalesman({
 
       // Close the form after successful submission
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error submitting salesman form:', error);
-      setServerError(error.message || 'An unexpected error occurred');
+      setServerError(error instanceof Error ? error.message : 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
       {/* Header */}
-      <div className="p-6 border-b">
+      <div className="border-b p-6">
         <h1 className="text-2xl font-bold text-black/70">
           {isEditMode ? 'Edit Salesman' : 'Add Salesman'}
         </h1>
       </div>
-      
-      <div className="flex-grow p-6 overflow-y-auto">
+
+      <div className="grow overflow-y-auto p-6">
         {serverError && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-md border border-red-200">
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-red-600">
             {serverError}
           </div>
         )}
-        
+
         <div className="space-y-6">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Name</label>
+            <label htmlFor="name" className="text-sm font-medium text-gray-700">
+              Name
+            </label>
             <Controller
               name="name"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="name"
                   variant="outlined"
                   fullWidth
                   size="small"
@@ -155,15 +161,18 @@ export default function AddSalesman({
             />
             <ErrorMessage message={errors.name?.message} />
           </div>
-          
+
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Contact Number</label>
+            <label htmlFor="contact_number" className="text-sm font-medium text-gray-700">
+              Contact Number
+            </label>
             <Controller
               name="contact_number"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="contact_number"
                   variant="outlined"
                   fullWidth
                   size="small"
@@ -195,13 +204,13 @@ export default function AddSalesman({
           </div>
         </div>
       </div>
-      
+
       {/* Buttons - Fixed at bottom */}
-      <div className="sticky bottom-0 p-6 border-t bg-white mt-auto">
+      <div className="sticky bottom-0 mt-auto border-t bg-white p-6">
         <div className="flex gap-4">
           <button
             type="button"
-            className="cursor-pointer flex-1 px-4 py-2.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex-1 cursor-pointer rounded-md border border-gray-300 px-4 py-2.5 text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
             onClick={onClose}
             disabled={isSubmitting}
           >
@@ -209,7 +218,7 @@ export default function AddSalesman({
           </button>
           <button
             type="submit"
-            className="cursor-pointer flex-1 px-4 py-2.5 rounded-md overflow-hidden bg-gradient-to-r from-red-500 to-blue-500 text-white hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:hover:scale-100"
+            className="flex-1 cursor-pointer overflow-hidden rounded-md bg-gradient-to-r from-red-500 to-blue-500 px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Saving...' : isEditMode ? 'Update' : 'Submit'}
@@ -218,4 +227,4 @@ export default function AddSalesman({
       </div>
     </form>
   );
-} 
+}

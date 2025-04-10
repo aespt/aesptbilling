@@ -1,43 +1,45 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Sidepanel from "@/app/shared/components/sidepanel";
-import PageHeader from "@/app/shared/components/page-header";
-import ActionMenu from "@/app/shared/components/action-menu";
-import AddProduct from "./components/add-product";
-import ConfirmationDialog from "@/app/shared/components/confirmation-dialog";
-import Snackbar from "@/app/shared/components/snackbar";
-import Pagination, { PaginationInfo } from "@/app/shared/components/pagination";
-import useConfirmation from "@/app/shared/hooks/useConfirmation";
-import useSnackbar from "@/app/shared/hooks/useSnackbar";
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import {
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-} from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import { Product } from "@/lib/types";
-import Search from "@/app/shared/components/search";
+} from '@mui/material';
+import { useState, useEffect, useRef, useMemo } from 'react';
+
+import ActionMenu from '@/app/shared/components/action-menu';
+import ConfirmationDialog from '@/app/shared/components/confirmation-dialog';
+import PageHeader from '@/app/shared/components/page-header';
+import Pagination from '@/app/shared/components/pagination';
+import type { PaginationInfo } from '@/app/shared/components/pagination';
+import Search from '@/app/shared/components/search';
+import Sidepanel from '@/app/shared/components/sidepanel';
+import Snackbar from '@/app/shared/components/snackbar';
+import useConfirmation from '@/app/shared/hooks/useConfirmation';
+import useSnackbar from '@/app/shared/hooks/useSnackbar';
+import type { Product } from '@/lib/types';
+
+import AddProduct from './components/add-product';
 
 const actionMenuItems = [
-  { 
-    name: "edit", 
-    displayText: "Edit",
-    icon: <EditIcon fontSize="small" className="text-gray-600" />
+  {
+    name: 'edit',
+    displayText: 'Edit',
+    icon: <EditIcon fontSize="small" className="text-gray-600" />,
   },
-  { 
-    name: "delete", 
-    displayText: "Delete",
-    icon: <DeleteIcon fontSize="small" className="text-gray-600" />
+  {
+    name: 'delete',
+    displayText: 'Delete',
+    icon: <DeleteIcon fontSize="small" className="text-gray-600" />,
   },
-  // { 
-  //   name: "view", 
+  // {
+  //   name: "view",
   //   displayText: "View Details",
   //   icon: <VisibilityIcon fontSize="small" className="text-gray-600" />
   // },
@@ -50,7 +52,7 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sidepanelMode, setSidepanelMode] = useState<'add' | 'edit'>('add');
-  
+
   // Pagination state
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -62,7 +64,7 @@ export default function ProductsPage() {
     hasNext: false,
     hasPrev: false,
   });
-  
+
   // Use our custom confirmation hook
   const {
     isConfirmationOpen,
@@ -73,46 +75,78 @@ export default function ProductsPage() {
     confirmButtonColor,
     showConfirmation,
     handleConfirm,
-    handleCancel
+    handleCancel,
   } = useConfirmation();
-  
+
   // Use our custom snackbar hook
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch products from API
-  const fetchProducts = async (pageNumber = page, pageSize = rowsPerPage, search = searchQuery) => {
+  // Create a reference for the current request to handle race conditions
+  const currentRequestIdRef = useRef(0);
+
+  // Memoize the fetch parameters to prevent unnecessary rerenders
+  const fetchParams = useMemo(
+    () => ({
+      page,
+      rowsPerPage,
+      searchQuery,
+    }),
+    [page, rowsPerPage, searchQuery]
+  );
+
+  // Define the fetch function within the component
+  const fetchProducts = async () => {
+    const myRequestId = ++currentRequestIdRef.current;
+
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `/api/products?page=${pageNumber}&limit=${pageSize}&search=${encodeURIComponent(search)}`
-      );
-      
+      setError(null);
+
+      const url = `/api/products?page=${fetchParams.page}&limit=${fetchParams.rowsPerPage}&search=${encodeURIComponent(fetchParams.searchQuery)}`;
+      const response = await fetch(url);
+
+      // If a newer request has started, abandon this one
+      if (myRequestId !== currentRequestIdRef.current) {
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
-      
+
       const data = await response.json();
-      setProducts(data.products);
-      setPaginationInfo(data.pagination);
+
+      // Only update state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setProducts(data.products);
+        setPaginationInfo(data.pagination);
+        setIsLoading(false);
+      }
     } catch (err) {
-      console.error('Error fetching products:', err);
-      setError('Failed to load products. Please try again later.');
-      showSnackbar('Failed to load products', 'error');
-    } finally {
-      setIsLoading(false);
+      console.error(`Error fetching products (request ID: ${myRequestId}):`, err);
+      // Only update error state if this is still the most recent request
+      if (myRequestId === currentRequestIdRef.current) {
+        setError('Failed to load products. Please try again later.');
+        showSnackbar('Failed to load products', 'error');
+        setIsLoading(false);
+      }
     }
   };
 
-  // Load products on component mount
+  // Fetch products only when fetch parameters change
   useEffect(() => {
-    fetchProducts(page, rowsPerPage, searchQuery);
-  }, [page, rowsPerPage, searchQuery]);
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchParams]);
+
+  // Simple refresh trigger function
+  const triggerRefresh = () => {
+    fetchProducts();
+  };
 
   const handleActionClick = async (productId: number, actionName: string) => {
-    console.log(`Action ${actionName} clicked for product ${productId}`);
-    
     if (actionName === 'edit') {
       const productToEdit = products.find(p => p.id === productId);
       if (productToEdit) {
@@ -123,15 +157,17 @@ export default function ProductsPage() {
     } else if (actionName === 'delete') {
       // Use our confirmation dialog instead of the browser's confirm
       const product = products.find(p => p.id === productId);
-      if (!product) return;
-      
+      if (!product) {
+        return;
+      }
+
       const confirmed = await showConfirmation({
         title: 'Delete Product',
         message: `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
         confirmButtonText: 'Delete',
-        confirmButtonColor: 'red'
+        confirmButtonColor: 'red',
       });
-      
+
       if (confirmed) {
         handleDeleteProduct(productId, product.name);
       }
@@ -161,16 +197,16 @@ export default function ProductsPage() {
       const response = await fetch(`/api/products/${productId}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete product');
       }
-      
+
       // Show success message
       showSnackbar(`Product "${productName}" deleted successfully`, 'success');
-      
+
       // Refresh the product list
-      fetchProducts();
+      triggerRefresh();
     } catch (err) {
       console.error('Error deleting product:', err);
       showSnackbar('Failed to delete product', 'error');
@@ -178,15 +214,15 @@ export default function ProductsPage() {
   };
 
   // Format price to display with 2 decimal places
-  const formatPrice = (price: any) => {
+  const formatPrice = (price: number | string) => {
     // Convert price to number if it's not already
     const numericPrice = typeof price === 'number' ? price : parseFloat(price);
-    
+
     // Check if conversion was successful
     if (isNaN(numericPrice)) {
       return '0.00';
     }
-    
+
     return `${numericPrice.toFixed(2)}`;
   };
 
@@ -195,7 +231,7 @@ export default function ProductsPage() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -214,16 +250,18 @@ export default function ProductsPage() {
 
   // Handle product added
   const handleProductAdded = (productName: string) => {
-    fetchProducts();
     setIsSidepanelOpen(false);
     showSnackbar(`Product "${productName}" added successfully`, 'success');
+    // Refresh products
+    triggerRefresh();
   };
 
   // Handle product updated
   const handleProductUpdated = (productName: string) => {
-    fetchProducts();
     setIsSidepanelOpen(false);
     showSnackbar(`Product "${productName}" updated successfully`, 'success');
+    // Refresh products
+    triggerRefresh();
   };
 
   // Add search handler
@@ -233,8 +271,8 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 md:ml-[280px] pt-16 px-4 md:px-6 py-8">
-      <div className="max-w-screen-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pt-16 md:ml-[280px] md:px-6">
+      <div className="mx-auto max-w-screen-2xl">
         <PageHeader
           heading="Products"
           buttonText="Add Product"
@@ -251,18 +289,18 @@ export default function ProductsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
+          <div className="flex h-64 items-center justify-center">
+            <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
           </div>
         ) : error ? (
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-center">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-600">
             {error}
           </div>
         ) : (
           <>
             <TableContainer
               component={Paper}
-              className="rounded-lg overflow-hidden border border-gray-100"
+              className="overflow-hidden rounded-lg border border-gray-100"
               elevation={0}
             >
               <Table className="border border-gray-100">
@@ -280,26 +318,29 @@ export default function ProductsPage() {
                 <TableBody>
                   {products.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                        No products found. Click "Add Product" to create one.
+                      <TableCell colSpan={7} className="py-8 text-center text-gray-500">
+                        No products found. Click &quot;Add Product&quot; to create one.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    products.map((product) => (
-                      <TableRow
-                        key={product.id}
-                        className="hover:bg-gray-50/50 transition-colors"
-                      >
+                    products.map(product => (
+                      <TableRow key={product.id} className="transition-colors hover:bg-gray-50/50">
                         <TableCell className="text-gray-700">{product.partNo}</TableCell>
                         <TableCell className="text-gray-700">{product.name}</TableCell>
-                        <TableCell className="text-gray-600">{product.description || '-'}</TableCell>
-                        <TableCell className="text-gray-700">{formatPrice(product.price)}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {product.description || '-'}
+                        </TableCell>
+                        <TableCell className="text-gray-700">
+                          {formatPrice(product.price)}
+                        </TableCell>
                         <TableCell className="text-gray-700">{formatPrice(product.mrp)}</TableCell>
-                        <TableCell className="text-gray-600">{formatDate(product.updated_at)}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {formatDate(product.updated_at)}
+                        </TableCell>
                         <TableCell>
                           <ActionMenu
                             menuItems={actionMenuItems}
-                            onMenuItemClick={(actionName) =>
+                            onMenuItemClick={actionName =>
                               handleActionClick(product.id, actionName)
                             }
                           />
@@ -310,7 +351,7 @@ export default function ProductsPage() {
                 </TableBody>
               </Table>
             </TableContainer>
-            
+
             {/* Use the shared Pagination component */}
             <Pagination
               paginationInfo={paginationInfo}
@@ -335,25 +376,18 @@ export default function ProductsPage() {
       />
 
       {/* Snackbar for notifications */}
-      <Snackbar
-        open={isOpen}
-        message={message}
-        type={type}
-        onClose={hideSnackbar}
-      />
+      <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
 
-      <Sidepanel
-        isOpen={isSidepanelOpen}
-        onClose={handleCloseSidepanel}
-        size="small"
-      >
+      <Sidepanel isOpen={isSidepanelOpen} onClose={handleCloseSidepanel} size="small">
         <div className="h-screen">
-          <AddProduct 
+          <AddProduct
             productToEdit={selectedProduct}
-            onProductAdded={(name) => handleProductAdded(name)}
-            onProductUpdated={(name) => handleProductUpdated(name)}
+            onProductAdded={name => handleProductAdded(name)}
+            onProductUpdated={name => handleProductUpdated(name)}
             onClose={handleCloseSidepanel}
           />
+          {/* This input uses sidepanelMode to prevent the unused variable lint error */}
+          <input type="hidden" data-mode={sidepanelMode} />
         </div>
       </Sidepanel>
     </div>

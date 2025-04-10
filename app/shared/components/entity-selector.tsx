@@ -1,7 +1,7 @@
 'use client';
 
-import { Autocomplete, TextField } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
+import AddIcon from '@mui/icons-material/Add';
+import { Autocomplete, TextField } from '@mui/material';
 
 interface EntitySelectorProps<T> {
   options: T[];
@@ -26,7 +26,7 @@ export default function EntitySelector<T>({
   error = false,
   helperText,
   disabled = false,
-  placeholder
+  placeholder,
 }: EntitySelectorProps<T>) {
   return (
     <div className="flex items-center gap-2">
@@ -35,7 +35,7 @@ export default function EntitySelector<T>({
         getOptionLabel={getOptionLabel}
         value={value}
         onChange={(_, newValue) => onChange(newValue)}
-        renderInput={(params) => (
+        renderInput={params => (
           <TextField
             {...params}
             label={label}
@@ -45,17 +45,17 @@ export default function EntitySelector<T>({
             placeholder={placeholder}
           />
         )}
-        className="flex-grow"
+        className="grow"
         disabled={disabled}
       />
       <button
         type="button"
         onClick={onAddClick}
-        className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md h-[56px] min-w-[56px] flex items-center justify-center"
+        className="flex h-[56px] min-w-[56px] items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600"
         disabled={disabled}
       >
         <AddIcon />
       </button>
     </div>
   );
-} 
+}

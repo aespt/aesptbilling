@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 
 const PrintButton = ({ invoiceId }: { invoiceId: string | string[] | undefined }) => {
   const handlePrintClick = async () => {
-    if (!invoiceId) return;
+    if (!invoiceId) {
+      console.error('Invoice ID is undefined');
+      return;
+    }
 
     try {
       const response = await fetch(`/api/invoices/pdf/${invoiceId}`);
@@ -27,11 +30,11 @@ const PrintButton = ({ invoiceId }: { invoiceId: string | string[] | undefined }
   return (
     <button
       onClick={handlePrintClick}
-      className="group flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
+      className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5 group-hover:scale-110 transition-transform duration-300"
+        className="size-5 transition-transform duration-300 group-hover:scale-110"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -97,65 +100,64 @@ const InvoicePdfPage = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100">
       {loading && (
         <>
-          
-          <div className="absolute inset-0 flex items-center justify-center bg-white z-50">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white">
             {/* PDF skeleton loader */}
-            <div className="relative w-full h-full max-w-4xl mx-auto bg-white shadow-lg rounded-md overflow-hidden">
+            <div className="relative mx-auto size-full max-w-4xl overflow-hidden rounded-md bg-white shadow-lg">
               {/* Fake PDF header */}
-              <div className="h-12 bg-gray-100 border-b border-gray-200 flex items-center px-4">
-                <div className="w-24 h-4 bg-gray-300 rounded animate-pulse"></div>
+              <div className="flex h-12 items-center border-b border-gray-200 bg-gray-100 px-4">
+                <div className="h-4 w-24 animate-pulse rounded bg-gray-300" />
                 <div className="ml-auto flex space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse"></div>
-                  <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse"></div>
+                  <div className="size-8 animate-pulse rounded-full bg-gray-300" />
+                  <div className="size-8 animate-pulse rounded-full bg-gray-300" />
                 </div>
               </div>
 
               {/* Fake PDF content with blurry text */}
-              <div className="p-8 h-full">
+              <div className="h-full p-8">
                 {/* Title and company header */}
-                <div className="flex justify-between mb-8">
+                <div className="mb-8 flex justify-between">
                   <div>
-                    <div className="w-40 h-8 bg-gray-300 rounded mb-2 blur-[2px] animate-pulse"></div>
-                    <div className="w-60 h-4 bg-gray-300 rounded blur-[2px] animate-pulse"></div>
+                    <div className="mb-2 h-8 w-40 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="h-4 w-60 animate-pulse rounded bg-gray-300 blur-[2px]" />
                   </div>
                   <div>
-                    <div className="w-32 h-10 bg-gray-300 rounded mb-2 blur-[2px] animate-pulse"></div>
+                    <div className="mb-2 h-10 w-32 animate-pulse rounded bg-gray-300 blur-[2px]" />
                   </div>
                 </div>
 
                 {/* Invoice details */}
-                <div className="flex justify-between mb-8">
+                <div className="mb-8 flex justify-between">
                   <div className="w-1/2 pr-4">
-                    <div className="h-5 w-20 bg-gray-300 rounded mb-3 blur-[2px] animate-pulse"></div>
-                    <div className="h-4 w-48 bg-gray-300 rounded mb-2 blur-[2px] animate-pulse"></div>
-                    <div className="h-4 w-40 bg-gray-300 rounded mb-2 blur-[2px] animate-pulse"></div>
-                    <div className="h-4 w-44 bg-gray-300 rounded blur-[2px] animate-pulse"></div>
+                    <div className="mb-3 h-5 w-20 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="mb-2 h-4 w-48 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="mb-2 h-4 w-40 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="h-4 w-44 animate-pulse rounded bg-gray-300 blur-[2px]" />
                   </div>
                   <div className="w-1/2 pl-4">
-                    <div className="h-5 w-28 bg-gray-300 rounded mb-3 blur-[2px] animate-pulse"></div>
-                    <div className="h-4 w-36 bg-gray-300 rounded mb-2 blur-[2px] animate-pulse"></div>
-                    <div className="h-4 w-24 bg-gray-300 rounded mb-2 blur-[2px] animate-pulse"></div>
-                    <div className="h-4 w-32 bg-gray-300 rounded blur-[2px] animate-pulse"></div>
+                    <div className="mb-3 h-5 w-28 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="mb-2 h-4 w-36 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="mb-2 h-4 w-24 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="h-4 w-32 animate-pulse rounded bg-gray-300 blur-[2px]" />
                   </div>
                 </div>
 
                 {/* Table-like structure */}
-                <div className="mt-8 border border-gray-200 rounded-md blur-[2px] mb-8">
-                  <div className="h-10 bg-gray-100 flex">
+                <div className="my-8 rounded-md border border-gray-200 blur-[2px]">
+                  <div className="flex h-10 bg-gray-100">
                     {[...Array(4)].map((_, i) => (
                       <div key={i} className="flex-1 p-2">
-                        <div className="h-4 bg-gray-300 rounded animate-pulse"></div>
+                        <div className="h-4 animate-pulse rounded bg-gray-300" />
                       </div>
                     ))}
                   </div>
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-12 flex border-t border-gray-200">
+                    <div key={i} className="flex h-12 border-t border-gray-200">
                       {[...Array(4)].map((_, j) => (
                         <div key={j} className="flex-1 p-2">
-                          <div className="h-4 bg-gray-300 rounded animate-pulse"></div>
+                          <div className="h-4 animate-pulse rounded bg-gray-300" />
                         </div>
                       ))}
                     </div>
@@ -165,21 +167,21 @@ const InvoicePdfPage = () => {
                 {/* Footer section - based on invoice-footer.html */}
                 <div className="mt-auto">
                   {/* Footer text container */}
-                  <div className="mx-5 my-3 p-4 bg-gray-100 rounded">
-                    <div className="h-3 w-full bg-gray-300 rounded mb-1 blur-[2px] animate-pulse"></div>
-                    <div className="h-3 w-11/12 bg-gray-300 rounded mb-1 blur-[2px] animate-pulse"></div>
-                    <div className="h-3 w-full bg-gray-300 rounded blur-[2px] animate-pulse"></div>
+                  <div className="mx-5 my-3 rounded bg-gray-100 p-4">
+                    <div className="mb-1 h-3 w-full animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="mb-1 h-3 w-11/12 animate-pulse rounded bg-gray-300 blur-[2px]" />
+                    <div className="h-3 w-full animate-pulse rounded bg-gray-300 blur-[2px]" />
                   </div>
 
                   {/* Signature section */}
                   <div className="mx-5 my-8 flex justify-between">
                     <div className="w-1/3">
-                      <div className="h-px bg-gray-300 w-full"></div>
-                      <div className="h-3 w-32 bg-gray-300 rounded mt-3 blur-[2px] animate-pulse"></div>
+                      <div className="h-px w-full bg-gray-300" />
+                      <div className="mt-3 h-3 w-32 animate-pulse rounded bg-gray-300 blur-[2px]" />
                     </div>
                     <div className="w-1/3">
-                      <div className="h-px bg-gray-300 w-full"></div>
-                      <div className="h-3 w-64 bg-gray-300 rounded mt-3 blur-[2px] animate-pulse"></div>
+                      <div className="h-px w-full bg-gray-300" />
+                      <div className="mt-3 h-3 w-64 animate-pulse rounded bg-gray-300 blur-[2px]" />
                     </div>
                   </div>
                 </div>
@@ -188,28 +190,27 @@ const InvoicePdfPage = () => {
 
             {/* Centered spinner overlay */}
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-40 backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-full border-4 border-t-blue-500 border-b-red-500 border-l-blue-300 border-r-red-300 animate-spin"></div>
-
+              <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
             </div>
 
             {/* Skeleton for the action buttons (right side) */}
-            <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50">
-              <div className="w-36 h-10 bg-gray-300 rounded-lg animate-pulse"></div>
-              <div className="w-36 h-10 bg-gray-300 rounded-lg animate-pulse"></div>
-              <div className="w-36 h-10 bg-gray-300 rounded-lg animate-pulse"></div>
+            <div className="fixed right-6 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3">
+              <div className="h-10 w-36 animate-pulse rounded-lg bg-gray-300" />
+              <div className="h-10 w-36 animate-pulse rounded-lg bg-gray-300" />
+              <div className="h-10 w-36 animate-pulse rounded-lg bg-gray-300" />
             </div>
           </div>
         </>
       )}
 
       {error ? (
-        <div className="flex flex-col items-center justify-center h-full">
+        <div className="flex h-full flex-col items-center justify-center">
           <div
-            className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg mb-4 max-w-md"
+            className="mb-4 max-w-md rounded-lg border-l-4 border-red-500 bg-red-50 p-4 text-red-700 shadow-lg"
             role="alert"
           >
             <div className="flex items-center">
-              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mr-2 size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -225,11 +226,11 @@ const InvoicePdfPage = () => {
           </div>
           <button
             onClick={() => router.back()}
-            className="group flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
+            className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 group-hover:scale-110 transition-transform duration-300"
+              className="size-5 transition-transform duration-300 group-hover:scale-110"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -248,7 +249,7 @@ const InvoicePdfPage = () => {
         <div className="relative h-full">
           {/* Floating Action Panel - Only show when not loading */}
           {!loading && (
-            <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50 print:hidden transition-all duration-300 ease-in-out transform">
+            <div className="fixed right-6 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3 transition-all duration-300 ease-in-out print:hidden">
               <PrintButton invoiceId={invoiceId} />
 
               <button
@@ -259,11 +260,11 @@ const InvoicePdfPage = () => {
                   link.download = `invoice-${invoiceId}.pdf`;
                   link.click();
                 }}
-                className="group flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
+                className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 group-hover:scale-110 transition-transform duration-300"
+                  className="size-5 transition-transform duration-300 group-hover:scale-110"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -280,11 +281,11 @@ const InvoicePdfPage = () => {
 
               <button
                 onClick={() => window.close()}
-                className="group flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
+                className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-rose-600 hover:to-rose-700 hover:shadow-xl"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 group-hover:scale-110 transition-transform duration-300"
+                  className="size-5 transition-transform duration-300 group-hover:scale-110"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -302,11 +303,11 @@ const InvoicePdfPage = () => {
           )}
 
           {/* PDF Container */}
-          <div className="h-full bg-white  overflow-hidden">
+          <div className="h-full overflow-hidden bg-white">
             <iframe
               id="pdf-iframe"
               src={`/api/invoices/pdf/${invoiceId}`}
-              className="w-full h-full border-none"
+              className="size-full border-none"
               style={{
                 display: 'block',
                 width: '100%',
@@ -322,7 +323,8 @@ const InvoicePdfPage = () => {
         </div>
       )}
 
-      <style jsx global>{`
+      {/* Global styles for printing */}
+      <style>{`
         @media print {
           @page {
             size: A4;

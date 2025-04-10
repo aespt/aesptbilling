@@ -25,7 +25,7 @@ export default function useConfirmation(): UseConfirmationReturn {
   const [confirmButtonText, setConfirmButtonText] = useState('Confirm');
   const [cancelButtonText, setCancelButtonText] = useState('Cancel');
   const [confirmButtonColor, setConfirmButtonColor] = useState<'red' | 'blue' | 'green'>('red');
-  
+
   // For resolving the promise
   const [resolvePromise, setResolvePromise] = useState<(value: boolean) => void>(() => () => {});
 
@@ -34,7 +34,7 @@ export default function useConfirmation(): UseConfirmationReturn {
     message,
     confirmButtonText = 'Confirm',
     cancelButtonText = 'Cancel',
-    confirmButtonColor = 'red'
+    confirmButtonColor = 'red',
   }: {
     title: string;
     message: string;
@@ -49,7 +49,7 @@ export default function useConfirmation(): UseConfirmationReturn {
     setConfirmButtonColor(confirmButtonColor);
     setIsConfirmationOpen(true);
 
-    return new Promise<boolean>((resolve) => {
+    return new Promise<boolean>(resolve => {
       setResolvePromise(() => resolve);
     });
   };
@@ -73,6 +73,6 @@ export default function useConfirmation(): UseConfirmationReturn {
     confirmButtonColor,
     showConfirmation,
     handleConfirm,
-    handleCancel
+    handleCancel,
   };
-} 
+}

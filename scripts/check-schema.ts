@@ -1,5 +1,6 @@
-import { db } from '../lib/drizzle';
 import { sql } from 'drizzle-orm';
+
+import { db } from '../lib/drizzle';
 
 async function checkSchema() {
   try {
@@ -9,11 +10,11 @@ async function checkSchema() {
       WHERE table_name = 'invoices'
       ORDER BY ordinal_position;
     `);
-    
+
     console.log('Invoice table schema:', result);
   } catch (error) {
     console.error('Error checking schema:', error);
   }
 }
 
-checkSchema(); 
+checkSchema();

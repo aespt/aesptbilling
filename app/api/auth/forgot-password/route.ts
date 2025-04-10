@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-// Import using relative paths - more reliable than aliases in some cases
-import { db } from '../../../../lib/db';
+import * as crypto from 'crypto';
+
 import { eq } from 'drizzle-orm';
+import { type NextRequest, NextResponse } from 'next/server';
+
+import { db } from '../../../../lib/drizzle';
+import type { User } from '../../../../lib/drizzle';
 import { UsersTable } from '../../../../lib/models/users';
 import { generatePasswordResetEmail, sendEmail } from '../../../../lib/utils/mailer';
-import * as crypto from 'crypto';
-import { User } from '../../../../lib/drizzle';
 
 /**
  * Handles the forgot password request
@@ -16,10 +17,7 @@ export async function POST(request: NextRequest) {
     const { email } = await request.json();
 
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
     // Find the user by email
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Generate a random token
     const token = crypto.randomBytes(32).toString('hex');
-    
+
     // Set token expiration (7 days from now)
     const tokenExpiration = new Date();
     tokenExpiration.setDate(tokenExpiration.getDate() + 7);
@@ -70,4 +68,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

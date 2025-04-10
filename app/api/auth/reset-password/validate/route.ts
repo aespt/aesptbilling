@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-// Import using relative paths - more reliable than aliases in some cases
-import { db } from '../../../../../lib/db';
 import { eq, and, gt } from 'drizzle-orm';
+import { type NextRequest, NextResponse } from 'next/server';
+
+import { db } from '../../../../../lib/drizzle';
+import type { User } from '../../../../../lib/drizzle';
 import { UsersTable } from '../../../../../lib/models/users';
-import { User } from '../../../../../lib/drizzle';
 
 /**
  * Validate a password reset token
@@ -14,10 +14,7 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('token');
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'Token is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token is required' }, { status: 400 });
     }
 
     // Find the user by token
@@ -27,23 +24,17 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(UsersTable.password_reset_token, token),
-          gt(UsersTable.token_expiration as any, new Date()) // Token is not expired
+          gt(UsersTable.token_expiration, new Date()) // Token is not expired
         )
       )
       .limit(1)
       .then((users: User[]) => users[0] || null);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { valid: true },
-      { status: 200 }
-    );
+    return NextResponse.json({ valid: true }, { status: 200 });
   } catch (error) {
     console.error('Error validating token:', error);
     return NextResponse.json(
@@ -51,4 +42,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

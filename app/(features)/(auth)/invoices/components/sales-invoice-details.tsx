@@ -1,22 +1,15 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { 
-  TextField, 
-  Typography,
-  Autocomplete,
-  IconButton,
-  Paper,
-  Divider,
-  Grid,
-  Box,
-} from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import AddIcon from "@mui/icons-material/Add";
-import Sidepanel from "@/app/shared/components/sidepanel";
-import useSnackbar from "@/app/shared/hooks/useSnackbar";
+import AddIcon from '@mui/icons-material/Add';
+import { Autocomplete, Box, Grid, IconButton, Paper, TextField, Typography } from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { useEffect, useRef, useState } from 'react';
+
+import AddCustomer from '@/app/(features)/(auth)/customers/components/add-customer';
+import Sidepanel from '@/app/shared/components/sidepanel';
+import type { FormErrors, InvoiceFormData } from '@/lib/types';
 
 interface Salesman {
   id: number;
@@ -32,10 +25,10 @@ interface Customer {
 }
 
 interface SalesInvoiceDetailsProps {
-  formData: any;
-  setFormData: (formData: any) => void;
-  errors: any;
-  setErrors: (errors: any) => void;
+  formData: InvoiceFormData;
+  setFormData: (formData: InvoiceFormData) => void;
+  errors: FormErrors;
+  setErrors: (errors: FormErrors) => void;
 }
 
 // Utility function to generate invoice number
@@ -48,13 +41,12 @@ const generateInvoiceNumber = () => {
     .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
 };
 
-export default function SalesInvoiceDetails({ 
-  formData, 
-  setFormData, 
+export default function SalesInvoiceDetails({
+  formData,
+  setFormData,
   errors,
-  setErrors
+  setErrors,
 }: SalesInvoiceDetailsProps) {
-  const { showSnackbar } = useSnackbar();
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedSalesman, setSelectedSalesman] = useState<Salesman | null>(null);
@@ -69,10 +61,10 @@ export default function SalesInvoiceDetails({
       try {
         // Generate invoice number if not already set
         if (!initialized.current && !formData.invoice_number) {
-          setFormData((prev: any) => ({
-            ...prev,
-            invoice_number: generateInvoiceNumber()
-          }));
+          setFormData({
+            ...formData,
+            invoice_number: generateInvoiceNumber(),
+          });
           initialized.current = true;
         }
 
@@ -86,7 +78,6 @@ export default function SalesInvoiceDetails({
         } catch (error) {
           console.error('Error fetching salesmen:', error);
           // Fallback to mock data when error occurs
-         
         }
 
         // Fetch customers
@@ -98,7 +89,6 @@ export default function SalesInvoiceDetails({
           }
         } catch (error) {
           console.error('Error fetching customers:', error);
-         
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -108,40 +98,47 @@ export default function SalesInvoiceDetails({
     };
 
     fetchData();
-  }, [setFormData, formData.invoice_number]);
+  }, [formData, setFormData]);
 
   // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
     const { name, value } = e.target;
-    if (!name) return;
+    if (!name) {
+      return;
+    }
 
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
-      [name]: value,
-    }));
+    // Handle the form update more directly based on field type
+    // For most form fields, we can safely use string values
+    setFormData({
+      ...formData,
+      // Type assertion for the specific field we're updating
+      [name]: value as string,
+    });
   };
 
   // Handle date change
   const handleDateChange = (date: Date | null) => {
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
+    setFormData({
+      ...formData,
       date: date || new Date(),
-    }));
+    });
   };
 
   // Handle salesman selection
   const handleSalesmanChange = (salesman: Salesman | null) => {
     setSelectedSalesman(salesman);
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
+    setFormData({
+      ...formData,
       salesman_id: salesman?.id || null,
-    }));
+    });
 
     // Clear salesman error if it exists
     if (errors.salesman_id) {
       setErrors({
         ...errors,
-        salesman_id: "",
+        salesman_id: '',
       });
     }
   };
@@ -149,31 +146,32 @@ export default function SalesInvoiceDetails({
   // Handle customer selection
   const handleCustomerChange = (customer: Customer | null) => {
     setSelectedCustomer(customer);
-    setFormData((prevFormData: any) => ({
-      ...prevFormData,
+    setFormData({
+      ...formData,
       customer_id: customer?.id || null,
-      ship_to: customer?.address || "",
-    }));
+      ship_to: customer?.address || '',
+    });
 
     // Clear customer error if it exists
     if (errors.customer_id) {
       setErrors({
         ...errors,
-        customer_id: "",
+        customer_id: '',
       });
     }
   };
 
-  // Handle customer added from sidepanel
+  // For completion of component interface, not currently used in this implementation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCustomerAdded = (customerName: string) => {
     setIsCustomerPanelOpen(false);
-    
+
     // Refresh customers list
     fetch('/api/dropdown/customers')
       .then(response => response.json())
       .then(data => {
         setCustomers(data.customers);
-        
+
         // Find and select the newly added customer
         const newCustomer = data.customers.find((c: Customer) => c.name === customerName);
         if (newCustomer) {
@@ -188,12 +186,12 @@ export default function SalesInvoiceDetails({
   return (
     <>
       <Paper elevation={0} className="mb-6 overflow-hidden border border-gray-200 shadow-lg">
-        <Box className="bg-blue-50 px-6 py-4 border-b border-gray-200">
+        <Box className="border-b border-gray-200 bg-blue-50 px-6 py-4">
           <Typography variant="subtitle1" className="font-medium text-gray-700">
             Invoice Details
           </Typography>
         </Box>
-        
+
         <Box className="p-6">
           <Grid container spacing={4}>
             {/* Left side - Invoice information with 2 columns */}
@@ -203,7 +201,7 @@ export default function SalesInvoiceDetails({
                 <Grid item xs={6}>
                   <div className="space-y-4">
                     <div>
-                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                      <Typography variant="caption" className="mb-1 block text-gray-500">
                         Invoice Number
                       </Typography>
                       <TextField
@@ -219,17 +217,17 @@ export default function SalesInvoiceDetails({
                         size="small"
                       />
                     </div>
-                    
+
                     <div>
-                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                      <Typography variant="caption" className="mb-1 block text-gray-500">
                         Sales Representative
                       </Typography>
                       <Autocomplete
                         options={salesmen}
-                        getOptionLabel={(option) => option.name}
+                        getOptionLabel={option => option.name}
                         value={selectedSalesman}
                         onChange={(_, newValue) => handleSalesmanChange(newValue)}
-                        renderInput={(params) => (
+                        renderInput={params => (
                           <TextField
                             {...params}
                             variant="outlined"
@@ -245,12 +243,12 @@ export default function SalesInvoiceDetails({
                     </div>
                   </div>
                 </Grid>
-                
+
                 {/* Right column of the left side */}
                 <Grid item xs={6}>
                   <div className="space-y-4">
                     <div>
-                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                      <Typography variant="caption" className="mb-1 block text-gray-500">
                         Invoice Date
                       </Typography>
                       <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -262,15 +260,15 @@ export default function SalesInvoiceDetails({
                               placeholder: 'Invoice Date',
                               fullWidth: true,
                               variant: 'outlined',
-                              size: 'small'
-                            }
+                              size: 'small',
+                            },
                           }}
                         />
                       </LocalizationProvider>
                     </div>
-                    
+
                     <div>
-                      <Typography variant="caption" className="text-gray-500 mb-1 block">
+                      <Typography variant="caption" className="mb-1 block text-gray-500">
                         Ship From
                       </Typography>
                       <TextField
@@ -285,11 +283,11 @@ export default function SalesInvoiceDetails({
                     </div>
                   </div>
                 </Grid>
-                
+
                 {/* Ship To field spans both columns */}
                 <Grid item xs={12}>
                   <div>
-                    <Typography variant="caption" className="text-gray-500 mb-1 block">
+                    <Typography variant="caption" className="mb-1 block text-gray-500">
                       Ship To
                     </Typography>
                     <TextField
@@ -307,21 +305,21 @@ export default function SalesInvoiceDetails({
                 </Grid>
               </Grid>
             </Grid>
-            
+
             {/* Right side - Customer information */}
             <Grid item xs={12} md={6}>
               <div className="space-y-4">
                 <div>
-                  <Typography variant="caption" className="text-gray-500 mb-1 block">
+                  <Typography variant="caption" className="mb-1 block text-gray-500">
                     Customer
                   </Typography>
                   <div className="flex items-center gap-2">
                     <Autocomplete
                       options={customers}
-                      getOptionLabel={(option) => option.name}
+                      getOptionLabel={option => option.name}
                       value={selectedCustomer}
                       onChange={(_, newValue) => handleCustomerChange(newValue)}
-                      renderInput={(params) => (
+                      renderInput={params => (
                         <TextField
                           {...params}
                           placeholder="Customer"
@@ -332,12 +330,12 @@ export default function SalesInvoiceDetails({
                           size="small"
                         />
                       )}
-                      className="flex-grow"
+                      className="grow"
                       disabled={isLoading}
                     />
-                    <IconButton 
+                    <IconButton
                       onClick={() => setIsCustomerPanelOpen(true)}
-                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200"
+                      className="border border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-800"
                       size="small"
                       title="Add New Customer"
                     >
@@ -345,21 +343,24 @@ export default function SalesInvoiceDetails({
                     </IconButton>
                   </div>
                 </div>
-                
+
                 {/* Customer details placeholder/display area */}
-                <Box 
-                  className={`border rounded-md p-4 min-h-[180px] ${!selectedCustomer ? 'border-dashed border-gray-300 flex items-center justify-center' : 'border-gray-200'}`}
+                <Box
+                  className={`min-h-[180px] rounded-md border p-4 ${!selectedCustomer ? 'flex items-center justify-center border-dashed border-gray-300' : 'border-gray-200'}`}
                 >
                   {selectedCustomer ? (
                     <Box className="space-y-3">
-                      <Typography variant="subtitle2" className="font-medium text-gray-800 border-b pb-2">
+                      <Typography
+                        variant="subtitle2"
+                        className="border-b pb-2 font-medium text-gray-800"
+                      >
                         {selectedCustomer.name || '-'}
                       </Typography>
-                      
+
                       <Box className="grid grid-cols-1 gap-2">
                         {selectedCustomer.address && (
                           <Box className="flex items-start">
-                            <Typography variant="caption" className="text-gray-500 w-20 flex-shrink-0">
+                            <Typography variant="caption" className="w-20 shrink-0 text-gray-500">
                               Address:
                             </Typography>
                             <Typography variant="body2" className="text-gray-700">
@@ -367,10 +368,10 @@ export default function SalesInvoiceDetails({
                             </Typography>
                           </Box>
                         )}
-                        
+
                         {selectedCustomer.email && (
                           <Box className="flex items-start">
-                            <Typography variant="caption" className="text-gray-500 w-20 flex-shrink-0">
+                            <Typography variant="caption" className="w-20 shrink-0 text-gray-500">
                               Email:
                             </Typography>
                             <Typography variant="body2" className="text-gray-700">
@@ -378,10 +379,10 @@ export default function SalesInvoiceDetails({
                             </Typography>
                           </Box>
                         )}
-                        
+
                         {selectedCustomer.phone && (
                           <Box className="flex items-start">
-                            <Typography variant="caption" className="text-gray-500 w-20 flex-shrink-0">
+                            <Typography variant="caption" className="w-20 shrink-0 text-gray-500">
                               Phone:
                             </Typography>
                             <Typography variant="body2" className="text-gray-700">
@@ -389,16 +390,18 @@ export default function SalesInvoiceDetails({
                             </Typography>
                           </Box>
                         )}
-                        
-                        {!selectedCustomer.address && !selectedCustomer.email && !selectedCustomer.phone && (
-                          <Typography variant="body2" className="text-gray-500 italic">
-                            No additional customer details available
-                          </Typography>
-                        )}
+
+                        {!selectedCustomer.address &&
+                          !selectedCustomer.email &&
+                          !selectedCustomer.phone && (
+                            <Typography variant="body2" className="italic text-gray-500">
+                              No additional customer details available
+                            </Typography>
+                          )}
                       </Box>
                     </Box>
                   ) : (
-                    <Typography variant="body2" className="text-gray-400 text-center">
+                    <Typography variant="body2" className="text-center text-gray-400">
                       Please select a customer to view details
                     </Typography>
                   )}
@@ -415,11 +418,12 @@ export default function SalesInvoiceDetails({
         onClose={() => setIsCustomerPanelOpen(false)}
         size="small"
       >
-        <div className="h-screen p-4">
-          <Typography variant="h6">Add Customer</Typography>
-          <Typography>Customer add form would go here</Typography>
-        </div>
+        <AddCustomer
+          onCustomerAdded={handleCustomerAdded}
+          onClose={() => setIsCustomerPanelOpen(false)}
+          useFormTag={false}
+        />
       </Sidepanel>
     </>
   );
-} 
+}

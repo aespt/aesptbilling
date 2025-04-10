@@ -48,4 +48,7 @@ export interface User extends BaseModel {
   password_hash: string;
   password_reset_token: string | null;
   token_expiration: string | null;
-} 
+}
+
+// Export invoice types
+export * from './invoice';

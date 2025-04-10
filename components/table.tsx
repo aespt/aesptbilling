@@ -1,5 +1,3 @@
-import Image from 'next/image';
-
 import { db, UsersTable } from '@/lib/drizzle';
 import { seed } from '@/lib/seed';
 import { timeAgo } from '@/lib/utils';
@@ -11,9 +9,12 @@ export default async function Table() {
   let startTime = Date.now();
   try {
     users = await db.select().from(UsersTable);
-  } catch (e: any) {
-    if (e.message === `relation "profiles" does not exist`) {
-      console.log('Table does not exist, creating and seeding it with dummy data now...');
+  } catch (e: unknown) {
+    if (
+      e instanceof Error &&
+      'message' in e &&
+      e.message === `relation "profiles" does not exist`
+    ) {
       // Table is not created yet
       await seed();
       startTime = Date.now();

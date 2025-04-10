@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BaseSchema, BaseCreateSchema } from './baseSchema';
+
+import { BaseCreateSchema, BaseSchema } from './baseSchema';
 
 // Zod schema for order item validation
 export const OrderItemSchema = BaseSchema.extend({
@@ -13,12 +14,12 @@ export const OrderItemSchema = BaseSchema.extend({
 
 // Zod schema for creating a new order item
 export const CreateOrderItemSchema = BaseCreateSchema.extend(
-  OrderItemSchema.omit({ 
-    id: true, 
-    created_at: true, 
+  OrderItemSchema.omit({
+    id: true,
+    created_at: true,
     updated_at: true,
     created_by: true,
-    updated_by: true
+    updated_by: true,
   }).shape
 );
 
@@ -27,4 +28,4 @@ export const UpdateOrderItemSchema = CreateOrderItemSchema.partial();
 
 // Types derived from Zod schema
 export type OrderItemInput = z.infer<typeof CreateOrderItemSchema>;
-export type OrderItemUpdate = z.infer<typeof UpdateOrderItemSchema>; 
+export type OrderItemUpdate = z.infer<typeof UpdateOrderItemSchema>;

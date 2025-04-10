@@ -1,23 +1,23 @@
 import { cookies } from 'next/headers';
-import { verifyToken } from './jwt';
-import { TokenPayload } from '../schemas/authSchema';
-import { AUTH_COOKIE_NAME } from './jwt';
+
+import type { TokenPayload } from '../schemas/authSchema';
+
+import { AUTH_COOKIE_NAME, verifyToken } from './jwt';
 
 /**
  * Get the current user from server components
  */
-export function getCurrentUser(): TokenPayload | null {
+export async function getCurrentUser(): Promise<TokenPayload | null> {
   try {
-    const cookiesList = cookies();
+    const cookiesList = await cookies();
     const token = cookiesList.get(AUTH_COOKIE_NAME)?.value;
-    
+
     if (!token) {
       return null;
     }
-    
+
     return verifyToken<TokenPayload>(token);
-  } catch (error) {
-    console.error('Error getting current user:', error);
+  } catch {
     return null;
   }
-} 
+}
