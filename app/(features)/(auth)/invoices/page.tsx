@@ -1,11 +1,25 @@
 'use client';
 
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import DescriptionIcon from '@mui/icons-material/Description';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 import SearchIcon from '@mui/icons-material/Search';
 import {
-  Typography,
+  Autocomplete,
   Box,
+  Button,
+  Drawer,
+  IconButton,
+  InputAdornment,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Paper,
+  Tab,
   Table,
   TableBody,
   TableCell,
@@ -13,13 +27,9 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
-  Drawer,
-  IconButton,
-  Button,
+  Tabs,
   TextField,
-  InputAdornment,
-  Autocomplete,
-  MenuItem,
+  Typography,
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -66,6 +76,7 @@ interface Invoice {
   ship_from: string;
   ship_to: string;
   invoice_type: string;
+  invoice_stage: 'SALE' | 'PROFORMA' | 'QUOTATION';
   customer: {
     id: number;
     name: string;
@@ -91,10 +102,12 @@ interface FilterOptions {
   salesPerson: Salesman | null;
   customer: Customer | null;
   invoiceType: string | null;
+  invoiceStage: string | null;
 }
 
 export default function InvoicesListPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
@@ -116,6 +129,7 @@ export default function InvoicesListPage() {
     salesPerson: null,
     customer: null,
     invoiceType: null,
+    invoiceStage: null,
   });
   const [tempFilters, setTempFilters] = useState<FilterOptions>({
     dateFrom: null,
@@ -124,13 +138,17 @@ export default function InvoicesListPage() {
     salesPerson: null,
     customer: null,
     invoiceType: null,
+    invoiceStage: null,
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   // Define invoice type options
   const invoiceTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
+  const invoiceStageOptions = ['SALE', 'PROFORMA', 'QUOTATION'];
 
   // Fetch dropdown data
   useEffect(() => {
@@ -179,6 +197,16 @@ export default function InvoicesListPage() {
           sortOrder: sort.direction,
         });
 
+        // Always add invoice stage filter based on active tab
+        if (activeTab === 0) {
+          // For Proforma & Quotation tab, we want both PROFORMA and QUOTATION
+          // We'll handle this filtering on the client since the API doesn't support multiple values
+          params.append('invoiceStageFilter', 'PROFORMA,QUOTATION');
+        } else {
+          // For Sales tab, we only want SALE
+          params.append('invoiceStageFilter', 'SALE');
+        }
+
         // Add date filters if set
         if (filtersToUse.dateFrom) {
           params.append('dateFrom', filtersToUse.dateFrom.format('YYYY-MM-DD'));
@@ -208,6 +236,11 @@ export default function InvoicesListPage() {
           params.append('invoiceType', filtersToUse.invoiceType);
         }
 
+        // Add invoice stage filter if set by the user (this will override the tab-based filter)
+        if (filtersToUse.invoiceStage) {
+          params.append('invoiceStage', filtersToUse.invoiceStage);
+        }
+
         const response = await fetch(`/api/invoices?${params.toString()}`);
 
         if (!response.ok) {
@@ -215,7 +248,10 @@ export default function InvoicesListPage() {
         }
 
         const data = await response.json();
-        setInvoices(data.invoices);
+
+        // Set filtered invoices directly from the API response
+        setFilteredInvoices(data.invoices);
+
         // Ensure pagination data has all required fields
         setPagination({
           total: data.pagination.total ?? 0,
@@ -231,13 +267,20 @@ export default function InvoicesListPage() {
         setLoading(false);
       }
     },
-    [pagination.currentPage, pagination.pageSize, sort, filters]
+    [pagination.currentPage, pagination.pageSize, sort, filters, activeTab]
   );
 
   // Load invoices on initial page load and when filters change
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  // Update the tab change handler to refetch with the new tab
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    // Fetch invoices whenever the tab changes to update the filtered data
+    fetchInvoices();
+  };
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({
@@ -295,6 +338,7 @@ export default function InvoicesListPage() {
       salesPerson: null,
       customer: null,
       invoiceType: null,
+      invoiceStage: null,
     };
 
     setTempFilters(emptyFilters);
@@ -321,6 +365,30 @@ export default function InvoicesListPage() {
     window.open(`/invoices/pdf/${invoiceId}`, '_blank');
   };
 
+  const handleActionClick = (event: React.MouseEvent<HTMLButtonElement>, invoice: Invoice) => {
+    setActionMenuAnchor(event.currentTarget);
+    setSelectedInvoice(invoice);
+  };
+
+  const handleActionClose = () => {
+    setActionMenuAnchor(null);
+    setSelectedInvoice(null);
+  };
+
+  const handleGenerateDocument = (documentType: string) => {
+    if (!selectedInvoice) {
+      return;
+    }
+
+    // Here you would implement the logic to generate different document types
+    console.log(`Generating ${documentType} for invoice: ${selectedInvoice.id}`);
+
+    // Example: This would be replaced with actual API calls
+    window.open(`/invoices/${documentType.toLowerCase()}/${selectedInvoice.id}`, '_blank');
+
+    handleActionClose();
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="px-4 pb-6 pt-16 md:ml-[280px] md:px-6">
@@ -337,6 +405,18 @@ export default function InvoicesListPage() {
           >
             <FilterAltIcon />
           </IconButton>
+        </Box>
+
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="invoice tabs"
+            variant="fullWidth"
+          >
+            <Tab label="Proforma & Quotation" />
+            <Tab label="Sales" />
+          </Tabs>
         </Box>
 
         {loading ? (
@@ -380,15 +460,6 @@ export default function InvoicesListPage() {
                       </TableSortLabel>
                     </TableCell>
                     <TableCell className="font-medium">Customer</TableCell>
-                    <TableCell className="font-medium">
-                      <TableSortLabel
-                        active={sort.field === 'invoice_type'}
-                        direction={sort.field === 'invoice_type' ? sort.direction : 'asc'}
-                        onClick={() => handleSortChange('invoice_type')}
-                      >
-                        Invoice Type
-                      </TableSortLabel>
-                    </TableCell>
                     <TableCell className="font-medium">Ship From</TableCell>
                     <TableCell className="font-medium">Ship To</TableCell>
                     <TableCell align="right" className="font-medium">
@@ -400,11 +471,14 @@ export default function InvoicesListPage() {
                         Total
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell align="center" className="font-medium">
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {invoices.length > 0 ? (
-                    invoices.map((invoice, index) => (
+                  {filteredInvoices.length > 0 ? (
+                    filteredInvoices.map((invoice, index) => (
                       <TableRow
                         key={invoice.id}
                         hover
@@ -423,17 +497,21 @@ export default function InvoicesListPage() {
                         </TableCell>
                         <TableCell>{invoice.salesman.name}</TableCell>
                         <TableCell>{invoice.customer.name}</TableCell>
-                        <TableCell className="capitalize">{invoice.invoice_type}</TableCell>
                         <TableCell>{invoice.ship_from}</TableCell>
                         <TableCell>{invoice.ship_to}</TableCell>
                         <TableCell align="right" className="font-bold">
                           {parseFloat(invoice.total).toFixed(2)} AED
                         </TableCell>
+                        <TableCell align="center">
+                          <IconButton size="small" onClick={e => handleActionClick(e, invoice)}>
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-gray-500">
+                      <TableCell colSpan={9} className="py-8 text-center text-gray-500">
                         No invoices found. Please try adjusting your filters.
                       </TableCell>
                     </TableRow>
@@ -450,6 +528,67 @@ export default function InvoicesListPage() {
             />
           </Paper>
         )}
+
+        {/* Action Menu */}
+        <Menu
+          anchorEl={actionMenuAnchor}
+          open={Boolean(actionMenuAnchor)}
+          onClose={handleActionClose}
+        >
+          {activeTab === 1 ? (
+            // Actions for Sales tab
+            [
+              <MenuItem key="sale" onClick={() => handleGenerateDocument('SALE')}>
+                <ListItemIcon>
+                  <ReceiptIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Generate Sale</ListItemText>
+              </MenuItem>,
+              <MenuItem key="delivery" onClick={() => handleGenerateDocument('DELIVERY')}>
+                <ListItemIcon>
+                  <LocalShippingIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Generate Delivery Note</ListItemText>
+              </MenuItem>,
+              <MenuItem key="proforma" onClick={() => handleGenerateDocument('PROFORMA')}>
+                <ListItemIcon>
+                  <AssignmentIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Generate Proforma</ListItemText>
+              </MenuItem>,
+              <MenuItem key="quotation" onClick={() => handleGenerateDocument('QUOTATION')}>
+                <ListItemIcon>
+                  <DescriptionIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Generate Quotation</ListItemText>
+              </MenuItem>,
+            ]
+          ) : selectedInvoice?.invoice_stage === 'QUOTATION' ? (
+            // Actions for Quotation
+            [
+              <MenuItem key="sale" onClick={() => handleGenerateDocument('SALE')}>
+                <ListItemIcon>
+                  <ReceiptIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Generate Sale</ListItemText>
+              </MenuItem>,
+              <MenuItem key="proforma" onClick={() => handleGenerateDocument('PROFORMA')}>
+                <ListItemIcon>
+                  <AssignmentIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Generate Proforma</ListItemText>
+              </MenuItem>,
+            ]
+          ) : (
+            // For PROFORMA - single item
+            <MenuItem onClick={() => handleGenerateDocument('SALE')}>
+              <ListItemIcon>
+                <ReceiptIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Generate Sale</ListItemText>
+            </MenuItem>
+          )}
+        </Menu>
 
         {/* Enhanced Filter Drawer */}
         <Drawer anchor="right" open={filterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
@@ -599,6 +738,29 @@ export default function InvoicesListPage() {
                 >
                   <MenuItem value="">All Types</MenuItem>
                   {invoiceTypeOptions.map(option => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </div>
+
+              {/* Invoice Stage Filter - Dropdown */}
+              <div>
+                <Typography variant="subtitle2" className="mb-2 text-gray-600">
+                  Invoice Stage
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  className="rounded bg-white"
+                  value={tempFilters.invoiceStage || ''}
+                  onChange={e => handleFilterChange('invoiceStage', e.target.value || null)}
+                  placeholder="Select invoice stage"
+                >
+                  <MenuItem value="">All Stages</MenuItem>
+                  {invoiceStageOptions.map(option => (
                     <MenuItem key={option} value={option}>
                       {option}
                     </MenuItem>

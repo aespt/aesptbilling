@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
     const invoiceNumber = searchParams.get('invoiceNumber');
     const salesPerson = searchParams.get('salesPerson');
     const customer = searchParams.get('customer');
-    const invoiceType = searchParams.get('invoiceType');
+    const invoiceStage = searchParams.get('invoiceStage');
+    const invoiceStageFilter = searchParams.get('invoiceStageFilter');
 
     // Calculate offset based on page and pageSize
     const offset = (page - 1) * pageSize;
@@ -83,9 +84,26 @@ export async function GET(request: NextRequest) {
       conditions.push(sql`${InvoicesTable.salesman_id} ILIKE ${`%${salesPerson}%`}`);
     }
 
-    // Add invoice type filter if provided
-    if (invoiceType && ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'].includes(invoiceType)) {
-      conditions.push(sql`${InvoicesTable.invoice_type} = ${invoiceType}`);
+    // Add invoice stage filter - single value (takes precedence over multi-value filter)
+    if (invoiceStage && ['SALE', 'PROFORMA', 'QUOTATION'].includes(invoiceStage)) {
+      conditions.push(sql`${InvoicesTable.invoice_stage} = ${invoiceStage}`);
+    }
+    // Add invoice stage filter - multiple values
+    else if (invoiceStageFilter) {
+      const stages = invoiceStageFilter.split(',');
+      // Filter out any invalid stages
+      const validStages = stages.filter(s => ['SALE', 'PROFORMA', 'QUOTATION'].includes(s));
+      if (validStages.length > 0) {
+        if (validStages.length === 1) {
+          // Single stage case
+          conditions.push(sql`${InvoicesTable.invoice_stage} = ${validStages[0]}`);
+        } else {
+          // Multiple stages case - use OR condition
+          conditions.push(
+            sql`${InvoicesTable.invoice_stage} IN (${sql.join(validStages, sql`, `)})`
+          );
+        }
+      }
     }
 
     // Get total count for pagination
@@ -113,7 +131,7 @@ export async function GET(request: NextRequest) {
         created_at: InvoicesTable.created_at,
         ship_from: InvoicesTable.ship_from,
         ship_to: InvoicesTable.ship_to,
-        invoice_type: InvoicesTable.invoice_type,
+        invoice_stage: InvoicesTable.invoice_stage,
       })
       .from(InvoicesTable)
       .where(conditions.length ? and(...conditions) : undefined)

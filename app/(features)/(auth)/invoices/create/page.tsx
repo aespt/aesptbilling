@@ -154,7 +154,7 @@ export default function CreateInvoicePage() {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false, invoiceType = 'INVOICE') => {
+  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false, invoiceStage = 'SALE') => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -170,7 +170,7 @@ export default function CreateInvoicePage() {
       const invoiceData = {
         ...formData,
         status: saveAsDraft ? 'DRAFT' : 'PENDING',
-        type: invoiceType,
+        invoice_stage: invoiceStage,
         items: invoiceItems.filter(item => item.product_id), // Only send items with a product selected
         subtotal: totals.subtotal,
         discount: totals.discount,
@@ -267,7 +267,7 @@ export default function CreateInvoicePage() {
               <MenuItem
                 onClick={e => {
                   popupState.close();
-                  handleSubmit(e, false, 'TAX');
+                  handleSubmit(e, false, 'SALE');
                 }}
               >
                 Tax Invoice
@@ -279,14 +279,6 @@ export default function CreateInvoicePage() {
                 }}
               >
                 Proforma Invoice
-              </MenuItem>
-              <MenuItem
-                onClick={e => {
-                  popupState.close();
-                  handleSubmit(e, false, 'DELIVERY');
-                }}
-              >
-                Delivery Note
               </MenuItem>
               <MenuItem
                 onClick={e => {
