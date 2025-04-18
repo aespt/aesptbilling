@@ -146,10 +146,6 @@ export default function InvoicesListPage() {
   const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
-  // Define invoice type options
-  const invoiceTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
-  const invoiceStageOptions = ['SALE', 'PROFORMA', 'QUOTATION'];
-
   // Fetch dropdown data
   useEffect(() => {
     const fetchDropdownData = async () => {
@@ -197,13 +193,15 @@ export default function InvoicesListPage() {
           sortOrder: sort.direction,
         });
 
-        // Always add invoice stage filter based on active tab
+        // Apply filter based on the active tab
         if (activeTab === 0) {
-          // For Proforma & Quotation tab, we want both PROFORMA and QUOTATION
-          // We'll handle this filtering on the client since the API doesn't support multiple values
-          params.append('invoiceStageFilter', 'PROFORMA,QUOTATION');
+          // QUOTATION tab
+          params.append('invoiceStageFilter', 'QUOTATION');
+        } else if (activeTab === 1) {
+          // PROFORMA tab
+          params.append('invoiceStageFilter', 'PROFORMA');
         } else {
-          // For Sales tab, we only want SALE
+          // SALES tab
           params.append('invoiceStageFilter', 'SALE');
         }
 
@@ -380,9 +378,6 @@ export default function InvoicesListPage() {
       return;
     }
 
-    // Here you would implement the logic to generate different document types
-    console.log(`Generating ${documentType} for invoice: ${selectedInvoice.id}`);
-
     // Example: This would be replaced with actual API calls
     window.open(`/invoices/${documentType.toLowerCase()}/${selectedInvoice.id}`, '_blank');
 
@@ -414,7 +409,8 @@ export default function InvoicesListPage() {
             aria-label="invoice tabs"
             variant="fullWidth"
           >
-            <Tab label="Proforma & Quotation" />
+            <Tab label="Quotation" />
+            <Tab label="Proforma" />
             <Tab label="Sales" />
           </Tabs>
         </Box>
@@ -535,7 +531,7 @@ export default function InvoicesListPage() {
           open={Boolean(actionMenuAnchor)}
           onClose={handleActionClose}
         >
-          {activeTab === 1 ? (
+          {activeTab === 2 ? (
             // Actions for Sales tab
             [
               <MenuItem key="sale" onClick={() => handleGenerateDocument('SALE')}>
@@ -563,8 +559,8 @@ export default function InvoicesListPage() {
                 <ListItemText>Generate Quotation</ListItemText>
               </MenuItem>,
             ]
-          ) : selectedInvoice?.invoice_stage === 'QUOTATION' ? (
-            // Actions for Quotation
+          ) : activeTab === 0 ? (
+            // Actions for Quotation tab
             [
               <MenuItem key="sale" onClick={() => handleGenerateDocument('SALE')}>
                 <ListItemIcon>
@@ -580,7 +576,7 @@ export default function InvoicesListPage() {
               </MenuItem>,
             ]
           ) : (
-            // For PROFORMA - single item
+            // Actions for Proforma tab
             <MenuItem onClick={() => handleGenerateDocument('SALE')}>
               <ListItemIcon>
                 <ReceiptIcon fontSize="small" />
@@ -720,52 +716,6 @@ export default function InvoicesListPage() {
                     />
                   )}
                 />
-              </div>
-
-              {/* Invoice Type Filter - Dropdown */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Invoice Type
-                </Typography>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  className="rounded bg-white"
-                  value={tempFilters.invoiceType || ''}
-                  onChange={e => handleFilterChange('invoiceType', e.target.value || null)}
-                  placeholder="Select invoice type"
-                >
-                  <MenuItem value="">All Types</MenuItem>
-                  {invoiceTypeOptions.map(option => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </div>
-
-              {/* Invoice Stage Filter - Dropdown */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Invoice Stage
-                </Typography>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  className="rounded bg-white"
-                  value={tempFilters.invoiceStage || ''}
-                  onChange={e => handleFilterChange('invoiceStage', e.target.value || null)}
-                  placeholder="Select invoice stage"
-                >
-                  <MenuItem value="">All Stages</MenuItem>
-                  {invoiceStageOptions.map(option => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </TextField>
               </div>
 
               <div className="flex flex-col gap-3 pt-4">
