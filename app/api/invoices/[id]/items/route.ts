@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { db } from '@/lib/drizzle';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { InvoicesTable } from '@/lib/models/invoices';
+import { ProductsTable } from '@/lib/models/products';
 import { type TokenPayload } from '@/lib/schemas/authSchema';
 import { CreateInvoiceItemSchema } from '@/lib/schemas/invoiceItemSchema';
 import { AUTH_COOKIE_NAME, verifyToken } from '@/lib/utils/jwt';
@@ -46,13 +47,68 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    // Get all items for this invoice
+    // Get all items for this invoice with basic information
     const items = await db
-      .select()
+      .select({
+        id: InvoiceItemsTable.id,
+        invoice_id: InvoiceItemsTable.invoice_id,
+        product_id: InvoiceItemsTable.product_id,
+        quantity: InvoiceItemsTable.quantity,
+        unit_price: InvoiceItemsTable.unit_price,
+        total_price: InvoiceItemsTable.total_price,
+      })
       .from(InvoiceItemsTable)
       .where(eq(InvoiceItemsTable.invoice_id, invoiceId));
 
-    return NextResponse.json({ items });
+    // Get product details for each item
+    const itemsWithDetails = await Promise.all(
+      items.map(async item => {
+        try {
+          // Get product details from the products table
+          const [product] = await db
+            .select({
+              id: ProductsTable.id,
+              partNo: ProductsTable.partNo,
+              name: ProductsTable.name,
+            })
+            .from(ProductsTable)
+            .where(eq(ProductsTable.id, item.product_id))
+            .limit(1);
+
+          // Use unit_price from invoice_items
+          const unitPrice = Number(item.unit_price);
+          const totalPrice = Number(item.total_price);
+
+          return {
+            ...item,
+            part_no: product?.partNo || '',
+            product_name: product?.name || '',
+            price: unitPrice,
+            mrp: unitPrice,
+            rate: unitPrice,
+            qty: item.quantity,
+            total: totalPrice,
+          };
+        } catch (error) {
+          console.error(`Error fetching product details for item ${item.id}:`, error);
+          return {
+            ...item,
+            part_no: '',
+            product_name: 'Unknown Product',
+            price: Number(item.unit_price),
+            mrp: Number(item.unit_price),
+            rate: Number(item.unit_price),
+            qty: item.quantity,
+            total: Number(item.total_price),
+          };
+        }
+      })
+    );
+
+    return NextResponse.json({
+      success: true,
+      items: itemsWithDetails,
+    });
   } catch (error) {
     console.error('Error fetching invoice items:', error);
 
