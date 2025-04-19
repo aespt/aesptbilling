@@ -10,6 +10,7 @@ import { launch, type Browser } from 'puppeteer';
 
 import { db } from '@/lib/drizzle';
 import { AddressTable } from '@/lib/models/address';
+import { BankDetailsTable } from '@/lib/models/bank_details';
 import { CustomersTable } from '@/lib/models/customers';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { InvoicesTable } from '@/lib/models/invoices';
@@ -69,6 +70,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const addresses = await db.select().from(AddressTable).where(eq(AddressTable.is_primary, true));
 
     const primaryAddress = addresses.length > 0 ? addresses[0] : null;
+
+    // Get primary bank details for proforma invoices
+    let primaryBankDetails = null;
+    if (invoiceStage === 'PROFORMA' || invoice.invoice_stage === 'PROFORMA') {
+      const bankDetailsResults = await db
+        .select()
+        .from(BankDetailsTable)
+        .where(eq(BankDetailsTable.is_primary, true));
+      if (bankDetailsResults.length > 0) {
+        primaryBankDetails = bankDetailsResults[0];
+      }
+    }
 
     if (!primaryAddress) {
       console.warn('No primary address found, using default address');
@@ -294,6 +307,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     $('#tax-amount').text(`${taxAmount} AED`);
     $('#discount').text(`${discount} AED`);
     $('#invoice-total').text(`${total} AED`);
+
+    // Replace terms and conditions with bank details for PROFORMA invoices
+    if (invoiceStage === 'PROFORMA' || invoice.invoice_stage === 'PROFORMA') {
+      if (primaryBankDetails) {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0; font-weight: bold">${primaryBankDetails.name}</p>
+          <p style="font-size: 12px; margin: 5px 0; white-space: pre-line">${primaryBankDetails.details}</p>
+        `);
+      } else {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0">No bank details found</p>
+        `);
+      }
+    }
 
     // Add a spacer at the end to ensure adequate space for the footer
     $('body').append('<div class="footer-spacer"></div>');
@@ -652,6 +681,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const primaryAddress = addresses.length > 0 ? addresses[0] : null;
 
+    // Get primary bank details for proforma invoices
+    let primaryBankDetails = null;
+    if (invoiceStage === 'PROFORMA') {
+      const bankDetailsResults = await db
+        .select()
+        .from(BankDetailsTable)
+        .where(eq(BankDetailsTable.is_primary, true));
+      if (bankDetailsResults.length > 0) {
+        primaryBankDetails = bankDetailsResults[0];
+      }
+    }
+
     if (!primaryAddress) {
       console.warn('No primary address found, using default address');
       // You could either use a default address or return an error
@@ -876,6 +917,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     $('#tax-amount').text(`${taxAmount} AED`);
     $('#discount').text(`${discount} AED`);
     $('#invoice-total').text(`${total} AED`);
+
+    // Replace terms and conditions with bank details for PROFORMA invoices
+    if (invoiceStage === 'PROFORMA') {
+      if (primaryBankDetails) {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0; font-weight: bold">${primaryBankDetails.name}</p>
+          <p style="font-size: 12px; margin: 5px 0; white-space: pre-line">${primaryBankDetails.details}</p>
+        `);
+      } else {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0">No bank details found</p>
+        `);
+      }
+    }
 
     // Add a spacer at the end to ensure adequate space for the footer
     $('body').append('<div class="footer-spacer"></div>');

@@ -16,7 +16,9 @@ import { useEffect, useState } from 'react';
 
 import AddProduct from '@/app/(features)/(auth)/products/components/add-product';
 import Sidepanel from '@/app/shared/components/sidepanel';
-import type { FormErrors, InvoiceItem, Product } from '@/lib/types';
+import type { FormErrors } from '@/lib/types';
+import type { Product } from '@/lib/types/index';
+import type { InvoiceItem } from '@/lib/types/invoice';
 
 interface SalesInvoiceItemsProps {
   invoiceItems: InvoiceItem[];
