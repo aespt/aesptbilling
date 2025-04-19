@@ -9,6 +9,7 @@ export const ProductSchema = BaseSchema.extend({
   name: z.string().min(2, { message: 'Product name must be at least 2 characters' }),
   description: z.string().optional(),
   price: z.number().positive({ message: 'Price must be positive' }),
+  brand: z.string().optional(),
   mrp: z.number().positive({ message: 'MRP must be positive' }),
   count: z.number().optional(),
 });

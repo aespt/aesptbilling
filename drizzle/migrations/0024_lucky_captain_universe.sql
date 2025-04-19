@@ -13,4 +13,5 @@ BEGIN
     END IF;
 END $$;
 --> statement-breakpoint
+ALTER TABLE "products" ADD COLUMN "brand" varchar(255);--> statement-breakpoint
 ALTER TABLE "invoices" ADD COLUMN "invoice_type" "invoice_type" DEFAULT 'TAX';

@@ -82,6 +82,8 @@ export default function ProductsPage() {
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Add a flag to track if search is initiated by user vs page change
+  const isSearchUserInitiated = useRef(true);
 
   // Create a reference for the current request to handle race conditions
   const currentRequestIdRef = useRef(0);
@@ -182,11 +184,15 @@ export default function ProductsPage() {
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
+    // Set flag to false since page change is not a user-initiated search
+    isSearchUserInitiated.current = false;
     setPage(newPage);
   };
 
   // Handle rows per page change
   const handleRowsPerPageChange = (newPageSize: number) => {
+    // Set flag to false since page size change is not a user-initiated search
+    isSearchUserInitiated.current = false;
     setRowsPerPage(newPageSize);
     setPage(1); // Reset to first page when changing rows per page
   };
@@ -266,8 +272,14 @@ export default function ProductsPage() {
 
   // Add search handler
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setPage(1); // Reset to first page when searching
+    // Only log and update search query if it's a user-initiated search
+    if (isSearchUserInitiated.current) {
+      console.log('query', query);
+      setSearchQuery(query);
+      setPage(1); // Reset to first page when searching
+    }
+    // Reset the flag back to true for next search
+    isSearchUserInitiated.current = true;
   };
 
   return (
@@ -311,6 +323,7 @@ export default function ProductsPage() {
                     <TableCell className="font-semibold">Description</TableCell>
                     <TableCell className="font-semibold">Price</TableCell>
                     <TableCell className="font-semibold">Selling Price</TableCell>
+                    <TableCell className="font-semibold">Brand</TableCell>
                     <TableCell className="font-semibold">Last Updated</TableCell>
                     <TableCell className="font-semibold">Actions</TableCell>
                   </TableRow>
@@ -334,6 +347,7 @@ export default function ProductsPage() {
                           {formatPrice(product.price)}
                         </TableCell>
                         <TableCell className="text-gray-700">{formatPrice(product.mrp)}</TableCell>
+                        <TableCell className="text-gray-700">{product.brand || '-'}</TableCell>
                         <TableCell className="text-gray-600">
                           {formatDate(product.updated_at)}
                         </TableCell>

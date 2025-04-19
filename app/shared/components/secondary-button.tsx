@@ -1,0 +1,17 @@
+import { Button } from '@mui/material';
+interface SecondaryButtonProps {
+  label: string;
+  disabled?: boolean;
+  onClick?: () => void;
+}
+
+export default function SecondaryButton({ label, onClick }: SecondaryButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="border-2 border-blue-500 text-blue-500 bg-white px-4 py-1 rounded-md hover:bg-blue-50"
+    >
+      {label}
+    </button>
+  );
+}

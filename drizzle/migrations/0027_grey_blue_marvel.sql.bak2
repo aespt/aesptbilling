@@ -1,0 +1,20 @@
+-- Create type was moved to 0028_fix_migration.sql
+-- CREATE TYPE "public"."invoice_stage" AS ENUM('SALE', 'PROFORMA', 'QUOTATION');--> statement-breakpoint
+CREATE TYPE "public"."payment_method" AS ENUM('CASH', 'CREDIT', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE');--> statement-breakpoint
+CREATE TYPE "public"."payment_status" AS ENUM('UNPAID', 'PARTIALLY_PAID', 'PAID');--> statement-breakpoint
+CREATE TABLE "payment_details" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"invoice_id" integer NOT NULL,
+	"payment_method" "payment_method" DEFAULT 'CASH',
+	"payment_status" "payment_status" DEFAULT 'UNPAID',
+	"payment_date" timestamp DEFAULT now(),
+	"reference_number" varchar(100),
+	"payment_notes" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "invoices" ADD COLUMN "invoice_stage" "invoice_stage" DEFAULT 'SALE';--> statement-breakpoint
+ALTER TABLE "payment_details" ADD CONSTRAINT "payment_details_invoice_id_invoices_id_fk" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "invoices" DROP COLUMN "invoice_type";--> statement-breakpoint
+DROP TYPE "public"."invoice_type";

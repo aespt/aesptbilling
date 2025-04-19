@@ -8,7 +8,9 @@ import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/app/shared/components/page-header';
 import Snackbar from '@/app/shared/components/snackbar';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
-import type { FormErrors, InvoiceFormData, InvoiceItem, Customer, Salesman } from '@/lib/types';
+import type { FormErrors } from '@/lib/types';
+import type { Customer, Salesman } from '@/lib/types/index';
+import type { InvoiceFormData, InvoiceItem } from '@/lib/types/invoice';
 
 import { fetchInvoiceById, type PaymentData } from '../components/invoice-loader';
 import InvoiceSearch from '../components/invoice-search';
@@ -97,7 +99,7 @@ export default function CreateInvoicePage() {
           setCurrentInvoiceId(Number(invoiceId));
 
           // Merge the loaded data with current formData to preserve defaults for any missing fields
-          setFormData(currentData => ({
+          setFormData((currentData: InvoiceFormData) => ({
             ...currentData,
             ...result.formData,
             // Ensure discount_type is the correct type
@@ -132,7 +134,7 @@ export default function CreateInvoicePage() {
 
                   // Update ship_to with customer's address if it's empty
                   if (!result.formData.ship_to && customer.address) {
-                    setFormData(currentData => ({
+                    setFormData((currentData: InvoiceFormData) => ({
                       ...currentData,
                       ship_to: customer.address,
                     }));
@@ -393,12 +395,13 @@ export default function CreateInvoicePage() {
   };
 
   return (
-    <div className="mt-16 px-4 py-8 md:ml-[280px] md:px-6">
+    <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
       <div className="mx-auto max-w-screen-2xl">
         <PageHeader
           heading={isEditMode ? 'Edit Sales Invoice' : 'Create Sales Invoice'}
           buttonText="Back to Invoices"
           onButtonClick={() => router.push('/invoices')}
+          buttonVariant="secondary"
         />
 
         {/* Invoice Search */}

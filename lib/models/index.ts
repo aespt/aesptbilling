@@ -12,3 +12,5 @@ export * from './sales';
 export * from './address';
 export * from './bank_details';
 export * from './payment_details';
+export * from './purchases';
+export * from './purchase_items';

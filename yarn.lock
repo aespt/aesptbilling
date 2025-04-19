@@ -1084,7 +1084,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.20.6, @babel/runtime@npm:^7.21.0":
+"@babel/runtime@npm:^7.21.0":
   version: 7.27.0
   resolution: "@babel/runtime@npm:7.27.0"
   dependencies:
@@ -7998,11 +7998,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"material-ui-popup-state@npm:^5.3.4":
-  version: 5.3.4
-  resolution: "material-ui-popup-state@npm:5.3.4"
+"material-ui-popup-state@npm:^5.3.5":
+  version: 5.3.5
+  resolution: "material-ui-popup-state@npm:5.3.5"
   dependencies:
-    "@babel/runtime": "npm:^7.20.6"
+    "@babel/runtime": "npm:^7.26.0"
     "@types/prop-types": "npm:^15.7.3"
     classnames: "npm:^2.2.6"
     prop-types: "npm:^15.7.2"
@@ -8013,7 +8013,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/803fd2ef1d3c72c9d325c17b93f104ffec8486029677904fa2b1aac192572fcef33de15e2e5d7fe704ac7a7e084990fa8030a65072cfe464ea7ec432c4157359
+  checksum: 10c0/ecb490da124f054724d55d9ee5adce9043d01d04ee12269ffd92627a7cdcd60942ad9e1f39e879caa6c0490ca3363c92d4db7ff806f90fd74df65ab2fc413da1
   languageName: node
   linkType: hard
 
@@ -9111,7 +9111,7 @@ __metadata:
     framer-motion: "npm:^12.4.7"
     jose: "npm:^6.0.8"
     jsonwebtoken: "npm:^9.0.2"
-    material-ui-popup-state: "npm:^5.3.4"
+    material-ui-popup-state: "npm:^5.3.5"
     module-alias: "npm:^2.2.3"
     ms: "npm:^2.1.3"
     next: "npm:^15.2.1"
