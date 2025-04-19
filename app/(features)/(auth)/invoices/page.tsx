@@ -1,7 +1,5 @@
 'use client';
 
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import DescriptionIcon from '@mui/icons-material/Description';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -35,6 +33,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import type * as DayJS from 'dayjs';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
 import Pagination from '@/app/shared/components/pagination';
@@ -145,6 +144,8 @@ export default function InvoicesListPage() {
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
   const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  const router = useRouter();
 
   // Fetch dropdown data
   useEffect(() => {
@@ -373,15 +374,21 @@ export default function InvoicesListPage() {
     setSelectedInvoice(null);
   };
 
-  const handleGenerateDocument = (documentType: string) => {
+  const handleGenerateDocument = (documentType: string, invoiceId?: number) => {
     if (!selectedInvoice) {
       return;
     }
 
-    // Example: This would be replaced with actual API calls
-    window.open(`/invoices/${documentType.toLowerCase()}/${selectedInvoice.id}`, '_blank');
+    // Use the provided invoiceId or fall back to selectedInvoice.id
+    const id = invoiceId || selectedInvoice.id;
+
+    window.open(`/invoices/pdf/${id}?invoiceStage=${documentType}`, '_blank');
 
     handleActionClose();
+  };
+
+  const handleSaleUpdate = (invoiceId?: number) => {
+    router.push(`/invoices/create?id=${invoiceId}`);
   };
 
   return (
@@ -534,54 +541,39 @@ export default function InvoicesListPage() {
           {activeTab === 2 ? (
             // Actions for Sales tab
             [
-              <MenuItem key="sale" onClick={() => handleGenerateDocument('SALE')}>
+              <MenuItem key="sale" onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
                 <ListItemIcon>
                   <ReceiptIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>Generate Sale</ListItemText>
+                <ListItemText>Update Sale</ListItemText>
               </MenuItem>,
-              <MenuItem key="delivery" onClick={() => handleGenerateDocument('DELIVERY')}>
+              <MenuItem
+                key="delivery"
+                onClick={() => handleGenerateDocument('DELIVERY', selectedInvoice?.id)}
+              >
                 <ListItemIcon>
                   <LocalShippingIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText>Generate Delivery Note</ListItemText>
               </MenuItem>,
-              <MenuItem key="proforma" onClick={() => handleGenerateDocument('PROFORMA')}>
-                <ListItemIcon>
-                  <AssignmentIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Generate Proforma</ListItemText>
-              </MenuItem>,
-              <MenuItem key="quotation" onClick={() => handleGenerateDocument('QUOTATION')}>
-                <ListItemIcon>
-                  <DescriptionIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Generate Quotation</ListItemText>
-              </MenuItem>,
             ]
           ) : activeTab === 0 ? (
             // Actions for Quotation tab
             [
-              <MenuItem key="sale" onClick={() => handleGenerateDocument('SALE')}>
+              <MenuItem key="sale" onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
                 <ListItemIcon>
                   <ReceiptIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>Generate Sale</ListItemText>
-              </MenuItem>,
-              <MenuItem key="proforma" onClick={() => handleGenerateDocument('PROFORMA')}>
-                <ListItemIcon>
-                  <AssignmentIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Generate Proforma</ListItemText>
+                <ListItemText>Update Sale</ListItemText>
               </MenuItem>,
             ]
           ) : (
             // Actions for Proforma tab
-            <MenuItem onClick={() => handleGenerateDocument('SALE')}>
+            <MenuItem onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
               <ListItemIcon>
                 <ReceiptIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>Generate Sale</ListItemText>
+              <ListItemText>Update Sale</ListItemText>
             </MenuItem>
           )}
         </Menu>

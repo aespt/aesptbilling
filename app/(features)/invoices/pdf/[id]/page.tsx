@@ -3,15 +3,42 @@
 import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
+// Define invoice interface with necessary properties
+interface Invoice {
+  id: number;
+  invoice_number: string;
+  invoice_date: string;
+  invoice_stage: 'SALE' | 'PROFORMA' | 'QUOTATION';
+  // Add other properties as needed
+}
+
+// Client-only wrapper component to prevent hydration errors
+const ClientOnly = ({ children }: { children: React.ReactNode }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
+  return <>{children}</>;
+};
+
 const PrintButton = ({ invoiceId }: { invoiceId: string | string[] | undefined }) => {
   const handlePrintClick = async () => {
-    if (!invoiceId) {
-      console.error('Invoice ID is undefined');
+    if (!invoiceId || typeof window === 'undefined') {
+      console.error('Invoice ID is undefined or not in browser environment');
       return;
     }
 
     try {
-      const response = await fetch(`/api/invoices/pdf/${invoiceId}`);
+      // Get current query parameters
+      const queryParams = window.location.search;
+
+      const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`);
       const pdfBlob = await response.blob();
       const pdfUrl = URL.createObjectURL(pdfBlob);
       const printWindow = window.open(pdfUrl, '_blank');
@@ -57,21 +84,38 @@ const InvoicePdfPage = () => {
   const invoiceId = params.id;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string>('');
 
   useEffect(() => {
-    // Check if the PDF is available by making a HEAD request
+    // Set PDF URL on client side
+    if (typeof window !== 'undefined') {
+      setPdfUrl(`/api/invoices/pdf/${invoiceId}${window.location.search}`);
+    }
+
+    // Check if the PDF is available and fetch invoice details
     const checkPdfAvailability = async () => {
       try {
-        const response = await fetch(`/api/invoices/pdf/${invoiceId}`, {
+        // Get any existing query parameters if in browser environment
+        const queryParams = typeof window !== 'undefined' ? window.location.search : '';
+
+        // First check PDF availability
+        const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`, {
           method: 'HEAD',
         });
 
         if (!response.ok) {
-          // If response is not OK, try to get error details
-          const errorResponse = await fetch(`/api/invoices/pdf/${invoiceId}`);
-          const errorData = await errorResponse.json();
-          throw new Error(errorData.error || errorData.details || 'Failed to load invoice PDF');
+          throw new Error('Failed to load invoice PDF');
         }
+
+        // Then fetch invoice details to get the stage
+        const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
+        if (!invoiceResponse.ok) {
+          throw new Error('Failed to load invoice details');
+        }
+
+        const invoiceData = await invoiceResponse.json();
+        setInvoice(invoiceData.data);
       } catch (err) {
         console.error('Error checking PDF availability:', err);
         setError(err instanceof Error ? err.message : 'Failed to load invoice PDF');
@@ -247,79 +291,145 @@ const InvoicePdfPage = () => {
         </div>
       ) : (
         <div className="relative h-full">
-          {/* Floating Action Panel - Only show when not loading */}
-          {!loading && (
-            <div className="fixed right-6 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3 transition-all duration-300 ease-in-out print:hidden">
-              <PrintButton invoiceId={invoiceId} />
+          <ClientOnly>
+            {/* Floating Action Panel - Only show when not loading */}
+            {!loading && (
+              <div className="fixed right-6 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3 transition-all duration-300 ease-in-out print:hidden">
+                <PrintButton invoiceId={invoiceId} />
 
-              <button
-                onClick={() => {
-                  const pdfUrl = `/api/invoices/pdf/${invoiceId}`;
-                  const link = document.createElement('a');
-                  link.href = pdfUrl;
-                  link.download = `invoice-${invoiceId}.pdf`;
-                  link.click();
-                }}
-                className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="size-5 transition-transform duration-300 group-hover:scale-110"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Download
-              </button>
+                <button
+                  onClick={() => {
+                    // Get current query parameters
+                    const queryParams = window.location.search;
+                    const pdfUrl = `/api/invoices/pdf/${invoiceId}${queryParams}`;
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
 
-              <button
-                onClick={() => window.close()}
-                className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-rose-600 hover:to-rose-700 hover:shadow-xl"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="size-5 transition-transform duration-300 group-hover:scale-110"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                    // Set filename based on invoiceStage if available
+                    const invoiceStage = new URLSearchParams(window.location.search).get(
+                      'invoiceStage'
+                    );
+                    let filename = `invoice-${invoiceId}.pdf`;
+                    if (invoiceStage === 'DELIVERY') {
+                      filename = `delivery-note-${invoiceId}.pdf`;
+                    } else if (invoiceStage === 'QUOTATION') {
+                      filename = `quotation-${invoiceId}.pdf`;
+                    } else if (invoiceStage === 'PROFORMA') {
+                      filename = `proforma-invoice-${invoiceId}.pdf`;
+                    }
+
+                    link.download = filename;
+                    link.click();
+                  }}
+                  className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Close
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="size-5 transition-transform duration-300 group-hover:scale-110"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Download
+                </button>
+
+                {/* Delivery Note button - only visible when invoice_stage is SALE */}
+                {new URLSearchParams(window.location.search).get('invoiceStage') === 'SALE' &&
+                  invoice !== null && (
+                    <button
+                      onClick={() => {
+                        // Get any existing query parameters from the current URL
+                        const currentUrl = new URL(window.location.href);
+                        const queryParams = new URLSearchParams(currentUrl.search);
+
+                        // Set the invoiceStage parameter
+                        queryParams.set('invoiceStage', 'DELIVERY');
+
+                        // Open a delivery note version of the invoice with all query params
+                        window.open(
+                          `/invoices/pdf/${invoiceId}?${queryParams.toString()}`,
+                          '_blank'
+                        );
+                      }}
+                      className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="size-5 transition-transform duration-300 group-hover:scale-110"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                      Delivery Note
+                    </button>
+                  )}
+
+                <button
+                  onClick={() => window.close()}
+                  className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-rose-600 hover:to-rose-700 hover:shadow-xl"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="size-5 transition-transform duration-300 group-hover:scale-110"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  Close
+                </button>
+              </div>
+            )}
+
+            {/* PDF iframe - only render on client */}
+            <div className="h-full overflow-hidden bg-white">
+              <ClientOnly>
+                <iframe
+                  id="pdf-iframe"
+                  src={pdfUrl}
+                  className="size-full border-none"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    border: '0',
+                    overflow: 'hidden',
+                  }}
+                  onLoad={handleIframeLoad}
+                  onError={handleIframeError}
+                  title="Invoice PDF"
+                />
+              </ClientOnly>
             </div>
-          )}
-
-          {/* PDF Container */}
-          <div className="h-full overflow-hidden bg-white">
-            <iframe
-              id="pdf-iframe"
-              src={`/api/invoices/pdf/${invoiceId}`}
-              className="size-full border-none"
-              style={{
-                display: 'block',
-                width: '100%',
-                height: '100%',
-                border: '0',
-                overflow: 'hidden',
-              }}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              title="Invoice PDF"
-            />
-          </div>
+          </ClientOnly>
+          {/* Fallback for server-side rendering */}
+          <noscript>
+            <div className="flex h-full items-center justify-center">
+              <p className="text-lg text-gray-700">
+                Please enable JavaScript to view the PDF invoice.
+              </p>
+            </div>
+          </noscript>
         </div>
       )}
 

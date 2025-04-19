@@ -2,7 +2,7 @@
 
 import { Button, Menu, MenuItem } from '@mui/material';
 import { usePopupState, bindTrigger, bindMenu } from 'material-ui-popup-state/hooks';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 import PageHeader from '@/app/shared/components/page-header';
@@ -20,6 +20,7 @@ import SalesTaxDiscount from '../components/sales-tax-discount';
 
 export default function CreateInvoicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const popupState = usePopupState({ variant: 'popover', popupId: 'invoiceActions' });
@@ -32,6 +33,15 @@ export default function CreateInvoicePage() {
   const [selectedSalesman, setSelectedSalesman] = useState<Salesman | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<number | null>(null);
+
+  // Check for invoice ID in URL query params on component mount
+  useEffect(() => {
+    // Check for any query param that could be an invoice ID
+    const id = searchParams.get('id');
+    if (id) {
+      loadInvoice(id);
+    }
+  }, [searchParams]);
 
   // Helper to convert item types for component compatibility
   const adaptInvoiceItemsForSummary = (items: InvoiceItem[]) => {
@@ -337,9 +347,9 @@ export default function CreateInvoicePage() {
 
       // Open PDF view in a new tab
       if (result.data && result.data.id) {
-        window.open(`/invoices/pdf/${result.data.id}`, '_blank');
+        window.open(`/invoices/pdf/${result.data.id}?invoiceStage=${invoiceStage}`, '_blank');
       } else if (isEditMode && currentInvoiceId) {
-        window.open(`/invoices/pdf/${currentInvoiceId}`, '_blank');
+        window.open(`/invoices/pdf/${currentInvoiceId}?invoiceStage=${invoiceStage}`, '_blank');
       }
 
       showSnackbar(

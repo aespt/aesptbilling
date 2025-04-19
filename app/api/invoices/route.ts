@@ -143,8 +143,15 @@ export async function GET(request: NextRequest) {
     const invoiceNumber = searchParams.get('invoiceNumber');
     const salesPerson = searchParams.get('salesPerson');
     const customer = searchParams.get('customer');
-    const invoiceStage = searchParams.get('invoiceStage');
-    const invoiceStageFilter = searchParams.get('invoiceStageFilter');
+    const invoiceStage =
+      searchParams.get('invoiceStage') ||
+      searchParams.get('invoicestage') ||
+      searchParams.get('InvoiceStage') ||
+      searchParams.get('INVOICESTAGE');
+    const invoiceStageFilter =
+      searchParams.get('invoiceStageFilter') ||
+      searchParams.get('invoicestagefilter') ||
+      searchParams.get('InvoiceStageFilter');
 
     // Calculate offset based on page and pageSize
     const offset = (page - 1) * pageSize;
