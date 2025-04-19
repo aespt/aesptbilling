@@ -9,26 +9,17 @@ import { useEffect, useRef, useState } from 'react';
 
 import AddCustomer from '@/app/(features)/(auth)/customers/components/add-customer';
 import Sidepanel from '@/app/shared/components/sidepanel';
-import type { FormErrors, InvoiceFormData } from '@/lib/types';
-
-interface Salesman {
-  id: number;
-  name: string;
-}
-
-interface Customer {
-  id: number;
-  name: string;
-  address?: string;
-  email?: string;
-  phone?: string;
-}
+import type { Customer, FormErrors, InvoiceFormData, Salesman } from '@/lib/types';
 
 interface SalesInvoiceDetailsProps {
   formData: InvoiceFormData;
   setFormData: (formData: InvoiceFormData) => void;
   errors: FormErrors;
   setErrors: (errors: FormErrors) => void;
+  selectedCustomer: Customer | null;
+  setSelectedCustomer: (customer: Customer | null) => void;
+  selectedSalesman: Salesman | null;
+  setSelectedSalesman: (salesman: Salesman | null) => void;
 }
 
 // Utility function to generate invoice number
@@ -46,11 +37,13 @@ export default function SalesInvoiceDetails({
   setFormData,
   errors,
   setErrors,
+  selectedCustomer,
+  setSelectedCustomer,
+  selectedSalesman,
+  setSelectedSalesman,
 }: SalesInvoiceDetailsProps) {
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedSalesman, setSelectedSalesman] = useState<Salesman | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCustomerPanelOpen, setIsCustomerPanelOpen] = useState(false);
   const initialized = useRef(false);
@@ -215,6 +208,9 @@ export default function SalesInvoiceDetails({
                         error={!!errors.invoice_number}
                         helperText={errors.invoice_number}
                         size="small"
+                        InputProps={{
+                          readOnly: true,
+                        }}
                       />
                     </div>
 

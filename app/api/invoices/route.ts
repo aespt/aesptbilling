@@ -1,4 +1,4 @@
-import { sql, eq, and, gte, lt } from 'drizzle-orm';
+import { sql, eq, and, gte, lt, like, or } from 'drizzle-orm';
 import { type InferInsertModel } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
@@ -16,9 +16,81 @@ import { AUTH_COOKIE_NAME, verifyToken } from '@/lib/utils/jwt';
 type InvoiceInsert = InferInsertModel<typeof InvoicesTable>;
 type InvoiceItemInsert = InferInsertModel<typeof InvoiceItemsTable>;
 
+// Define interface for search results
+interface InvoiceSearchResult {
+  id: number;
+  invoice_number: string;
+  date: Date;
+  customer_id: number;
+  customer_name: string | null;
+  total: string;
+  invoice_stage: 'SALE' | 'PROFORMA' | 'QUOTATION' | null;
+}
+
+// Utility function to handle invoice search
+async function searchInvoices(
+  params: URLSearchParams,
+  _payload: TokenPayload
+): Promise<{ success: boolean; data: InvoiceSearchResult[] | null; error?: string }> {
+  try {
+    const invoiceNumber = params.get('invoice_number');
+    const stage = params.get('stage');
+    // Status is not used in this function currently but kept for future expansion
+    // const status = params.get('status');
+
+    // Build the select query
+    const query = db
+      .select({
+        id: InvoicesTable.id,
+        invoice_number: InvoicesTable.invoice_number,
+        date: InvoicesTable.invoice_date,
+        customer_id: InvoicesTable.customer_id,
+        customer_name: CustomersTable.name,
+        total: InvoicesTable.total,
+        invoice_stage: InvoicesTable.invoice_stage,
+      })
+      .from(InvoicesTable)
+      .leftJoin(CustomersTable, eq(InvoicesTable.customer_id, CustomersTable.id));
+
+    // Create conditions array
+    const conditions = [];
+
+    // Add invoice number search if provided
+    if (invoiceNumber) {
+      conditions.push(
+        or(
+          like(InvoicesTable.invoice_number, `%${invoiceNumber}%`),
+          eq(InvoicesTable.invoice_number, invoiceNumber)
+        )
+      );
+    }
+
+    // Add invoice stage filter if provided
+    if (stage && ['SALE', 'PROFORMA', 'QUOTATION'].includes(stage)) {
+      // Cast stage to the correct type based on invoiceStageEnum
+      conditions.push(eq(InvoicesTable.invoice_stage, stage as 'SALE' | 'PROFORMA' | 'QUOTATION'));
+    }
+
+    // Apply conditions if any
+    const results = conditions.length
+      ? await query.where(and(...conditions)).limit(20)
+      : await query.limit(20);
+
+    return { success: true, data: results };
+  } catch (error) {
+    console.error('Error searching invoices:', error);
+    return {
+      success: false,
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to search invoices',
+    };
+  }
+}
+
 /**
  * GET /api/invoices
  * Retrieves a list of invoices with optional filtering
+ * Also handles search functionality if invoice_number, stage or status params are provided
  */
 export async function GET(request: NextRequest) {
   try {
@@ -38,6 +110,29 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
+
+    // Check if this is a search request
+    const isSearchRequest =
+      searchParams.has('invoice_number') || searchParams.has('stage') || searchParams.has('status');
+
+    if (isSearchRequest) {
+      const searchResult = await searchInvoices(searchParams, payload);
+      if (searchResult.success) {
+        return NextResponse.json({
+          success: true,
+          data: searchResult.data,
+        });
+      } else {
+        return NextResponse.json(
+          {
+            error: searchResult.error || 'Failed to search invoices',
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Continue with regular listing functionality
     const customerId = searchParams.get('customer_id');
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = parseInt(searchParams.get('limit') || '10');
@@ -48,7 +143,15 @@ export async function GET(request: NextRequest) {
     const invoiceNumber = searchParams.get('invoiceNumber');
     const salesPerson = searchParams.get('salesPerson');
     const customer = searchParams.get('customer');
-    const invoiceType = searchParams.get('invoiceType');
+    const invoiceStage =
+      searchParams.get('invoiceStage') ||
+      searchParams.get('invoicestage') ||
+      searchParams.get('InvoiceStage') ||
+      searchParams.get('INVOICESTAGE');
+    const invoiceStageFilter =
+      searchParams.get('invoiceStageFilter') ||
+      searchParams.get('invoicestagefilter') ||
+      searchParams.get('InvoiceStageFilter');
 
     // Calculate offset based on page and pageSize
     const offset = (page - 1) * pageSize;
@@ -80,12 +183,40 @@ export async function GET(request: NextRequest) {
 
     // Add sales person filter if provided
     if (salesPerson) {
-      conditions.push(sql`${InvoicesTable.salesman_id} ILIKE ${`%${salesPerson}%`}`);
+      try {
+        const salesmanId = parseInt(salesPerson);
+        if (!isNaN(salesmanId)) {
+          // If it's a valid number, use equality comparison
+          conditions.push(eq(InvoicesTable.salesman_id, salesmanId));
+        } else {
+          // If it's a string (name), we'll handle it later in post-processing like customer filter
+        }
+      } catch (e) {
+        // If parsing fails, ignore this filter
+        console.error('Error parsing salesperson ID:', e);
+      }
     }
 
-    // Add invoice type filter if provided
-    if (invoiceType && ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'].includes(invoiceType)) {
-      conditions.push(sql`${InvoicesTable.invoice_type} = ${invoiceType}`);
+    // Add invoice stage filter - single value (takes precedence over multi-value filter)
+    if (invoiceStage && ['SALE', 'PROFORMA', 'QUOTATION'].includes(invoiceStage)) {
+      conditions.push(sql`${InvoicesTable.invoice_stage} = ${invoiceStage}`);
+    }
+    // Add invoice stage filter - multiple values
+    else if (invoiceStageFilter) {
+      const stages = invoiceStageFilter.split(',');
+      // Filter out any invalid stages
+      const validStages = stages.filter(s => ['SALE', 'PROFORMA', 'QUOTATION'].includes(s));
+      if (validStages.length > 0) {
+        if (validStages.length === 1) {
+          // Single stage case
+          conditions.push(sql`${InvoicesTable.invoice_stage} = ${validStages[0]}`);
+        } else {
+          // Multiple stages case - use OR condition
+          conditions.push(
+            sql`${InvoicesTable.invoice_stage} IN (${sql.join(validStages, sql`, `)})`
+          );
+        }
+      }
     }
 
     // Get total count for pagination
@@ -113,7 +244,7 @@ export async function GET(request: NextRequest) {
         created_at: InvoicesTable.created_at,
         ship_from: InvoicesTable.ship_from,
         ship_to: InvoicesTable.ship_to,
-        invoice_type: InvoicesTable.invoice_type,
+        invoice_stage: InvoicesTable.invoice_stage,
       })
       .from(InvoicesTable)
       .where(conditions.length ? and(...conditions) : undefined)
@@ -170,6 +301,16 @@ export async function GET(request: NextRequest) {
     if (customer) {
       results = invoicesWithDetails.filter(invoice =>
         invoice.customer.name.toLowerCase().includes(customer.toLowerCase())
+      );
+    }
+
+    // Apply salesperson name filter if provided and it's a string (not an ID)
+    if (salesPerson && isNaN(parseInt(salesPerson))) {
+      results = results.filter(
+        invoice =>
+          invoice.salesman &&
+          invoice.salesman.name &&
+          invoice.salesman.name.toLowerCase().includes(salesPerson.toLowerCase())
       );
     }
 

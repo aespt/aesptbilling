@@ -1,5 +1,5 @@
 {
-  "id": "9131bc26-9669-47a1-8902-71cbbcf8464c",
+  "id": "cba74c4b-5567-4539-93ad-e763103e4e84",
   "prevId": "2d5bfa1e-50e0-4940-a111-ee5de56be27b",
   "version": "7",
   "dialect": "postgresql",
@@ -499,12 +499,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "brand": {
-          "name": "brand",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_by": {
           "name": "created_by",
           "type": "varchar(100)",
@@ -603,13 +597,13 @@
           "notNull": false,
           "default": "'0'"
         },
-        "invoice_type": {
-          "name": "invoice_type",
-          "type": "invoice_type",
+        "invoice_stage": {
+          "name": "invoice_stage",
+          "type": "invoice_stage",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
-          "default": "'TAX'"
+          "default": "'SALE'"
         },
         "profit": {
           "name": "profit",
@@ -1231,12 +1225,11 @@
     }
   },
   "enums": {
-    "public.invoice_type": {
-      "name": "invoice_type",
+    "public.invoice_stage": {
+      "name": "invoice_stage",
       "schema": "public",
       "values": [
-        "TAX",
-        "DELIVERY",
+        "SALE",
         "PROFORMA",
         "QUOTATION"
       ]

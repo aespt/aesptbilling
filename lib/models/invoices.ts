@@ -7,7 +7,7 @@ import { UsersTable } from './users';
 // Create an enum for tax types
 export const taxTypeEnum = pgEnum('tax_type', ['VAT', 'GST', 'NONE']);
 
-export const invoiceTypeEnum = pgEnum('invoice_type', ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION']);
+export const invoiceStageEnum = pgEnum('invoice_stage', ['SALE', 'PROFORMA', 'QUOTATION']);
 
 export const InvoicesTable = pgTable('invoices', {
   id: serial('id').primaryKey(),
@@ -21,7 +21,7 @@ export const InvoicesTable = pgTable('invoices', {
   tax_rate: decimal('tax_rate', { precision: 5, scale: 2 }).default('0'),
   sub_total: decimal('sub_total', { precision: 10, scale: 2 }).notNull(),
   discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
-  invoice_type: invoiceTypeEnum('invoice_type').default('TAX'),
+  invoice_stage: invoiceStageEnum('invoice_stage').default('SALE'),
   profit: decimal('profit', { precision: 10, scale: 2 }).default('0'),
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
   ship_to: varchar('ship_to', { length: 255 }),

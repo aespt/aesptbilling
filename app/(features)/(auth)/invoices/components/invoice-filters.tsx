@@ -50,7 +50,6 @@ interface InvoiceFiltersProps {
   customers: Customer[];
   salesmen: Salesman[];
   loadingDropdowns: boolean;
-  invoiceTypeOptions: string[];
 }
 
 export default function InvoiceFilters({
@@ -61,7 +60,6 @@ export default function InvoiceFilters({
   customers,
   salesmen,
   loadingDropdowns,
-  invoiceTypeOptions,
 }: InvoiceFiltersProps) {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -190,7 +188,7 @@ export default function InvoiceFilters({
             </div>
 
             {/* Invoice Type Filter - Dropdown */}
-            <div className="space-y-1">
+            {/* <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">Invoice Type</label>
               <TextField
                 select
@@ -208,7 +206,7 @@ export default function InvoiceFilters({
                   </MenuItem>
                 ))}
               </TextField>
-            </div>
+            </div> */}
           </div>
         </div>
 

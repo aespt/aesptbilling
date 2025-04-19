@@ -1,0 +1,6 @@
+CREATE TYPE "public"."invoice_stage" AS ENUM('SALE', 'PROFORMA', 'QUOTATION');--> statement-breakpoint
+ALTER TABLE "users" DROP CONSTRAINT "users_created_by_users_id_fk";
+--> statement-breakpoint
+ALTER TABLE "users" DROP CONSTRAINT "users_updated_by_users_id_fk";
+--> statement-breakpoint
+ALTER TABLE "invoices" ADD COLUMN "invoice_stage" "invoice_stage" DEFAULT 'SALE';

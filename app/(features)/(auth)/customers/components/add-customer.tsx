@@ -10,13 +10,15 @@ import { type Customer } from '@/lib/types';
 
 // Define the validation schema using Zod
 const customerFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 characters")
-    .max(20, "Phone number must not exceed 20 characters"),
-    trn: z.string().min(3, "TRN must be at least 3 characters"),
-    address: z.string().optional().or(z.literal(''))
-  });
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  phone: z
+    .string()
+    .min(10, 'Phone number must be at least 10 characters')
+    .max(20, 'Phone number must not exceed 20 characters'),
+  trn: z.string().min(3, 'TRN must be at least 3 characters'),
+  address: z.string().optional().or(z.literal('')),
+});
 
 // Infer the type from the schema
 type CustomerFormData = z.infer<typeof customerFormSchema>;
@@ -53,7 +55,7 @@ export default function AddCustomer({
       email: '',
       phone: '',
       address: '',
-      trn: ''
+      trn: '',
     },
     mode: 'onChange', // Validate on change for immediate feedback
   });
@@ -66,7 +68,7 @@ export default function AddCustomer({
         email: customerToEdit.email,
         phone: customerToEdit.phone || '',
         address: customerToEdit.address || '',
-        trn: customerToEdit.trn || ''
+        trn: customerToEdit.trn || '',
       });
     }
   }, [customerToEdit, reset]);
@@ -83,7 +85,7 @@ export default function AddCustomer({
         email: data.email,
         phone: data.phone || '',
         address: data.address || '',
-        trn: data.trn || ''
+        trn: data.trn || '',
       };
 
       // If in edit mode, add the ID and use PUT method
@@ -92,8 +94,6 @@ export default function AddCustomer({
           id: customerToEdit.id,
           ...customerData,
         };
-
-        console.log(updateData);
 
         const response = await fetch('/api/customers', {
           method: 'PUT',
@@ -124,7 +124,6 @@ export default function AddCustomer({
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.log(errorData);
           throw new Error(errorData.error || 'Failed to create customer');
         }
 
@@ -244,13 +243,16 @@ export default function AddCustomer({
             <ErrorMessage message={errors.phone?.message} />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">TRN</label>
+            <label htmlFor="trn" className="text-sm font-medium text-gray-700">
+              TRN
+            </label>
             <Controller
               name="trn"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="trn"
                   variant="outlined"
                   fullWidth
                   error={!!errors.trn}
@@ -263,7 +265,7 @@ export default function AddCustomer({
             />
             <ErrorMessage message={errors.trn?.message} />
           </div>
-          
+
           <div className="space-y-1">
             <label htmlFor="address" className="text-sm font-medium text-gray-700">
               Address (Optional)

@@ -1,11 +1,22 @@
 'use client';
 
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 import SearchIcon from '@mui/icons-material/Search';
 import {
-  Typography,
+  Autocomplete,
   Box,
+  Drawer,
+  InputAdornment,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Paper,
+  Tab,
   Table,
   TableBody,
   TableCell,
@@ -15,15 +26,15 @@ import {
   TableSortLabel,
   IconButton,
   Button,
+  Tabs,
   TextField,
-  InputAdornment,
-  Autocomplete,
-  MenuItem,
+  Typography,
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import type * as DayJS from 'dayjs';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
 import Pagination from '@/app/shared/components/pagination';
@@ -67,6 +78,7 @@ interface Invoice {
   ship_from: string;
   ship_to: string;
   invoice_type: string;
+  invoice_stage: 'SALE' | 'PROFORMA' | 'QUOTATION';
   customer: {
     id: number;
     name: string;
@@ -92,10 +104,12 @@ interface FilterOptions {
   salesPerson: Salesman | null;
   customer: Customer | null;
   invoiceType: string | null;
+  invoiceStage: string | null;
 }
 
 export default function InvoicesListPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
@@ -117,6 +131,7 @@ export default function InvoicesListPage() {
     salesPerson: null,
     customer: null,
     invoiceType: null,
+    invoiceStage: null,
   });
   const [tempFilters, setTempFilters] = useState<FilterOptions>({
     dateFrom: null,
@@ -125,13 +140,15 @@ export default function InvoicesListPage() {
     salesPerson: null,
     customer: null,
     invoiceType: null,
+    invoiceStage: null,
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
-  // Define invoice type options
-  const invoiceTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
+  const router = useRouter();
 
   // Fetch dropdown data
   useEffect(() => {
@@ -180,6 +197,18 @@ export default function InvoicesListPage() {
           sortOrder: sort.direction,
         });
 
+        // Apply filter based on the active tab
+        if (activeTab === 0) {
+          // QUOTATION tab
+          params.append('invoiceStageFilter', 'QUOTATION');
+        } else if (activeTab === 1) {
+          // PROFORMA tab
+          params.append('invoiceStageFilter', 'PROFORMA');
+        } else {
+          // SALES tab
+          params.append('invoiceStageFilter', 'SALE');
+        }
+
         // Add date filters if set
         if (filtersToUse.dateFrom) {
           params.append('dateFrom', filtersToUse.dateFrom.format('YYYY-MM-DD'));
@@ -209,6 +238,11 @@ export default function InvoicesListPage() {
           params.append('invoiceType', filtersToUse.invoiceType);
         }
 
+        // Add invoice stage filter if set by the user (this will override the tab-based filter)
+        if (filtersToUse.invoiceStage) {
+          params.append('invoiceStage', filtersToUse.invoiceStage);
+        }
+
         const response = await fetch(`/api/invoices?${params.toString()}`);
 
         if (!response.ok) {
@@ -216,7 +250,10 @@ export default function InvoicesListPage() {
         }
 
         const data = await response.json();
-        setInvoices(data.invoices);
+
+        // Set filtered invoices directly from the API response
+        setFilteredInvoices(data.invoices);
+
         // Ensure pagination data has all required fields
         setPagination({
           total: data.pagination.total ?? 0,
@@ -232,13 +269,20 @@ export default function InvoicesListPage() {
         setLoading(false);
       }
     },
-    [pagination.currentPage, pagination.pageSize, sort, filters]
+    [pagination.currentPage, pagination.pageSize, sort, filters, activeTab]
   );
 
   // Load invoices on initial page load and when filters change
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  // Update the tab change handler to refetch with the new tab
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    // Fetch invoices whenever the tab changes to update the filtered data
+    fetchInvoices();
+  };
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({
@@ -296,6 +340,7 @@ export default function InvoicesListPage() {
       salesPerson: null,
       customer: null,
       invoiceType: null,
+      invoiceStage: null,
     };
 
     setTempFilters(emptyFilters);
@@ -322,6 +367,84 @@ export default function InvoicesListPage() {
     window.open(`/invoices/pdf/${invoiceId}`, '_blank');
   };
 
+  const handleActionClick = (event: React.MouseEvent<HTMLButtonElement>, invoice: Invoice) => {
+    setActionMenuAnchor(event.currentTarget);
+    setSelectedInvoice(invoice);
+  };
+
+  const handleActionClose = () => {
+    setActionMenuAnchor(null);
+    setSelectedInvoice(null);
+  };
+
+  const handleGenerateDocument = (documentType: string, invoiceId?: number) => {
+    if (!selectedInvoice) {
+      return;
+    }
+
+    // Use the provided invoiceId or fall back to selectedInvoice.id
+    const id = invoiceId || selectedInvoice.id;
+
+    window.open(`/invoices/pdf/${id}?invoiceStage=${documentType}`, '_blank');
+
+    handleActionClose();
+  };
+
+  const handleSaleUpdate = (invoiceId?: number) => {
+    router.push(`/invoices/create?id=${invoiceId}`);
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      // Construct the same filter parameters as used in the current view
+      const params = new URLSearchParams();
+
+      // Add filter based on date range if provided
+      if (filters.dateFrom) {
+        params.append('dateFrom', filters.dateFrom.format('YYYY-MM-DD'));
+      }
+
+      if (filters.dateTo) {
+        params.append('dateTo', filters.dateTo.format('YYYY-MM-DD'));
+      }
+
+      // Add invoice number filter if provided
+      if (filters.invoiceNumber) {
+        params.append('invoiceNumber', filters.invoiceNumber);
+      }
+
+      // Add sales person filter if provided
+      if (filters.salesPerson) {
+        params.append('salesPerson', filters.salesPerson.id.toString());
+      }
+
+      // Add customer filter if provided
+      if (filters.customer) {
+        params.append('customer_id', filters.customer.id.toString());
+      }
+
+      // Create a Blob from the response and trigger a download
+      const response = await fetch(`/api/invoices/export?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to export invoices');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoices_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Error exporting invoices:', error);
+      // You could add a toast notification here to inform the user
+    }
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="px-4 pb-6 pt-16 md:ml-[280px] md:px-6">
@@ -330,14 +453,40 @@ export default function InvoicesListPage() {
           <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
             Sales History
           </Typography>
-          <IconButton
-            onClick={() => setFilterPanelOpen(true)}
-            color="primary"
-            className="bg-blue-50 hover:bg-blue-100"
-            size="medium"
+          <div className="flex items-center gap-2">
+            {activeTab === 2 && ( // Only show Export button on Sales tab
+              <Button
+                startIcon={<FileDownloadIcon />}
+                variant="contained"
+                color="primary"
+                onClick={handleExportExcel}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Export Excel
+              </Button>
+            )}
+            <IconButton
+              onClick={() => setFilterPanelOpen(true)}
+              color="primary"
+              className="bg-blue-50 hover:bg-blue-100"
+              size="medium"
+            >
+              <FilterAltIcon />
+            </IconButton>
+          </div>
+        </Box>
+
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="invoice tabs"
+            variant="fullWidth"
           >
-            <FilterAltIcon />
-          </IconButton>
+            <Tab label="Quotation" />
+            <Tab label="Proforma" />
+            <Tab label="Sales" />
+          </Tabs>
         </Box>
 
         {loading ? (
@@ -381,15 +530,6 @@ export default function InvoicesListPage() {
                       </TableSortLabel>
                     </TableCell>
                     <TableCell className="font-medium">Customer</TableCell>
-                    <TableCell className="font-medium">
-                      <TableSortLabel
-                        active={sort.field === 'invoice_type'}
-                        direction={sort.field === 'invoice_type' ? sort.direction : 'asc'}
-                        onClick={() => handleSortChange('invoice_type')}
-                      >
-                        Invoice Type
-                      </TableSortLabel>
-                    </TableCell>
                     <TableCell className="font-medium">Ship From</TableCell>
                     <TableCell className="font-medium">Ship To</TableCell>
                     <TableCell align="right" className="font-medium">
@@ -401,11 +541,14 @@ export default function InvoicesListPage() {
                         Total
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell align="center" className="font-medium">
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {invoices.length > 0 ? (
-                    invoices.map((invoice, index) => (
+                  {filteredInvoices.length > 0 ? (
+                    filteredInvoices.map((invoice, index) => (
                       <TableRow
                         key={invoice.id}
                         hover
@@ -424,17 +567,21 @@ export default function InvoicesListPage() {
                         </TableCell>
                         <TableCell>{invoice.salesman.name}</TableCell>
                         <TableCell>{invoice.customer.name}</TableCell>
-                        <TableCell className="capitalize">{invoice.invoice_type}</TableCell>
                         <TableCell>{invoice.ship_from}</TableCell>
                         <TableCell>{invoice.ship_to}</TableCell>
                         <TableCell align="right" className="font-bold">
                           {parseFloat(invoice.total).toFixed(2)} AED
                         </TableCell>
+                        <TableCell align="center">
+                          <IconButton size="small" onClick={e => handleActionClick(e, invoice)}>
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-gray-500">
+                      <TableCell colSpan={9} className="py-8 text-center text-gray-500">
                         No invoices found. Please try adjusting your filters.
                       </TableCell>
                     </TableRow>
@@ -452,7 +599,51 @@ export default function InvoicesListPage() {
           </Paper>
         )}
 
-        {/* Sidepanel with InvoiceFilters */}
+        {/* Action Menu */}
+        <Menu
+          anchorEl={actionMenuAnchor}
+          open={Boolean(actionMenuAnchor)}
+          onClose={handleActionClose}
+        >
+          {activeTab === 2 ? (
+            // Actions for Sales tab
+            [
+              <MenuItem key="sale" onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <ReceiptIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Update Sale</ListItemText>
+              </MenuItem>,
+              <MenuItem
+                key="delivery"
+                onClick={() => handleGenerateDocument('DELIVERY', selectedInvoice?.id)}
+              >
+                <ListItemIcon>
+                  <LocalShippingIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Generate Delivery Note</ListItemText>
+              </MenuItem>,
+            ]
+          ) : activeTab === 0 ? (
+            // Actions for Quotation tab
+            [
+              <MenuItem key="sale" onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <ReceiptIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Update Sale</ListItemText>
+              </MenuItem>,
+            ]
+          ) : (
+            // Actions for Proforma tab
+            <MenuItem onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
+              <ListItemIcon>
+                <ReceiptIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Update Sale</ListItemText>
+            </MenuItem>
+          )}
+        </Menu>
         <Sidepanel isOpen={filterPanelOpen} onClose={() => setFilterPanelOpen(false)} size="small">
           <InvoiceFilters 
             tempFilters={tempFilters}
@@ -462,7 +653,6 @@ export default function InvoicesListPage() {
             customers={customers}
             salesmen={salesmen}
             loadingDropdowns={loadingDropdowns}
-            invoiceTypeOptions={invoiceTypeOptions}
           />
         </Sidepanel>
       </div>

@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           ship_to: body.ship_to,
           ship_from: body.ship_from,
           profit: body.profit,
-          invoice_type: body.type,
+          invoice_stage: body.invoice_stage,
           created_by: payload.userId,
           updated_by: payload.userId,
         })

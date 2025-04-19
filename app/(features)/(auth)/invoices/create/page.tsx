@@ -2,14 +2,17 @@
 
 import { Button, Menu, MenuItem } from '@mui/material';
 import { usePopupState, bindTrigger, bindMenu } from 'material-ui-popup-state/hooks';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 
 import PageHeader from '@/app/shared/components/page-header';
 import Snackbar from '@/app/shared/components/snackbar';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
-import type { FormErrors, InvoiceFormData, InvoiceItem } from '@/lib/types';
+import type { FormErrors, InvoiceFormData, InvoiceItem, Customer, Salesman } from '@/lib/types';
 
+import { fetchInvoiceById } from '../components/invoice-loader';
+import InvoiceSearch from '../components/invoice-search';
+import PreviousInvoicesModal from '../components/previous-invoices-modal';
 import SalesInvoiceDetails from '../components/sales-invoice-details';
 import SalesInvoiceItems from '../components/sales-invoice-items';
 import SalesInvoiceSummary from '../components/sales-invoice-summary';
@@ -17,19 +20,19 @@ import SalesTaxDiscount from '../components/sales-tax-discount';
 
 export default function CreateInvoicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const popupState = usePopupState({ variant: 'popover', popupId: 'invoiceActions' });
 
-  // Helper to convert item types for component compatibility
-  const adaptInvoiceItemsForSummary = (items: InvoiceItem[]) => {
-    return items.map(item => ({
-      ...item,
-      // Ensure required properties have default values
-      mrp: item.mrp ?? 0,
-      price: item.price ?? 0,
-    }));
-  };
+  // Search and modal state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedSalesman, setSelectedSalesman] = useState<Salesman | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentInvoiceId, setCurrentInvoiceId] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<InvoiceFormData>({
@@ -71,13 +74,148 @@ export default function CreateInvoicePage() {
     items: '',
   });
 
-  // Force re-render of components when tax or discount changes
-  const handleTaxDiscountChange = () => {
-    // This is just to trigger a re-render of the summary
-    setInvoiceItems([...invoiceItems]);
+  // Load invoice by ID
+  const loadInvoice = useCallback(
+    async (invoiceId: string) => {
+      setIsLoadingInvoice(true);
+      try {
+        const result = await fetchInvoiceById(invoiceId);
+
+        if (result) {
+          // Set edit mode and current invoice ID
+          setIsEditMode(true);
+          setCurrentInvoiceId(Number(invoiceId));
+
+          // Merge the loaded data with current formData to preserve defaults for any missing fields
+          setFormData(currentData => ({
+            ...currentData,
+            ...result.formData,
+          }));
+
+          // Replace invoice items only if we got items
+          if (result.invoiceItems.length > 0) {
+            setInvoiceItems(result.invoiceItems);
+          }
+
+          // Fetch customer details if customer_id is available
+          if (result.formData.customer_id) {
+            try {
+              const customerResponse = await fetch('/api/dropdown/customers');
+              if (customerResponse.ok) {
+                const customersData = await customerResponse.json();
+                const customer = customersData.customers.find(
+                  (c: Customer) => c.id === result.formData.customer_id
+                );
+
+                if (customer) {
+                  setSelectedCustomer(customer);
+
+                  // Update ship_to with customer's address if it's empty
+                  if (!result.formData.ship_to && customer.address) {
+                    setFormData(currentData => ({
+                      ...currentData,
+                      ship_to: customer.address,
+                    }));
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching customer details:', error);
+            }
+          }
+
+          // Fetch salesman details if salesman_id is available
+          if (result.formData.salesman_id) {
+            try {
+              const salesmanResponse = await fetch('/api/dropdown/salesmen');
+              if (salesmanResponse.ok) {
+                const salesmenData = await salesmanResponse.json();
+                const salesman = salesmenData.salesmen.find(
+                  (s: Salesman) => s.id === result.formData.salesman_id
+                );
+
+                if (salesman) {
+                  setSelectedSalesman(salesman);
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching salesman details:', error);
+            }
+          }
+
+          showSnackbar('Invoice loaded successfully', 'success');
+        } else {
+          showSnackbar('Failed to load invoice', 'error');
+        }
+      } catch (error) {
+        console.error('Error loading invoice:', error);
+        showSnackbar('Error loading invoice', 'error');
+      } finally {
+        setIsLoadingInvoice(false);
+      }
+    },
+    [showSnackbar]
+  );
+
+  // Check for invoice ID in URL query params on component mount
+  useEffect(() => {
+    // Check for any query param that could be an invoice ID
+    const id = searchParams.get('id');
+    if (id) {
+      loadInvoice(id);
+    }
+  }, [searchParams, loadInvoice]);
+
+  // Helper to convert item types for component compatibility
+  const adaptInvoiceItemsForSummary = (items: InvoiceItem[]) => {
+    return items.map(item => ({
+      ...item,
+      // Ensure required properties have default values
+      mrp: item.mrp ?? 0,
+      price: item.price ?? 0,
+    }));
   };
 
-  // Validate form
+  // Handle invoice search
+  const searchInvoiceByNumber = useCallback(
+    async (number: string) => {
+      if (!number.trim()) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/invoices?invoice_number=${encodeURIComponent(number)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data && result.data.length > 0) {
+            // If invoice found, load it
+            const invoice = result.data[0];
+            await loadInvoice(invoice.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error searching for invoice:', error);
+      }
+    },
+    [loadInvoice]
+  );
+
+  useEffect(() => {
+    if (searchTerm) {
+      const delaySearch = setTimeout(() => {
+        searchInvoiceByNumber(searchTerm);
+      }, 500);
+      return () => clearTimeout(delaySearch);
+    }
+  }, [searchTerm, searchInvoiceByNumber]);
+
+  // Form validation
   const validateForm = () => {
     const newErrors: FormErrors = {
       invoice_number: !formData.invoice_number ? 'Invoice number is required' : '',
@@ -154,7 +292,7 @@ export default function CreateInvoicePage() {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false, invoiceType = 'INVOICE') => {
+  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false, invoiceStage = 'SALE') => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -165,12 +303,18 @@ export default function CreateInvoicePage() {
     setIsSubmitting(true);
     try {
       const totals = calculateInvoiceTotals();
-      const profit = calculateProfit(invoiceItems, totals.discount);
+
+      let profit = 0;
+      if (invoiceStage === 'SALE') {
+        profit = calculateProfit(invoiceItems, totals.discount);
+      } else {
+        profit = 0;
+      }
 
       const invoiceData = {
         ...formData,
         status: saveAsDraft ? 'DRAFT' : 'PENDING',
-        type: invoiceType,
+        invoice_stage: invoiceStage,
         items: invoiceItems.filter(item => item.product_id), // Only send items with a product selected
         subtotal: totals.subtotal,
         discount: totals.discount,
@@ -179,30 +323,48 @@ export default function CreateInvoicePage() {
         profit,
       };
 
-      // Send data to the API
-      const response = await fetch('/api/invoices/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoiceData),
-      });
+      let response;
+
+      // If in edit mode, update the existing invoice
+      if (isEditMode && currentInvoiceId) {
+        response = await fetch(`/api/invoices/${currentInvoiceId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invoiceData),
+        });
+      } else {
+        // Otherwise create a new invoice
+        response = await fetch('/api/invoices/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invoiceData),
+        });
+      }
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || result.message || 'Failed to create invoice');
+        throw new Error(result.error || result.message || 'Failed to process invoice');
       }
 
       // Open PDF view in a new tab
       if (result.data && result.data.id) {
-        window.open(`/invoices/pdf/${result.data.id}`, '_blank');
+        window.open(`/invoices/pdf/${result.data.id}?invoiceStage=${invoiceStage}`, '_blank');
+      } else if (isEditMode && currentInvoiceId) {
+        window.open(`/invoices/pdf/${currentInvoiceId}?invoiceStage=${invoiceStage}`, '_blank');
       }
 
-      showSnackbar('Invoice created successfully', 'success');
+      showSnackbar(
+        isEditMode ? 'Invoice updated successfully' : 'Invoice created successfully',
+        'success'
+      );
     } catch (error: unknown) {
-      console.error('Error creating invoice:', error);
-      showSnackbar(error instanceof Error ? error.message : 'Failed to create invoice', 'error');
+      console.error(isEditMode ? 'Error updating invoice:' : 'Error creating invoice:', error);
+      showSnackbar(error instanceof Error ? error.message : 'Failed to process invoice', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -212,10 +374,17 @@ export default function CreateInvoicePage() {
     <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
       <div className="mx-auto max-w-screen-2xl">
         <PageHeader
-          heading="Create Sales Invoice"
+          heading={isEditMode ? 'Edit Sales Invoice' : 'Create Sales Invoice'}
           buttonText="Back to Invoices"
           onButtonClick={() => router.push('/invoices')}
           buttonVariant="secondary"
+        />
+
+        {/* Invoice Search */}
+        <InvoiceSearch
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onOpenModal={() => setIsModalOpen(true)}
         />
 
         <form onSubmit={e => handleSubmit(e, false)}>
@@ -224,6 +393,10 @@ export default function CreateInvoicePage() {
             setFormData={setFormData}
             errors={errors}
             setErrors={setErrors}
+            selectedCustomer={selectedCustomer}
+            setSelectedCustomer={customer => setSelectedCustomer(customer)}
+            selectedSalesman={selectedSalesman}
+            setSelectedSalesman={salesman => setSelectedSalesman(salesman)}
           />
 
           <SalesTaxDiscount
@@ -231,7 +404,7 @@ export default function CreateInvoicePage() {
             setFormData={setFormData}
             errors={errors}
             setErrors={setErrors}
-            onTaxDiscountChange={handleTaxDiscountChange}
+            onTaxDiscountChange={() => setInvoiceItems([...invoiceItems])}
           />
 
           <SalesInvoiceItems
@@ -249,17 +422,17 @@ export default function CreateInvoicePage() {
           <div className="my-6 flex justify-end space-x-4">
             <Button
               variant="contained"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingInvoice}
               className="bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-300 hover:scale-105"
               {...bindTrigger(popupState)}
             >
-              Create Invoice
+              {isEditMode ? 'Update Invoice' : 'Create Invoice'}
             </Button>
             <Menu {...bindMenu(popupState)}>
               <MenuItem
                 onClick={e => {
                   popupState.close();
-                  handleSubmit(e, false, 'TAX');
+                  handleSubmit(e, false, 'SALE');
                 }}
               >
                 Tax Invoice
@@ -275,14 +448,6 @@ export default function CreateInvoicePage() {
               <MenuItem
                 onClick={e => {
                   popupState.close();
-                  handleSubmit(e, false, 'DELIVERY');
-                }}
-              >
-                Delivery Note
-              </MenuItem>
-              <MenuItem
-                onClick={e => {
-                  popupState.close();
                   handleSubmit(e, false, 'QUOTATION');
                 }}
               >
@@ -292,6 +457,13 @@ export default function CreateInvoicePage() {
           </div>
         </form>
       </div>
+
+      {/* Previous Invoices Modal */}
+      <PreviousInvoicesModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelectInvoice={loadInvoice}
+      />
 
       {/* Snackbar for notifications */}
       <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
