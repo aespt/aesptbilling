@@ -5,16 +5,10 @@ import { db } from '@/lib/db';
 import { BankDetailsTable } from '@/lib/models';
 import { UpdateBankDetailsSchema } from '@/lib/schemas/bankDetailsSchema';
 
-interface Params {
-  params: {
-    id: string;
-  };
-}
-
 // GET: Retrieve a single bank details entry
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id, 10);
 
     // Find the bank details with the given ID
     const bankDetails = await db.select().from(BankDetailsTable).where(eq(BankDetailsTable.id, id));
@@ -31,9 +25,9 @@ export async function GET(request: NextRequest, { params }: Params) {
 }
 
 // PUT: Update a bank details entry
-export async function PUT(request: NextRequest, { params }: Params) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id, 10);
     const body = await request.json();
 
     // Validate the request body
@@ -110,9 +104,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 // DELETE: Remove a bank details entry
-export async function DELETE(request: NextRequest, { params }: Params) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id, 10);
 
     // Check if the bank details exist and if they are primary
     const existingBankDetails = await db

@@ -6,9 +6,9 @@ import { PaymentDetailsTable } from '@/lib/models/payment_details';
 import { UpdatePaymentDetailsSchema } from '@/lib/schemas/paymentDetailsSchema';
 
 // Get payment by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id, 10);
 
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid payment ID' }, { status: 400 });
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // Update payment by ID
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id, 10);
 
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid payment ID' }, { status: 400 });
@@ -63,9 +63,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // Delete payment by ID
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id, 10);
 
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid payment ID' }, { status: 400 });

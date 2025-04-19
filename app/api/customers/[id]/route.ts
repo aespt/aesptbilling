@@ -54,13 +54,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json();
 
     // Create an update object with only the fields that are provided
-    const updateData: Record<string, any> = {};
-    
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.email !== undefined) updateData.email = body.email;
-    if (body.phone !== undefined) updateData.phone = body.phone || null;
-    if (body.address !== undefined) updateData.address = body.address || null;
-    if (body.trn !== undefined) updateData.trn = body.trn || null;
+    const updateData: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      trn?: string;
+    } = {};
+
+    if (body.name !== undefined) {
+      updateData.name = body.name;
+    }
+    if (body.email !== undefined) {
+      updateData.email = body.email;
+    }
+    if (body.phone !== undefined) {
+      updateData.phone = body.phone;
+    }
+    if (body.address !== undefined) {
+      updateData.address = body.address;
+    }
+    if (body.trn !== undefined) {
+      updateData.trn = body.trn;
+    }
 
     const updatedCustomer = await db
       .update(CustomersTable)

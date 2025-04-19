@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         email: body.email,
         phone: body.phone || null,
         address: body.address || null,
-        trn: body.trn || null
+        trn: body.trn || null,
       })
       .returning();
 
