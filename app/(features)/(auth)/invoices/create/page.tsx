@@ -10,8 +10,9 @@ import Snackbar from '@/app/shared/components/snackbar';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
 import type { FormErrors, InvoiceFormData, InvoiceItem, Customer, Salesman } from '@/lib/types';
 
-import { fetchInvoiceById } from '../components/invoice-loader';
+import { fetchInvoiceById, type PaymentData } from '../components/invoice-loader';
 import InvoiceSearch from '../components/invoice-search';
+import PaymentDetails from '../components/payment-details';
 import PreviousInvoicesModal from '../components/previous-invoices-modal';
 import SalesInvoiceDetails from '../components/sales-invoice-details';
 import SalesInvoiceItems from '../components/sales-invoice-items';
@@ -52,6 +53,15 @@ export default function CreateInvoicePage() {
     discount_value: 0,
   });
 
+  // Payment Details State
+  const [paymentData, setPaymentData] = useState<PaymentData>({
+    payment_method: '',
+    payment_status: 'UNPAID',
+    payment_date: null,
+    reference_number: '',
+    payment_notes: '',
+  });
+
   // Invoice items
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
     {
@@ -90,11 +100,21 @@ export default function CreateInvoicePage() {
           setFormData(currentData => ({
             ...currentData,
             ...result.formData,
+            // Ensure discount_type is the correct type
+            discount_type: result.formData.discount_type as InvoiceFormData['discount_type'],
           }));
 
           // Replace invoice items only if we got items
           if (result.invoiceItems.length > 0) {
             setInvoiceItems(result.invoiceItems);
+          }
+
+          // Load payment details if available
+          if (result.paymentData) {
+            setPaymentData(currentData => ({
+              ...currentData,
+              ...result.paymentData,
+            }));
           }
 
           // Fetch customer details if customer_id is available
@@ -321,6 +341,8 @@ export default function CreateInvoicePage() {
         tax: totals.tax,
         total: totals.total,
         profit,
+        // Include payment details
+        payment: paymentData,
       };
 
       let response;
@@ -417,6 +439,9 @@ export default function CreateInvoicePage() {
             invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
             formData={formData}
           />
+
+          {/* Payment Details */}
+          <PaymentDetails paymentData={paymentData} setPaymentData={setPaymentData} />
 
           <div className="mt-6 flex justify-end space-x-4">
             <Button

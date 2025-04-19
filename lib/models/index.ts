@@ -10,4 +10,5 @@ export * from './suppliers';
 export * from './salesmen';
 export * from './sales';
 export * from './address';
-export * from './bank_details'; 
+export * from './bank_details';
+export * from './payment_details';
