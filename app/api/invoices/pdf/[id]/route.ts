@@ -238,7 +238,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       rowEl.attr('id', `invoice-item-${item.id}`);
       rowEl.addClass('invoice-item-row');
 
-      // Append cells with data
+      // Append cells with data 1
       rowEl.append(
         $('<td>')
           .attr('style', 'padding: 8px; border: 1px solid #ddd')
