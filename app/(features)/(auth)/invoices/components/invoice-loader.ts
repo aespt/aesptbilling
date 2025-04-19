@@ -7,14 +7,19 @@ export interface PaymentData {
 }
 
 interface InvoiceItemData {
-  id: string;
+  id: number;
   product_id: number;
-  part_no: string;
+  invoice_id: number;
   quantity: number;
-  rate: string;
-  total: string;
-  cost_price?: string;
-  mrp?: string | number;
+  unit_price: string;
+  total_price: string;
+  part_no: string;
+  product_name: string;
+  price: number;
+  rate: number;
+  mrp: number;
+  qty: number;
+  total: number;
 }
 
 /**
@@ -37,7 +42,7 @@ export async function fetchInvoiceById(id: string) {
     }
 
     // Fetch the invoice items
-    const itemsResponse = await fetch(`/api/invoice-items?invoice_id=${id}`);
+    const itemsResponse = await fetch(`/api/invoices/${id}/items`);
 
     if (!itemsResponse.ok) {
       throw new Error('Failed to fetch invoice items');
@@ -89,15 +94,15 @@ export async function fetchInvoiceById(id: string) {
         status: 'DRAFT', // Default status for editing
         invoice_stage: invoice.invoice_stage,
       },
-      invoiceItems: itemsData.data.map((item: InvoiceItemData) => ({
+      invoiceItems: itemsData.items.map((item: InvoiceItemData) => ({
         id: item.id.toString(),
         product_id: item.product_id,
         part_no: item.part_no || '',
-        qty: item.quantity,
-        rate: parseFloat(item.rate),
-        total: parseFloat(item.total),
-        price: parseFloat(item.cost_price || '0'),
-        mrp: item.mrp ? parseFloat(item.mrp.toString()) : parseFloat(item.rate),
+        qty: item.qty,
+        rate: item.rate,
+        total: item.total,
+        price: item.price,
+        mrp: item.mrp,
       })),
       // Include payment data
       paymentData,

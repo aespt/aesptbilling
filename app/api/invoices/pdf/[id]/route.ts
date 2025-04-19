@@ -10,6 +10,7 @@ import { launch, type Browser } from 'puppeteer';
 
 import { db } from '@/lib/drizzle';
 import { AddressTable } from '@/lib/models/address';
+import { BankDetailsTable } from '@/lib/models/bank_details';
 import { CustomersTable } from '@/lib/models/customers';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { InvoicesTable } from '@/lib/models/invoices';
@@ -70,6 +71,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const primaryAddress = addresses.length > 0 ? addresses[0] : null;
 
+    // Get primary bank details for proforma invoices
+    let primaryBankDetails = null;
+    if (invoiceStage === 'PROFORMA' || invoice.invoice_stage === 'PROFORMA') {
+      const bankDetailsResults = await db
+        .select()
+        .from(BankDetailsTable)
+        .where(eq(BankDetailsTable.is_primary, true));
+      if (bankDetailsResults.length > 0) {
+        primaryBankDetails = bankDetailsResults[0];
+      }
+    }
+
     if (!primaryAddress) {
       console.warn('No primary address found, using default address');
       // You could either use a default address or return an error
@@ -122,11 +135,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Check if it's a delivery invoice and modify the table
     if (invoiceStage === 'DELIVERY') {
       // Remove pricing columns from the invoice table header
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Rate
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Amount
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT %
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Total Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Rate (now at position 6 because of Brand column)
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT %
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Total Amount
 
       // Hide the totals container entirely, including Terms & Conditions
       $('.invoice-footer').css('display', 'none');
@@ -225,7 +238,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       rowEl.attr('id', `invoice-item-${item.id}`);
       rowEl.addClass('invoice-item-row');
 
-      // Append cells with data
+      // Append cells with data 1
       rowEl.append(
         $('<td>')
           .attr('style', 'padding: 8px; border: 1px solid #ddd')
@@ -235,6 +248,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         $('<td>')
           .attr('style', 'padding: 8px; border: 1px solid #ddd')
           .text(product?.partNo || 'N/A')
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(product?.brand || 'N/A')
       );
       rowEl.append(
         $('<td>')
@@ -294,6 +312,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     $('#tax-amount').text(`${taxAmount} AED`);
     $('#discount').text(`${discount} AED`);
     $('#invoice-total').text(`${total} AED`);
+
+    // Replace terms and conditions with bank details for PROFORMA invoices
+    if (invoiceStage === 'PROFORMA' || invoice.invoice_stage === 'PROFORMA') {
+      if (primaryBankDetails) {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0; font-weight: bold">${primaryBankDetails.name}</p>
+          <p style="font-size: 12px; margin: 5px 0; white-space: pre-line">${primaryBankDetails.details}</p>
+        `);
+      } else {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0">No bank details found</p>
+        `);
+      }
+    }
 
     // Add a spacer at the end to ensure adequate space for the footer
     $('body').append('<div class="footer-spacer"></div>');
@@ -652,6 +686,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const primaryAddress = addresses.length > 0 ? addresses[0] : null;
 
+    // Get primary bank details for proforma invoices
+    let primaryBankDetails = null;
+    if (invoiceStage === 'PROFORMA') {
+      const bankDetailsResults = await db
+        .select()
+        .from(BankDetailsTable)
+        .where(eq(BankDetailsTable.is_primary, true));
+      if (bankDetailsResults.length > 0) {
+        primaryBankDetails = bankDetailsResults[0];
+      }
+    }
+
     if (!primaryAddress) {
       console.warn('No primary address found, using default address');
       // You could either use a default address or return an error
@@ -704,11 +750,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Check if it's a delivery invoice and modify the table
     if (invoiceStage === 'DELIVERY') {
       // Remove pricing columns from the invoice table header
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Rate
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Amount
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT %
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Total Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Rate (now at position 6 because of Brand column)
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT %
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Total Amount
 
       // Hide the totals container entirely, including Terms & Conditions
       $('.invoice-footer').css('display', 'none');
@@ -821,6 +867,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       rowEl.append(
         $('<td>')
           .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(product?.brand || 'N/A')
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
           .text(product?.name || 'N/A')
       );
       rowEl.append(
@@ -876,6 +927,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     $('#tax-amount').text(`${taxAmount} AED`);
     $('#discount').text(`${discount} AED`);
     $('#invoice-total').text(`${total} AED`);
+
+    // Replace terms and conditions with bank details for PROFORMA invoices
+    if (invoiceStage === 'PROFORMA') {
+      if (primaryBankDetails) {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0; font-weight: bold">${primaryBankDetails.name}</p>
+          <p style="font-size: 12px; margin: 5px 0; white-space: pre-line">${primaryBankDetails.details}</p>
+        `);
+      } else {
+        $('.terms-conditions').html(`
+          <h4 style="margin: 0 0 10px 0">Bank Details</h4>
+          <p style="font-size: 12px; margin: 0">No bank details found</p>
+        `);
+      }
+    }
 
     // Add a spacer at the end to ensure adequate space for the footer
     $('body').append('<div class="footer-spacer"></div>');
