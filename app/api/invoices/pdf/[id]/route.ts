@@ -135,11 +135,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Check if it's a delivery invoice and modify the table
     if (invoiceStage === 'DELIVERY') {
       // Remove pricing columns from the invoice table header
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Rate
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Amount
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT %
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Total Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Rate (now at position 6 because of Brand column)
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT %
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Total Amount
 
       // Hide the totals container entirely, including Terms & Conditions
       $('.invoice-footer').css('display', 'none');
@@ -248,6 +248,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         $('<td>')
           .attr('style', 'padding: 8px; border: 1px solid #ddd')
           .text(product?.partNo || 'N/A')
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(product?.brand || 'N/A')
       );
       rowEl.append(
         $('<td>')
@@ -745,11 +750,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Check if it's a delivery invoice and modify the table
     if (invoiceStage === 'DELIVERY') {
       // Remove pricing columns from the invoice table header
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Rate
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Amount
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT %
-      $('table.invoice-items-table th:nth-child(5)').remove(); // VAT
-      $('table.invoice-items-table th:nth-child(5)').remove(); // Total Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Rate (now at position 6 because of Brand column)
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Amount
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT %
+      $('table.invoice-items-table th:nth-child(6)').remove(); // VAT
+      $('table.invoice-items-table th:nth-child(6)').remove(); // Total Amount
 
       // Hide the totals container entirely, including Terms & Conditions
       $('.invoice-footer').css('display', 'none');
@@ -858,6 +863,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         $('<td>')
           .attr('style', 'padding: 8px; border: 1px solid #ddd')
           .text(product?.partNo || 'N/A')
+      );
+      rowEl.append(
+        $('<td>')
+          .attr('style', 'padding: 8px; border: 1px solid #ddd')
+          .text(product?.brand || 'N/A')
       );
       rowEl.append(
         $('<td>')
