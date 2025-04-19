@@ -1,5 +1,6 @@
 'use client';
 
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -391,6 +392,57 @@ export default function InvoicesListPage() {
     router.push(`/invoices/create?id=${invoiceId}`);
   };
 
+  const handleExportExcel = async () => {
+    try {
+      // Construct the same filter parameters as used in the current view
+      const params = new URLSearchParams();
+
+      // Add filter based on date range if provided
+      if (filters.dateFrom) {
+        params.append('dateFrom', filters.dateFrom.format('YYYY-MM-DD'));
+      }
+
+      if (filters.dateTo) {
+        params.append('dateTo', filters.dateTo.format('YYYY-MM-DD'));
+      }
+
+      // Add invoice number filter if provided
+      if (filters.invoiceNumber) {
+        params.append('invoiceNumber', filters.invoiceNumber);
+      }
+
+      // Add sales person filter if provided
+      if (filters.salesPerson) {
+        params.append('salesPerson', filters.salesPerson.id.toString());
+      }
+
+      // Add customer filter if provided
+      if (filters.customer) {
+        params.append('customer_id', filters.customer.id.toString());
+      }
+
+      // Create a Blob from the response and trigger a download
+      const response = await fetch(`/api/invoices/export?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to export invoices');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoices_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Error exporting invoices:', error);
+      // You could add a toast notification here to inform the user
+    }
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="px-4 pb-6 pt-16 md:ml-[280px] md:px-6">
@@ -399,14 +451,27 @@ export default function InvoicesListPage() {
           <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
             Sales History
           </Typography>
-          <IconButton
-            onClick={() => setFilterDrawerOpen(true)}
-            color="primary"
-            className="bg-blue-50 hover:bg-blue-100"
-            size="medium"
-          >
-            <FilterAltIcon />
-          </IconButton>
+          <div className="flex items-center gap-2">
+            {activeTab === 2 && ( // Only show Export button on Sales tab
+              <Button
+                startIcon={<FileDownloadIcon />}
+                variant="contained"
+                color="primary"
+                onClick={handleExportExcel}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Export Excel
+              </Button>
+            )}
+            <IconButton
+              onClick={() => setFilterDrawerOpen(true)}
+              color="primary"
+              className="bg-blue-50 hover:bg-blue-100"
+              size="medium"
+            >
+              <FilterAltIcon />
+            </IconButton>
+          </div>
         </Box>
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>

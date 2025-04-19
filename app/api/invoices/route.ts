@@ -183,7 +183,18 @@ export async function GET(request: NextRequest) {
 
     // Add sales person filter if provided
     if (salesPerson) {
-      conditions.push(sql`${InvoicesTable.salesman_id} ILIKE ${`%${salesPerson}%`}`);
+      try {
+        const salesmanId = parseInt(salesPerson);
+        if (!isNaN(salesmanId)) {
+          // If it's a valid number, use equality comparison
+          conditions.push(eq(InvoicesTable.salesman_id, salesmanId));
+        } else {
+          // If it's a string (name), we'll handle it later in post-processing like customer filter
+        }
+      } catch (e) {
+        // If parsing fails, ignore this filter
+        console.error('Error parsing salesperson ID:', e);
+      }
     }
 
     // Add invoice stage filter - single value (takes precedence over multi-value filter)
@@ -290,6 +301,16 @@ export async function GET(request: NextRequest) {
     if (customer) {
       results = invoicesWithDetails.filter(invoice =>
         invoice.customer.name.toLowerCase().includes(customer.toLowerCase())
+      );
+    }
+
+    // Apply salesperson name filter if provided and it's a string (not an ID)
+    if (salesPerson && isNaN(parseInt(salesPerson))) {
+      results = results.filter(
+        invoice =>
+          invoice.salesman &&
+          invoice.salesman.name &&
+          invoice.salesman.name.toLowerCase().includes(salesPerson.toLowerCase())
       );
     }
 
