@@ -35,11 +35,6 @@ export default function SalesInvoiceItems({
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductPanelOpen, setIsProductPanelOpen] = useState(false);
 
-  // Debug log for troubleshooting
-  useEffect(() => {
-    console.log('Received invoice items:', invoiceItems);
-  }, [invoiceItems]);
-
   // Fetch products on component mount
   useEffect(() => {
     const fetchProducts = async () => {

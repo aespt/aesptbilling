@@ -30,15 +30,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Get the invoiceStage from query parameter if it exists
     const url = new URL(request.url);
-    console.log('Request URL:', request.url);
-    console.log('All URL search params:', Object.fromEntries(url.searchParams.entries()));
 
     const invoiceStage =
       url.searchParams.get('invoiceStage') ||
       url.searchParams.get('invoicestage') ||
       url.searchParams.get('InvoiceStage') ||
       url.searchParams.get('INVOICESTAGE');
-    console.log('invoiceStage from URL params:', invoiceStage);
 
     // Get invoice data from database
     const invoices = await db.select().from(InvoicesTable).where(eq(InvoicesTable.id, invoiceId));
@@ -615,7 +612,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Parse the request body to get invoice_stage
     const requestBody = await request.json();
-    console.log('Request body:', JSON.stringify(requestBody));
 
     const invoiceStage =
       requestBody.invoiceStage ||
@@ -623,8 +619,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       requestBody.InvoiceStage ||
       requestBody.INVOICESTAGE ||
       'SALE';
-
-    console.log('invoiceStage from request body:', invoiceStage);
 
     // Get invoice data from database
     const invoices = await db.select().from(InvoicesTable).where(eq(InvoicesTable.id, invoiceId));

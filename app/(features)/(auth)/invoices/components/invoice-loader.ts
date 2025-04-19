@@ -96,8 +96,6 @@ export async function fetchInvoiceById(invoiceId: string): Promise<{
       };
     });
 
-    console.log('Mapped invoice items:', invoiceItems);
-
     return { formData, invoiceItems };
   } catch (error) {
     console.error('Error fetching invoice:', error);
