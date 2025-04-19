@@ -21,6 +21,7 @@ const productFormSchema = z.object({
     val => (val === '' ? 0 : Number(val)),
     z.number().min(0.01, 'MRP must be greater than zero')
   ),
+  brand: z.string().optional(),
   count: z.preprocess(
     val => (val === '' ? 0 : Number(val)),
     z.number().int('Quantity must be a whole number').nonnegative('Quantity cannot be negative')
@@ -64,6 +65,7 @@ export default function AddProduct({
       price: 0,
       mrp: 0,
       count: 0,
+      brand: '',
     },
     mode: 'onChange', // Validate on change for immediate feedback
   });
@@ -89,6 +91,7 @@ export default function AddProduct({
         price: isNaN(numericPrice) ? 0 : numericPrice,
         mrp: isNaN(numericMrp) ? 0 : numericMrp,
         count: productToEdit.count || 0,
+        brand: productToEdit.brand || '',
       });
     }
   }, [productToEdit, reset]);
@@ -107,6 +110,7 @@ export default function AddProduct({
         price: data.price,
         mrp: data.mrp,
         count: data.count,
+        brand: data.brand || '',
       };
 
       // If in edit mode, add the ID and use PUT method
@@ -157,6 +161,7 @@ export default function AddProduct({
           price: 0,
           mrp: 0,
           count: 0,
+          brand: '',
         });
 
         // Call the callback if provided
@@ -320,6 +325,23 @@ export default function AddProduct({
               />
               <ErrorMessage message={errors.mrp?.message} />
             </div>
+            <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Brand</label>
+            <Controller
+              name="brand"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  placeholder="Enter brand"
+                  variant="outlined"
+                  size="small"
+                />
+              )}
+            />
+            <ErrorMessage message={errors.brand?.message} />
+          </div>
           
           <div className="space-y-1 hidden">
             <label className="text-sm font-medium text-gray-700">Quantity</label>
@@ -374,7 +396,7 @@ export default function AddProduct({
   );
 
   return useFormTag ? (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form className="flex h-full flex-col" onSubmit={handleSubmit(onSubmit)} noValidate>
       {formContent}
     </form>
   ) : (

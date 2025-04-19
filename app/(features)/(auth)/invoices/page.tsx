@@ -13,7 +13,6 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
-  Drawer,
   IconButton,
   Button,
   TextField,
@@ -30,6 +29,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Pagination from '@/app/shared/components/pagination';
 import type { PaginationInfo } from '@/app/shared/components/pagination';
 import PrimaryButton from '@/app/shared/components/primary-button';
+import Sidepanel from '@/app/shared/components/sidepanel';
+import InvoiceFilters from '@/app/(features)/(auth)/invoices/components/invoice-filters';
 
 // Add custom CSS for animations
 const tableRowAnimation = `
@@ -108,7 +109,7 @@ export default function InvoicesListPage() {
     field: 'invoice_date',
     direction: 'desc',
   });
-  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
     dateFrom: null,
     dateTo: null,
@@ -157,11 +158,11 @@ export default function InvoicesListPage() {
       }
     };
 
-    if (filterDrawerOpen) {
+    if (filterPanelOpen) {
       setTempFilters(filters);
       fetchDropdownData();
     }
-  }, [filterDrawerOpen]);
+  }, [filterPanelOpen]);
 
   const fetchInvoices = useCallback(
     async (overrideFilters?: FilterOptions) => {
@@ -284,7 +285,7 @@ export default function InvoicesListPage() {
     // Then update the state filters
     setFilters(tempFilters);
 
-    setFilterDrawerOpen(false);
+    setFilterPanelOpen(false);
   };
 
   const handleResetFilters = () => {
@@ -309,7 +310,7 @@ export default function InvoicesListPage() {
     // Then update the state
     setFilters(emptyFilters);
 
-    setFilterDrawerOpen(false);
+    setFilterPanelOpen(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -330,7 +331,7 @@ export default function InvoicesListPage() {
             Sales History
           </Typography>
           <IconButton
-            onClick={() => setFilterDrawerOpen(true)}
+            onClick={() => setFilterPanelOpen(true)}
             color="primary"
             className="bg-blue-50 hover:bg-blue-100"
             size="medium"
@@ -451,175 +452,19 @@ export default function InvoicesListPage() {
           </Paper>
         )}
 
-        {/* Enhanced Filter Drawer */}
-        <Drawer anchor="right" open={filterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
-          <Box className="w-[400px] p-6">
-            <Typography variant="h6" className="mb-6 font-semibold">
-              Filter Invoices
-            </Typography>
-
-            <div className="space-y-6">
-              {/* Date From Filter */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Date From
-                </Typography>
-                <DatePicker
-                  value={tempFilters.dateFrom}
-                  onChange={newValue => handleFilterChange('dateFrom', newValue)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      size: 'small',
-                      className: 'bg-white rounded',
-                    },
-                  }}
-                />
-              </div>
-
-              {/* Date To Filter */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Date To
-                </Typography>
-                <DatePicker
-                  value={tempFilters.dateTo}
-                  onChange={newValue => handleFilterChange('dateTo', newValue)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      size: 'small',
-                      className: 'bg-white rounded',
-                    },
-                  }}
-                />
-              </div>
-
-              {/* Invoice Number Filter */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Invoice Number
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={tempFilters.invoiceNumber}
-                  onChange={e => handleFilterChange('invoiceNumber', e.target.value)}
-                  placeholder="Search by invoice number"
-                  className="rounded bg-white"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" className="text-gray-400" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </div>
-
-              {/* Sales Person Filter - Autocomplete */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Sales Person
-                </Typography>
-                <Autocomplete
-                  options={salesmen}
-                  loading={loadingDropdowns}
-                  getOptionLabel={option => option.name}
-                  value={tempFilters.salesPerson}
-                  onChange={(_, newValue) => handleFilterChange('salesPerson', newValue)}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      placeholder="Select a sales person"
-                      size="small"
-                      className="rounded bg-white"
-                      InputProps={{
-                        ...params.InputProps,
-                        startAdornment: (
-                          <>
-                            <InputAdornment position="start">
-                              <SearchIcon fontSize="small" className="text-gray-400" />
-                            </InputAdornment>
-                            {params.InputProps.startAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                />
-              </div>
-
-              {/* Customer Filter - Autocomplete */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Customer
-                </Typography>
-                <Autocomplete
-                  options={customers}
-                  loading={loadingDropdowns}
-                  getOptionLabel={option => option.name}
-                  value={tempFilters.customer}
-                  onChange={(_, newValue) => handleFilterChange('customer', newValue)}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      placeholder="Select a customer"
-                      size="small"
-                      className="rounded bg-white"
-                      InputProps={{
-                        ...params.InputProps,
-                        startAdornment: (
-                          <>
-                            <InputAdornment position="start">
-                              <SearchIcon fontSize="small" className="text-gray-400" />
-                            </InputAdornment>
-                            {params.InputProps.startAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                />
-              </div>
-
-              {/* Invoice Type Filter - Dropdown */}
-              <div>
-                <Typography variant="subtitle2" className="mb-2 text-gray-600">
-                  Invoice Type
-                </Typography>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  className="rounded bg-white"
-                  value={tempFilters.invoiceType || ''}
-                  onChange={e => handleFilterChange('invoiceType', e.target.value || null)}
-                  placeholder="Select invoice type"
-                >
-                  <MenuItem value="">All Types</MenuItem>
-                  {invoiceTypeOptions.map(option => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </div>
-
-              <div className="flex flex-col gap-3 pt-4">
-                <PrimaryButton label="Apply Filters" onClick={handleApplyFilters} />
-
-                <Button
-                  variant="outlined"
-                  onClick={handleResetFilters}
-                  className="mt-2 w-full normal-case"
-                >
-                  Reset Filters
-                </Button>
-              </div>
-            </div>
-          </Box>
-        </Drawer>
+        {/* Sidepanel with InvoiceFilters */}
+        <Sidepanel isOpen={filterPanelOpen} onClose={() => setFilterPanelOpen(false)} size="small">
+          <InvoiceFilters 
+            tempFilters={tempFilters}
+            handleFilterChange={handleFilterChange}
+            handleApplyFilters={handleApplyFilters}
+            handleResetFilters={handleResetFilters}
+            customers={customers}
+            salesmen={salesmen}
+            loadingDropdowns={loadingDropdowns}
+            invoiceTypeOptions={invoiceTypeOptions}
+          />
+        </Sidepanel>
       </div>
     </LocalizationProvider>
   );

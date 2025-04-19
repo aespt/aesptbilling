@@ -209,12 +209,13 @@ export default function CreateInvoicePage() {
   };
 
   return (
-    <div className="mt-16 px-4 py-8 md:ml-[280px] md:px-6">
+    <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
       <div className="mx-auto max-w-screen-2xl">
         <PageHeader
           heading="Create Sales Invoice"
           buttonText="Back to Invoices"
           onButtonClick={() => router.push('/invoices')}
+          buttonVariant="secondary"
         />
 
         <form onSubmit={e => handleSubmit(e, false)}>
@@ -245,16 +246,7 @@ export default function CreateInvoicePage() {
             formData={formData}
           />
 
-          <div className="mt-6 flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outlined"
-              onClick={e => handleSubmit(e, true)}
-              disabled={isSubmitting}
-            >
-              Save as Draft
-            </Button>
-
+          <div className="my-6 flex justify-end space-x-4">
             <Button
               variant="contained"
               disabled={isSubmitting}

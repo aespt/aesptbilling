@@ -93,6 +93,7 @@ export async function POST(request: Request) {
         price: priceValue,
         mrp: validatedData.mrp?.toString(),
         count: validatedData.count,
+        brand: validatedData.brand || null,
         created_at: new Date(),
         updated_at: new Date(),
       })
@@ -160,6 +161,10 @@ export async function PUT(request: Request) {
       if (priceValue !== null && !isNaN(parseFloat(priceValue))) {
         updateData.price = priceValue;
       }
+    }
+
+    if (validatedData.brand !== undefined) {
+      updateData.brand = validatedData.brand;
     }
 
     if (validatedData.mrp !== undefined) {

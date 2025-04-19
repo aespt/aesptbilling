@@ -15,6 +15,7 @@ export interface Product extends BaseModel {
   price: number | string; // Allow both number and string for flexibility
   mrp: number | string;
   count: number | null;
+  brand: string | null;
 }
 
 // Customer interface

@@ -25,7 +25,8 @@ const menuItems = [
   { name: 'Salesmen', path: '/salesmen', icon: FiUserCheck },
   { name: 'Sales', path: '/invoices/create', icon: FiShoppingCart },
   { name: 'Sales History', path: '/invoices', icon: FiFile },
-  { name: 'Purchases', path: '/purchases', icon: FiShoppingBag },
+  { name: 'Purchases', path: '/purchases/create', icon: FiShoppingBag },
+  { name: 'Purchases History', path: '/purchases', icon: FiFile },
   { name: 'Settings', path: '/settings', icon: FiSettings },
 ];
 
