@@ -1,8 +1,20 @@
 -- Create type was moved to 0028_fix_migration.sql
 -- CREATE TYPE "public"."invoice_stage" AS ENUM('SALE', 'PROFORMA', 'QUOTATION');--> statement-breakpoint
-CREATE TYPE "public"."payment_method" AS ENUM('CASH', 'CREDIT', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE');--> statement-breakpoint
-CREATE TYPE "public"."payment_status" AS ENUM('UNPAID', 'PARTIALLY_PAID', 'PAID');--> statement-breakpoint
-CREATE TABLE "payment_details" (
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
+        CREATE TYPE "public"."payment_method" AS ENUM('CASH', 'CREDIT', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE');
+    END IF;
+END $$;
+--> statement-breakpoint
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+        CREATE TYPE "public"."payment_status" AS ENUM('UNPAID', 'PARTIALLY_PAID', 'PAID');
+    END IF;
+END $$;
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "payment_details" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"invoice_id" integer NOT NULL,
 	"payment_method" "payment_method" DEFAULT 'CASH',
@@ -21,8 +33,17 @@ BEGIN
     END IF;
 END $$;
 --> statement-breakpoint
-ALTER TABLE "payment_details" ADD CONSTRAINT "payment_details_invoice_id_invoices_id_fk" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'payment_details_invoice_id_invoices_id_fk' 
+        AND table_name = 'payment_details'
+    ) THEN
+        ALTER TABLE "payment_details" ADD CONSTRAINT "payment_details_invoice_id_invoices_id_fk" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+END $$;
+--> statement-breakpoint
 -- Drop invoice_type column if it exists
 DO $$ 
 BEGIN
@@ -31,7 +52,6 @@ BEGIN
     END IF;
 END $$;
 --> statement-breakpoint
-
 -- Drop invoice_type enum if it exists
 DO $$ 
 BEGIN

@@ -367,6 +367,12 @@ export default function CreateInvoicePage() {
         profit = 0;
       }
 
+      // Store the discount percentage if discount type is PERCENTAGE
+      const discountPercentage =
+        formData.discount_type === 'PERCENTAGE' && formData.discount_value !== ''
+          ? Number(formData.discount_value)
+          : 0;
+
       const invoiceData = {
         ...formData,
         status: saveAsDraft ? 'DRAFT' : 'PENDING',
@@ -374,6 +380,7 @@ export default function CreateInvoicePage() {
         items: invoiceItems.filter(item => item.product_id), // Only send items with a product selected
         subtotal: totals.subtotal,
         discount: totals.discount,
+        discount_percentage: discountPercentage,
         tax: totals.tax,
         total: totals.total,
         profit,
@@ -484,6 +491,7 @@ export default function CreateInvoicePage() {
             errors={errors}
             setErrors={setErrors}
             onTaxDiscountChange={() => setInvoiceItems([...invoiceItems])}
+            invoiceSubtotal={invoiceItems.reduce((sum, item) => sum + (item.total || 0), 0)}
           />
 
           <SalesInvoiceItems

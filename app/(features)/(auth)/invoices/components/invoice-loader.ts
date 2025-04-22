@@ -50,6 +50,8 @@ export async function fetchInvoiceById(id: string) {
 
     const itemsData = await itemsResponse.json();
 
+    console.log('itemsData', itemsData);
+
     // Fetch payment details if invoice stage is SALE
     let paymentData: PaymentData | null = null;
     if (invoice.invoice_stage === 'SALE') {
@@ -89,8 +91,15 @@ export async function fetchInvoiceById(id: string) {
         cgst_percentage: invoice.tax_type === 'GST' ? parseFloat(invoice.tax_rate) / 2 : 0,
         sgst_percentage: invoice.tax_type === 'GST' ? parseFloat(invoice.tax_rate) / 2 : 0,
         // Discount information
-        discount_type: 'FIXED', // Default to FIXED for existing invoices
-        discount_value: parseFloat(invoice.discount),
+        discount_type: invoice.discount_type || 'FIXED', // Use the stored discount_type
+        discount_value:
+          invoice.discount_type === 'PERCENTAGE'
+            ? parseFloat(invoice.discount_percentage || '0')
+            : parseFloat(invoice.discount),
+        discount_percentage:
+          invoice.discount_type === 'PERCENTAGE'
+            ? parseFloat(invoice.discount_percentage || '0')
+            : 0,
         status: 'DRAFT', // Default status for editing
         invoice_stage: invoice.invoice_stage,
       },

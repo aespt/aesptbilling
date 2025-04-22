@@ -1,30 +1,37 @@
-import { sql } from 'drizzle-orm';
+import * as dotenv from 'dotenv';
+import postgres from 'postgres';
 
-import { db } from '../lib/drizzle';
+// Load environment variables
+dotenv.config();
 
-async function applyDiscountMigration() {
+async function main() {
+  // Connection string with explicit credentials
+  const connectionString =
+    process.env.POSTGRES_URL || 'postgres://postgres:postgres@localhost:5432/aespt_db';
+
+  console.log(`Connecting to database: ${connectionString.replace(/:[^:]*@/, ':***@')}`);
+
+  // Create a client
+  const client = postgres(connectionString, {
+    ssl: false,
+  });
+
   try {
-    // First check if the column exists
-    const checkResult = await db.execute(sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'invoices' 
-      AND column_name = 'discount';
+    console.log('Applying discount_percentage migration to invoices table...');
+
+    // Execute the migration SQL directly
+    await client.unsafe(`
+      ALTER TABLE IF EXISTS invoices 
+      ADD COLUMN IF NOT EXISTS discount_percentage DECIMAL(5, 2) DEFAULT '0'
     `);
 
-    if (checkResult.length === 0) {
-      // Column doesn't exist, add it
-      await db.execute(sql`
-        ALTER TABLE "invoices" 
-        ADD COLUMN "discount" numeric(10, 2) DEFAULT '0';
-      `);
-      console.log('Successfully added discount column');
-    } else {
-      console.log('Discount column already exists');
-    }
+    console.log('Migration applied successfully!');
   } catch (error) {
     console.error('Error applying migration:', error);
+  } finally {
+    await client.end();
+    process.exit(0);
   }
 }
 
-applyDiscountMigration();
+main();

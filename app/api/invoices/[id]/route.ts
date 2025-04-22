@@ -92,6 +92,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         quantity: InvoiceItemsTable.quantity,
         unit_price: InvoiceItemsTable.unit_price,
         total_price: InvoiceItemsTable.total_price,
+        mrp: InvoiceItemsTable.mrp,
       })
       .from(InvoiceItemsTable)
       .where(eq(InvoiceItemsTable.invoice_id, invoiceId));
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           // Convert unit_price and total_price to numbers
           const unitPrice = Number(item.unit_price);
           const totalPrice = Number(item.total_price);
+          const mrpValue = Number(item.mrp);
 
           return {
             ...item,
@@ -121,7 +123,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             product_name: product?.name || '',
             // Use unit_price from invoice_items instead of price from products
             price: unitPrice,
-            mrp: unitPrice, // Use unit_price as MRP as well if needed
+            mrp: mrpValue,
             rate: unitPrice,
             qty: item.quantity,
             total: totalPrice,
@@ -133,7 +135,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             part_no: '',
             product_name: 'Unknown Product',
             price: Number(item.unit_price),
-            mrp: Number(item.unit_price),
+            mrp: Number(item.mrp),
             rate: Number(item.unit_price),
             qty: item.quantity,
             total: Number(item.total_price),
@@ -141,6 +143,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
       })
     );
+
+    console.log(itemsWithProductDetails);
 
     return NextResponse.json({
       success: true,
@@ -180,6 +184,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid authentication token' }, { status: 401 });
     }
 
+    // Ensure userId is a valid number
+    const userId = typeof payload.userId === 'number' ? payload.userId : Number(payload.userId);
+
+    if (isNaN(userId) || userId <= 0) {
+      return NextResponse.json({ error: 'Invalid user ID in token' }, { status: 400 });
+    }
+
     const invoiceId = parseInt((await params).id);
 
     if (isNaN(invoiceId)) {
@@ -207,106 +218,92 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         updated_by: payload.username,
       });
 
-      // Prepare update data
-      const updateData = {
-        updated_by: payload.userId,
+      // Update invoice details
+      const updateData: any = {
+        updated_by: userId,
         updated_at: new Date(),
-      } as Partial<typeof InvoicesTable.$inferInsert> & {
-        // Additional fields that might not be in the base type
-        status?: string;
-        invoice_stage?: string;
-        vat_percentage?: number;
-        cgst_percentage?: number;
-        sgst_percentage?: number;
-        discount_type?: string;
-        discount_value?: number | string;
-        tax?: string;
-        profit?: string;
       };
 
-      // Add fields that are present in the request
+      if (validatedData.invoice_number !== undefined) {
+        updateData.invoice_number = validatedData.invoice_number;
+      }
+
       if (validatedData.invoice_date !== undefined) {
-        updateData.invoice_date = new Date(validatedData.invoice_date);
+        updateData.invoice_date = validatedData.invoice_date;
       }
 
       if (validatedData.customer_id !== undefined) {
         updateData.customer_id = validatedData.customer_id;
       }
 
-      // Handle salesmen_id which might be passed as salesman_id in the frontend
+      // Handle the mismatch between schema (salesmen_id) and database column (salesman_id)
       if (validatedData.salesmen_id !== undefined) {
         updateData.salesman_id = validatedData.salesmen_id;
       }
 
-      // Handle additional fields that might not be in the schema but are in the database
-      // These are checked with undefined checks to ensure safety
-      if (body.ship_from !== undefined) {
-        updateData.ship_from = body.ship_from;
-      }
-
-      if (body.ship_to !== undefined) {
-        updateData.ship_to = body.ship_to;
-      }
-
-      if (body.status !== undefined) {
-        updateData.status = body.status;
-      }
-
-      if (body.invoice_stage !== undefined) {
-        updateData.invoice_stage = body.invoice_stage;
-      }
-
       if (validatedData.tax_type !== undefined) {
-        updateData.tax_type = validatedData.tax_type;
+        updateData.tax_type = validatedData.tax_type as 'VAT' | 'GST' | 'NONE';
       }
 
       if (validatedData.tax_rate !== undefined) {
-        updateData.tax_rate = validatedData.tax_rate.toString();
+        updateData.tax_rate =
+          typeof validatedData.tax_rate === 'string' && validatedData.tax_rate === ''
+            ? '0'
+            : validatedData.tax_rate.toString();
       }
 
-      // These fields may not be in the schema but could be sent from frontend
-      if (body.vat_percentage !== undefined) {
-        updateData.vat_percentage = body.vat_percentage;
+      if (validatedData.discount_type !== undefined) {
+        updateData.discount_type = validatedData.discount_type as 'PERCENTAGE' | 'FIXED' | 'NONE';
       }
 
-      if (body.cgst_percentage !== undefined) {
-        updateData.cgst_percentage = body.cgst_percentage;
+      if (validatedData.invoice_stage !== undefined) {
+        updateData.invoice_stage = validatedData.invoice_stage as 'SALE' | 'PROFORMA' | 'QUOTATION';
       }
 
-      if (body.sgst_percentage !== undefined) {
-        updateData.sgst_percentage = body.sgst_percentage;
+      if (validatedData.ship_to !== undefined) {
+        updateData.ship_to = validatedData.ship_to;
       }
 
-      // Handle discount fields
-      if (body.discount_type !== undefined) {
-        updateData.discount_type = body.discount_type;
+      if (validatedData.ship_from !== undefined) {
+        updateData.ship_from = validatedData.ship_from;
       }
 
-      if (body.discount_value !== undefined) {
-        updateData.discount_value = body.discount_value;
-      }
-
-      // Handle totals
-      if (body.subtotal !== undefined) {
-        updateData.sub_total = body.subtotal.toString();
-      } else if (validatedData.sub_total !== undefined) {
-        updateData.sub_total = validatedData.sub_total.toString();
+      if (validatedData.sub_total !== undefined) {
+        updateData.sub_total =
+          typeof validatedData.sub_total === 'string' && validatedData.sub_total === ''
+            ? '0'
+            : validatedData.sub_total.toString();
       }
 
       if (body.discount !== undefined) {
-        updateData.discount = body.discount.toString();
+        updateData.discount =
+          typeof body.discount === 'string' && body.discount === ''
+            ? '0'
+            : body.discount.toString();
       }
 
       if (body.tax !== undefined) {
-        updateData.tax = body.tax.toString();
+        updateData.tax =
+          typeof body.tax === 'string' && body.tax === '' ? '0' : body.tax.toString();
       }
 
       if (validatedData.total !== undefined) {
-        updateData.total = validatedData.total.toString();
+        updateData.total =
+          typeof validatedData.total === 'string' && validatedData.total === ''
+            ? '0'
+            : validatedData.total.toString();
       }
 
       if (body.profit !== undefined) {
-        updateData.profit = body.profit.toString();
+        updateData.profit =
+          typeof body.profit === 'string' && body.profit === '' ? '0' : body.profit.toString();
+      }
+
+      if (body.discount_percentage !== undefined) {
+        updateData.discount_percentage =
+          typeof body.discount_percentage === 'string' && body.discount_percentage === ''
+            ? '0'
+            : body.discount_percentage.toString();
       }
 
       // Update the invoice
@@ -333,10 +330,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             product_id:
               typeof item.product_id === 'string' ? parseInt(item.product_id) : item.product_id,
             quantity: item.qty || item.quantity || 1,
-            unit_price: (item.price || item.rate || 0).toString(),
+            unit_price: (item.price || 0).toString(),
             total_price: (item.total || 0).toString(),
-            created_by: payload.userId,
-            updated_by: payload.userId,
+            mrp: (item.mrp || 0).toString(),
+            created_by: userId,
+            updated_by: userId,
             created_at: new Date(),
             updated_at: new Date(),
           });
@@ -371,8 +369,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               payment_date: body.payment.payment_date
                 ? new Date(body.payment.payment_date)
                 : new Date(),
-              reference_number: body.payment.reference_number || '',
-              payment_notes: body.payment.payment_notes || '',
+              reference_number: body.payment.reference_number || null,
+              payment_notes: body.payment.payment_notes || null,
               updated_at: new Date(),
             })
             .where(eq(PaymentDetailsTable.invoice_id, invoiceId));
@@ -385,8 +383,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             payment_date: body.payment.payment_date
               ? new Date(body.payment.payment_date)
               : new Date(),
-            reference_number: body.payment.reference_number || '',
-            payment_notes: body.payment.payment_notes || '',
+            reference_number: body.payment.reference_number || null,
+            payment_notes: body.payment.payment_notes || null,
           });
         }
       } else if (body.invoice_stage !== 'SALE') {

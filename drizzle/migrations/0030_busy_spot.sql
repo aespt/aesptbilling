@@ -1,0 +1,1 @@
+ALTER TABLE "invoices" ADD COLUMN "discount_percentage" numeric(5, 2) DEFAULT '0';

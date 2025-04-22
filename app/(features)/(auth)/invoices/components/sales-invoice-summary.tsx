@@ -2,7 +2,7 @@
 
 import { Typography, Box, Paper, Divider } from '@mui/material';
 
-import type { InvoiceFormData, InvoiceItem } from '@/lib/types';
+import type { InvoiceFormData, InvoiceItem } from '@/lib/types/invoice';
 
 interface SalesInvoiceSummaryProps {
   invoiceItems: InvoiceItem[];
@@ -17,7 +17,8 @@ export default function SalesInvoiceSummary({ invoiceItems, formData }: SalesInv
   const discountAmount = calculateDiscount(
     subtotal,
     formData.discount_type,
-    formData.discount_value
+    formData.discount_value,
+    formData.discount_percentage
   );
 
   // Calculate tax on subtotal after discount
@@ -44,13 +45,25 @@ export default function SalesInvoiceSummary({ invoiceItems, formData }: SalesInv
   };
 
   // Calculate discount amount based on type and value
-  function calculateDiscount(amount: number, type: string, value: number | string): number {
-    if (!type || type === 'NONE' || !value || Number(value) <= 0) {
+  function calculateDiscount(
+    amount: number,
+    type: string,
+    value: number | string,
+    percentageValue?: number
+  ): number {
+    if (
+      !type ||
+      type === 'NONE' ||
+      (!value && !percentageValue) ||
+      (Number(value) <= 0 && !percentageValue)
+    ) {
       return 0;
     }
 
     if (type === 'PERCENTAGE') {
-      return (amount * Number(value)) / 100;
+      // Use percentageValue if provided (for edit mode), otherwise use the value
+      const discountPercentage = percentageValue !== undefined ? percentageValue : Number(value);
+      return (amount * discountPercentage) / 100;
     }
 
     if (type === 'FIXED') {
@@ -109,12 +122,13 @@ export default function SalesInvoiceSummary({ invoiceItems, formData }: SalesInv
               {/* Discount Row - Only shown if discount exists */}
               {formData.discount_type &&
                 formData.discount_type !== 'NONE' &&
-                Number(formData.discount_value) > 0 && (
+                ((formData.discount_value !== '' && Number(formData.discount_value) > 0) ||
+                  (formData.discount_percentage && formData.discount_percentage > 0)) && (
                   <Box className="flex items-center justify-between py-2">
                     <Typography variant="body2" className="text-gray-600">
                       Discount
                       {formData.discount_type === 'PERCENTAGE'
-                        ? ` (${formData.discount_value}%)`
+                        ? ` (${formData.discount_percentage ?? formData.discount_value}%)`
                         : ''}
                     </Typography>
                     <Typography variant="body1" className="text-red-600">

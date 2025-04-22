@@ -15,6 +15,7 @@ export const InvoiceItemsTable = pgTable('invoice_items', {
   quantity: integer('quantity').notNull(),
   unit_price: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
   total_price: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
+  mrp: decimal('mrp', { precision: 10, scale: 2 }).notNull(),
   created_by: integer('created_by').references(() => UsersTable.id),
   updated_by: integer('updated_by').references(() => UsersTable.id),
   created_at: timestamp('created_at').defaultNow().notNull(),

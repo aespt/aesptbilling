@@ -31,10 +31,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    // Ensure userId is a valid number
+    const userId = typeof payload.userId === 'number' ? payload.userId : Number(payload.userId);
+
+    if (isNaN(userId) || userId <= 0) {
+      return NextResponse.json({ error: 'Invalid user ID in token' }, { status: 400 });
+    }
+
     const body = await request.json();
 
     // Extract payment data from request body
     const { payment, ...invoiceData } = body;
+
+    // Ensure numeric fields aren't empty strings
+    const safeDiscount = invoiceData.discount === '' ? 0 : invoiceData.discount;
+    const safeDiscountPercentage =
+      invoiceData.discount_percentage === '' ? 0 : invoiceData.discount_percentage;
+    const safeProfit = invoiceData.profit === '' ? 0 : invoiceData.profit;
+
+    console.log('invoiceData', invoiceData);
 
     // Start transaction
     return await db.transaction(async tx => {
@@ -54,15 +69,17 @@ export async function POST(request: NextRequest) {
                 ? invoiceData.cgst_percentage + invoiceData.sgst_percentage
                 : 0
           ),
-          sub_total: String(invoiceData.subtotal),
-          total: String(invoiceData.total),
-          discount: invoiceData.discount,
+          sub_total: String(invoiceData.subtotal || 0),
+          total: String(invoiceData.total || 0),
+          discount: safeDiscount,
+          discount_type: invoiceData.discount_type || 'NONE',
+          discount_percentage: safeDiscountPercentage,
           ship_to: invoiceData.ship_to,
           ship_from: invoiceData.ship_from,
-          profit: invoiceData.profit,
+          profit: safeProfit,
           invoice_stage: invoiceData.invoice_stage,
-          created_by: payload.userId,
-          updated_by: payload.userId,
+          created_by: userId,
+          updated_by: userId,
         })
         .returning();
 
@@ -86,11 +103,11 @@ export async function POST(request: NextRequest) {
           invoice_id: invoiceId,
           product_id: item.product_id,
           quantity: item.qty,
-          unit_price: String(item.rate || 0),
+          unit_price: String(item.price || 0),
           total_price: String(item.total || 0),
-          cost_price: String(item.price || 0),
-          created_by: payload.userId,
-          updated_by: payload.userId,
+          mrp: String(item.mrp || 0),
+          created_by: userId,
+          updated_by: userId,
         }));
 
         // Insert all invoice items
@@ -104,8 +121,8 @@ export async function POST(request: NextRequest) {
           payment_method: payment.payment_method || 'CASH',
           payment_status: payment.payment_status || 'UNPAID',
           payment_date: payment.payment_date ? new Date(payment.payment_date) : new Date(),
-          reference_number: payment.reference_number || '',
-          payment_notes: payment.payment_notes || '',
+          reference_number: payment.reference_number || null,
+          payment_notes: payment.payment_notes || null,
         });
       }
 

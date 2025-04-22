@@ -88,16 +88,19 @@ export default function SalesInvoiceItems({
   const handleProductChange = (itemId: string, product: Product | null) => {
     const updatedItems = invoiceItems.map(item => {
       if (item.id === itemId) {
-        const mrp = Number(product?.mrp) || 0;
-        const price = Number(product?.price) || 0;
+        // Get product details from the selection
+        const productMrp = Number(product?.mrp) || 0;
+        const productPrice = Number(product?.price) || 0;
+
+        // Always use the product's values
         return {
           ...item,
           product_id: product?.id || null,
           part_no: product?.partNo || '',
-          rate: mrp, // Use MRP as the rate
-          total: item.qty * mrp,
-          price: price, // Store the hidden price
-          mrp: mrp, // Store the MRP
+          rate: productMrp, // MRP for display purposes (customer-facing rate)
+          price: productPrice, // Actual cost price used for profit calculation and unit_price in database
+          mrp: productMrp, // MRP stored separately for reference
+          total: item.qty * productMrp, // Total is based on the displayed rate (MRP)
         };
       }
       return item;
@@ -144,9 +147,11 @@ export default function SalesInvoiceItems({
       if (item.id === itemId) {
         return {
           ...item,
-          rate: rate,
+          rate: rate, // Update the displayed rate (customer-facing)
+          mrp: rate, // Update stored MRP to match the manually entered rate
           total: item.qty * rate,
-          mrp: rate, // Update MRP when rate is manually changed
+          // Note: We don't update the price (cost price) when rate changes manually
+          // This preserves the profit calculation
         };
       }
       return item;

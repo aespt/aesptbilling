@@ -8,6 +8,9 @@ export const TaxTypeEnum = z.enum(['VAT', 'GST', 'NONE']);
 // Enum for invoice stages
 export const InvoiceStageEnum = z.enum(['SALE', 'PROFORMA', 'QUOTATION']);
 
+// Enum for discount types
+export const DiscountTypeEnum = z.enum(['PERCENTAGE', 'FIXED', 'NONE']);
+
 // Zod schema for invoice validation
 export const InvoiceSchema = BaseSchema.extend({
   id: z.number().optional(),
@@ -20,6 +23,8 @@ export const InvoiceSchema = BaseSchema.extend({
   invoice_stage: InvoiceStageEnum.default('SALE'),
   tax_rate: z.number().nonnegative().default(0),
   discount: z.number().nonnegative().default(0),
+  discount_percentage: z.number().nonnegative().default(0),
+  discount_type: DiscountTypeEnum.default('NONE'),
   profit: z.number().nonnegative().default(0),
   sub_total: z.number().positive(),
   total: z.number().positive(),

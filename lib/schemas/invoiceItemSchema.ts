@@ -10,6 +10,7 @@ export const InvoiceItemSchema = BaseSchema.extend({
   quantity: z.number().int().positive(),
   unit_price: z.number().positive(),
   total_price: z.number().positive(),
+  mrp: z.number().positive(),
 });
 
 // Zod schema for creating a new invoice item
