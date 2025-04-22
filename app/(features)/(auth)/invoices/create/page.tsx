@@ -1,17 +1,26 @@
 'use client';
 
-import { Button, Menu, MenuItem } from '@mui/material';
-import { usePopupState, bindTrigger, bindMenu } from 'material-ui-popup-state/hooks';
+import {
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  type SelectChangeEvent,
+} from '@mui/material';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import PageHeader from '@/app/shared/components/page-header';
 import Snackbar from '@/app/shared/components/snackbar';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
-import type { FormErrors, InvoiceFormData, InvoiceItem, Customer, Salesman } from '@/lib/types';
+import type { FormErrors } from '@/lib/types';
+import type { Customer, Salesman } from '@/lib/types/index';
+import type { InvoiceFormData, InvoiceItem } from '@/lib/types/invoice';
 
-import { fetchInvoiceById } from '../components/invoice-loader';
+import { fetchInvoiceById, type PaymentData } from '../components/invoice-loader';
 import InvoiceSearch from '../components/invoice-search';
+import PaymentDetails from '../components/payment-details';
 import PreviousInvoicesModal from '../components/previous-invoices-modal';
 import SalesInvoiceDetails from '../components/sales-invoice-details';
 import SalesInvoiceItems from '../components/sales-invoice-items';
@@ -23,7 +32,7 @@ export default function CreateInvoicePage() {
   const searchParams = useSearchParams();
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const popupState = usePopupState({ variant: 'popover', popupId: 'invoiceActions' });
+  const invoiceIdLoaded = useRef<string | null>(null);
 
   // Search and modal state
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,6 +61,15 @@ export default function CreateInvoicePage() {
     discount_value: 0,
   });
 
+  // Payment Details State
+  const [paymentData, setPaymentData] = useState<PaymentData>({
+    payment_method: '',
+    payment_status: 'UNPAID',
+    payment_date: null,
+    reference_number: '',
+    payment_notes: '',
+  });
+
   // Invoice items
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
     {
@@ -74,9 +92,20 @@ export default function CreateInvoicePage() {
     items: '',
   });
 
+  // Invoice stage
+  const [invoiceStage, setInvoiceStage] = useState<'SALE' | 'QUOTATION' | 'PROFORMA'>('SALE');
+
   // Load invoice by ID
   const loadInvoice = useCallback(
     async (invoiceId: string) => {
+      // Skip if already loading or the same invoice
+      if (
+        isLoadingInvoice ||
+        (currentInvoiceId !== null && currentInvoiceId.toString() === invoiceId)
+      ) {
+        return;
+      }
+
       setIsLoadingInvoice(true);
       try {
         const result = await fetchInvoiceById(invoiceId);
@@ -90,11 +119,21 @@ export default function CreateInvoicePage() {
           setFormData((currentData: InvoiceFormData) => ({
             ...currentData,
             ...result.formData,
+            // Ensure discount_type is the correct type
+            discount_type: result.formData.discount_type as InvoiceFormData['discount_type'],
           }));
 
           // Replace invoice items only if we got items
           if (result.invoiceItems.length > 0) {
             setInvoiceItems(result.invoiceItems);
+          }
+
+          // Load payment details if available
+          if (result.paymentData) {
+            setPaymentData(currentData => ({
+              ...currentData,
+              ...result.paymentData,
+            }));
           }
 
           // Fetch customer details if customer_id is available
@@ -154,16 +193,22 @@ export default function CreateInvoicePage() {
         setIsLoadingInvoice(false);
       }
     },
-    [showSnackbar]
+    [showSnackbar, currentInvoiceId, isLoadingInvoice]
   );
 
   // Check for invoice ID in URL query params on component mount
   useEffect(() => {
     // Check for any query param that could be an invoice ID
     const id = searchParams.get('id');
-    if (id) {
+    if (id && id !== invoiceIdLoaded.current) {
+      invoiceIdLoaded.current = id;
       loadInvoice(id);
     }
+
+    // Cleanup function to reset the ref when component unmounts
+    return () => {
+      invoiceIdLoaded.current = null;
+    };
   }, [searchParams, loadInvoice]);
 
   // Helper to convert item types for component compatibility
@@ -196,24 +241,30 @@ export default function CreateInvoicePage() {
           if (result.data && result.data.length > 0) {
             // If invoice found, load it
             const invoice = result.data[0];
-            await loadInvoice(invoice.id);
+            // Check if we're already loaded this invoice
+            if (invoice.id !== invoiceIdLoaded.current) {
+              await loadInvoice(invoice.id);
+            }
           }
         }
       } catch (error) {
         console.error('Error searching for invoice:', error);
       }
     },
-    [loadInvoice]
+    [loadInvoice, invoiceIdLoaded]
   );
 
   useEffect(() => {
     if (searchTerm) {
       const delaySearch = setTimeout(() => {
-        searchInvoiceByNumber(searchTerm);
+        // Skip loading if we're currently in edit mode
+        if (!isEditMode && !isLoadingInvoice) {
+          searchInvoiceByNumber(searchTerm);
+        }
       }, 500);
       return () => clearTimeout(delaySearch);
     }
-  }, [searchTerm, searchInvoiceByNumber]);
+  }, [searchTerm, searchInvoiceByNumber, isEditMode, isLoadingInvoice]);
 
   // Form validation
   const validateForm = () => {
@@ -291,8 +342,13 @@ export default function CreateInvoicePage() {
     return discountedProfit;
   };
 
+  // Handle invoice stage change
+  const handleInvoiceStageChange = (event: SelectChangeEvent) => {
+    setInvoiceStage(event.target.value as 'SALE' | 'QUOTATION' | 'PROFORMA');
+  };
+
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false, invoiceStage = 'SALE') => {
+  const handleSubmit = async (e: React.FormEvent, saveAsDraft = false) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -321,6 +377,8 @@ export default function CreateInvoicePage() {
         tax: totals.tax,
         total: totals.total,
         profit,
+        // Include payment details
+        payment: paymentData,
       };
 
       let response;
@@ -380,12 +438,33 @@ export default function CreateInvoicePage() {
           buttonVariant="secondary"
         />
 
-        {/* Invoice Search */}
-        <InvoiceSearch
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onOpenModal={() => setIsModalOpen(true)}
-        />
+        {/* Invoice Search and Stage Selection */}
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="w-full">
+            <InvoiceSearch
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onOpenModal={() => setIsModalOpen(true)}
+            />
+          </div>
+
+          <div className="w-full">
+            <FormControl fullWidth variant="outlined" size="small">
+              <InputLabel id="invoice-stage-label">Invoice Type</InputLabel>
+              <Select
+                labelId="invoice-stage-label"
+                id="invoice-stage"
+                value={invoiceStage}
+                onChange={handleInvoiceStageChange}
+                label="Invoice Type"
+              >
+                <MenuItem value="SALE">Tax Invoice</MenuItem>
+                <MenuItem value="QUOTATION">Quotation</MenuItem>
+                <MenuItem value="PROFORMA">Proforma Invoice</MenuItem>
+              </Select>
+            </FormControl>
+          </div>
+        </div>
 
         <form onSubmit={e => handleSubmit(e, false)}>
           <SalesInvoiceDetails
@@ -419,41 +498,29 @@ export default function CreateInvoicePage() {
             formData={formData}
           />
 
-          <div className="my-6 flex justify-end space-x-4">
+          {/* Show Payment Details only for Sales Invoices */}
+          {invoiceStage === 'SALE' && (
+            <PaymentDetails paymentData={paymentData} setPaymentData={setPaymentData} />
+          )}
+
+          <div className="mt-6 flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={e => handleSubmit(e, true)}
+              disabled={isSubmitting || isLoadingInvoice}
+            >
+              Save as Draft
+            </Button>
+
             <Button
               variant="contained"
+              type="submit"
               disabled={isSubmitting || isLoadingInvoice}
               className="bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-300 hover:scale-105"
-              {...bindTrigger(popupState)}
             >
               {isEditMode ? 'Update Invoice' : 'Create Invoice'}
             </Button>
-            <Menu {...bindMenu(popupState)}>
-              <MenuItem
-                onClick={e => {
-                  popupState.close();
-                  handleSubmit(e, false, 'SALE');
-                }}
-              >
-                Tax Invoice
-              </MenuItem>
-              <MenuItem
-                onClick={e => {
-                  popupState.close();
-                  handleSubmit(e, false, 'PROFORMA');
-                }}
-              >
-                Proforma Invoice
-              </MenuItem>
-              <MenuItem
-                onClick={e => {
-                  popupState.close();
-                  handleSubmit(e, false, 'QUOTATION');
-                }}
-              >
-                Quotation
-              </MenuItem>
-            </Menu>
           </div>
         </form>
       </div>

@@ -6,6 +6,7 @@ import { db } from '@/lib/drizzle';
 import { CustomersTable } from '@/lib/models/customers';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { InvoicesTable } from '@/lib/models/invoices';
+import { PaymentDetailsTable } from '@/lib/models/payment_details';
 import { ProductsTable } from '@/lib/models/products';
 import { SalesmenTable } from '@/lib/models/salesmen';
 import { type TokenPayload } from '@/lib/schemas/authSchema';
@@ -351,6 +352,47 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         .select()
         .from(InvoiceItemsTable)
         .where(eq(InvoiceItemsTable.invoice_id, invoiceId));
+
+      // Update or create payment details if invoice stage is SALE
+      if (body.invoice_stage === 'SALE' && body.payment) {
+        // Check if payment record already exists
+        const existingPayment = await tx
+          .select()
+          .from(PaymentDetailsTable)
+          .where(eq(PaymentDetailsTable.invoice_id, invoiceId));
+
+        if (existingPayment && existingPayment.length > 0) {
+          // Update existing payment
+          await tx
+            .update(PaymentDetailsTable)
+            .set({
+              payment_method: body.payment.payment_method || 'CASH',
+              payment_status: body.payment.payment_status || 'UNPAID',
+              payment_date: body.payment.payment_date
+                ? new Date(body.payment.payment_date)
+                : new Date(),
+              reference_number: body.payment.reference_number || '',
+              payment_notes: body.payment.payment_notes || '',
+              updated_at: new Date(),
+            })
+            .where(eq(PaymentDetailsTable.invoice_id, invoiceId));
+        } else {
+          // Create new payment record
+          await tx.insert(PaymentDetailsTable).values({
+            invoice_id: invoiceId,
+            payment_method: body.payment.payment_method || 'CASH',
+            payment_status: body.payment.payment_status || 'UNPAID',
+            payment_date: body.payment.payment_date
+              ? new Date(body.payment.payment_date)
+              : new Date(),
+            reference_number: body.payment.reference_number || '',
+            payment_notes: body.payment.payment_notes || '',
+          });
+        }
+      } else if (body.invoice_stage !== 'SALE') {
+        // If invoice is not a SALE, remove any existing payment records
+        await tx.delete(PaymentDetailsTable).where(eq(PaymentDetailsTable.invoice_id, invoiceId));
+      }
 
       return NextResponse.json({
         message: 'Invoice updated successfully',

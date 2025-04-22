@@ -1,104 +1,114 @@
-import type { InvoiceFormData, InvoiceItem } from '@/lib/types';
+export interface PaymentData {
+  payment_method: string;
+  payment_status: string;
+  payment_date: Date | null;
+  reference_number: string;
+  payment_notes: string;
+}
+
+interface InvoiceItemData {
+  id: number;
+  product_id: number;
+  invoice_id: number;
+  quantity: number;
+  unit_price: string;
+  total_price: string;
+  part_no: string;
+  product_name: string;
+  price: number;
+  rate: number;
+  mrp: number;
+  qty: number;
+  total: number;
+}
 
 /**
  * Fetches an invoice by ID and returns it in a format suitable for the invoice form
  */
-export async function fetchInvoiceById(invoiceId: string): Promise<{
-  formData: Partial<InvoiceFormData>;
-  invoiceItems: InvoiceItem[];
-} | null> {
+export async function fetchInvoiceById(id: string) {
   try {
-    const response = await fetch(`/api/invoices/${invoiceId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Fetch the invoice details
+    const invoiceResponse = await fetch(`/api/invoices/${id}`);
 
-    if (!response.ok) {
+    if (!invoiceResponse.ok) {
       throw new Error('Failed to fetch invoice');
     }
 
-    const result = await response.json();
-
-    // Handle new API response format
-    const invoice = result.invoice || result.data;
+    const invoiceData = await invoiceResponse.json();
+    const invoice = invoiceData.data;
 
     if (!invoice) {
-      return null;
+      throw new Error('Invoice not found');
     }
 
-    // Transform the invoice data to match the form structure
-    const formData: Partial<InvoiceFormData> = {
-      invoice_number: invoice.invoice_number,
-      date: new Date(invoice.date || invoice.invoice_date),
-      salesman_id: invoice.salesman_id,
-      ship_from: invoice.ship_from || '',
-      customer_id: invoice.customer_id,
-      ship_to: invoice.ship_to || '',
-      status: 'DRAFT', // Always create as draft
-      tax_type: invoice.tax_type || 'VAT',
-      vat_percentage: invoice.vat_percentage || 5,
-      cgst_percentage: invoice.cgst_percentage || 0,
-      sgst_percentage: invoice.sgst_percentage || 0,
-      discount_type: invoice.discount_type || 'PERCENTAGE',
-      discount_value: invoice.discount_value || 0,
-    };
+    // Fetch the invoice items
+    const itemsResponse = await fetch(`/api/invoices/${id}/items`);
 
-    // Define the interface for the API invoice item
-    interface ApiInvoiceItem {
-      id?: number;
-      product_id: string | number | null;
-      part_no?: string;
-      quantity?: number;
-      qty?: number;
-      unit_price?: string | number;
-      rate?: number;
-      total_price?: string | number;
-      total?: number;
-      price?: number;
-      mrp?: number;
+    if (!itemsResponse.ok) {
+      throw new Error('Failed to fetch invoice items');
     }
 
-    // Get invoice items from the response
-    const items = result.items || invoice.items || [];
+    const itemsData = await itemsResponse.json();
 
-    // Transform invoice items
-    const invoiceItems: InvoiceItem[] = items.map((item: ApiInvoiceItem) => {
-      // Use unit_price as the primary price source
-      const unitPrice =
-        typeof item.unit_price !== 'undefined'
-          ? Number(item.unit_price)
-          : typeof item.rate !== 'undefined'
-            ? Number(item.rate)
-            : 0;
+    // Fetch payment details if invoice stage is SALE
+    let paymentData: PaymentData | null = null;
+    if (invoice.invoice_stage === 'SALE') {
+      try {
+        const paymentResponse = await fetch(`/api/payments?invoice_id=${id}`);
+        if (paymentResponse.ok) {
+          const paymentResult = await paymentResponse.json();
+          if (paymentResult.data && paymentResult.data.length > 0) {
+            const payment = paymentResult.data[0];
+            paymentData = {
+              payment_method: payment.payment_method,
+              payment_status: payment.payment_status,
+              payment_date: payment.payment_date ? new Date(payment.payment_date) : null,
+              reference_number: payment.reference_number || '',
+              payment_notes: payment.payment_notes || '',
+            };
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching payment details:', error);
+        // Continue loading invoice even if payment fetch fails
+      }
+    }
 
-      return {
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 9), // Generate new ID for each item
-        product_id:
-          typeof item.product_id === 'string' ? parseInt(item.product_id) : item.product_id,
+    // Transform the data into the format expected by the form
+    return {
+      formData: {
+        invoice_number: invoice.invoice_number,
+        date: new Date(invoice.invoice_date),
+        customer_id: invoice.customer_id,
+        salesman_id: invoice.salesman_id,
+        ship_to: invoice.ship_to,
+        ship_from: invoice.ship_from,
+        // Extract tax information
+        tax_type: invoice.tax_type,
+        vat_percentage: invoice.tax_type === 'VAT' ? parseFloat(invoice.tax_rate) : 0,
+        cgst_percentage: invoice.tax_type === 'GST' ? parseFloat(invoice.tax_rate) / 2 : 0,
+        sgst_percentage: invoice.tax_type === 'GST' ? parseFloat(invoice.tax_rate) / 2 : 0,
+        // Discount information
+        discount_type: 'FIXED', // Default to FIXED for existing invoices
+        discount_value: parseFloat(invoice.discount),
+        status: 'DRAFT', // Default status for editing
+        invoice_stage: invoice.invoice_stage,
+      },
+      invoiceItems: itemsData.items.map((item: InvoiceItemData) => ({
+        id: item.id.toString(),
+        product_id: item.product_id,
         part_no: item.part_no || '',
-        // Handle different API formats for quantity
-        qty: item.qty || item.quantity || 1,
-        // Use unit_price or rate as the rate value
-        rate: unitPrice,
-        // Handle different API formats for total
-        total:
-          typeof item.total !== 'undefined'
-            ? Number(item.total)
-            : typeof item.total_price !== 'undefined'
-              ? Number(item.total_price)
-              : unitPrice * (item.qty || item.quantity || 1), // Calculate if not provided
-        // Use unit_price for price too
-        price: unitPrice,
-        // MRP can be the same as unit_price if not provided
-        mrp: typeof item.mrp !== 'undefined' ? Number(item.mrp) : unitPrice,
-      };
-    });
-
-    return { formData, invoiceItems };
+        qty: item.qty,
+        rate: item.rate,
+        total: item.total,
+        price: item.price,
+        mrp: item.mrp,
+      })),
+      // Include payment data
+      paymentData,
+    };
   } catch (error) {
-    console.error('Error fetching invoice:', error);
-    return null;
+    console.error('Error loading invoice:', error);
+    throw error;
   }
 }

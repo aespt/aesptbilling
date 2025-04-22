@@ -1,10 +1,30 @@
 -- Drop existing foreign key constraints
-ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_created_by_users_id_fk";
-ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_updated_by_users_id_fk";
-ALTER TABLE "invoices" DROP CONSTRAINT IF EXISTS "invoices_created_by_users_id_fk";
-ALTER TABLE "invoices" DROP CONSTRAINT IF EXISTS "invoices_updated_by_users_id_fk";
-ALTER TABLE "invoice_items" DROP CONSTRAINT IF EXISTS "invoice_items_created_by_users_id_fk";
-ALTER TABLE "invoice_items" DROP CONSTRAINT IF EXISTS "invoice_items_updated_by_users_id_fk";
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_created_by_users_id_fk') THEN
+        ALTER TABLE "users" DROP CONSTRAINT "users_created_by_users_id_fk";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_updated_by_users_id_fk') THEN
+        ALTER TABLE "users" DROP CONSTRAINT "users_updated_by_users_id_fk";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'invoices_created_by_users_id_fk') THEN
+        ALTER TABLE "invoices" DROP CONSTRAINT "invoices_created_by_users_id_fk";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'invoices_updated_by_users_id_fk') THEN
+        ALTER TABLE "invoices" DROP CONSTRAINT "invoices_updated_by_users_id_fk";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'invoice_items_created_by_users_id_fk') THEN
+        ALTER TABLE "invoice_items" DROP CONSTRAINT "invoice_items_created_by_users_id_fk";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'invoice_items_updated_by_users_id_fk') THEN
+        ALTER TABLE "invoice_items" DROP CONSTRAINT "invoice_items_updated_by_users_id_fk";
+    END IF;
+END $$;
 
 -- Create temporary integer columns
 ALTER TABLE "users" ADD COLUMN "created_by_new" integer;
@@ -52,18 +72,45 @@ END,
 END;
 
 -- Drop old columns and rename new ones
-ALTER TABLE "users" DROP COLUMN "created_by";
-ALTER TABLE "users" DROP COLUMN "updated_by";
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'created_by') THEN
+        ALTER TABLE "users" DROP COLUMN "created_by";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'updated_by') THEN
+        ALTER TABLE "users" DROP COLUMN "updated_by";
+    END IF;
+END $$;
+
 ALTER TABLE "users" RENAME COLUMN "created_by_new" TO "created_by";
 ALTER TABLE "users" RENAME COLUMN "updated_by_new" TO "updated_by";
 
-ALTER TABLE "invoices" DROP COLUMN "created_by";
-ALTER TABLE "invoices" DROP COLUMN "updated_by";
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'created_by') THEN
+        ALTER TABLE "invoices" DROP COLUMN "created_by";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'updated_by') THEN
+        ALTER TABLE "invoices" DROP COLUMN "updated_by";
+    END IF;
+END $$;
+
 ALTER TABLE "invoices" RENAME COLUMN "created_by_new" TO "created_by";
 ALTER TABLE "invoices" RENAME COLUMN "updated_by_new" TO "updated_by";
 
-ALTER TABLE "invoice_items" DROP COLUMN "created_by";
-ALTER TABLE "invoice_items" DROP COLUMN "updated_by";
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoice_items' AND column_name = 'created_by') THEN
+        ALTER TABLE "invoice_items" DROP COLUMN "created_by";
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoice_items' AND column_name = 'updated_by') THEN
+        ALTER TABLE "invoice_items" DROP COLUMN "updated_by";
+    END IF;
+END $$;
+
 ALTER TABLE "invoice_items" RENAME COLUMN "created_by_new" TO "created_by";
 ALTER TABLE "invoice_items" RENAME COLUMN "updated_by_new" TO "updated_by";
 
