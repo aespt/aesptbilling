@@ -14,7 +14,6 @@ import { AUTH_COOKIE_NAME, verifyToken } from '@/lib/utils/jwt';
 
 type PurchaseInsert = InferInsertModel<typeof PurchasesTable>;
 type PurchaseItemInsert = InferInsertModel<typeof PurchaseItemsTable>;
-
 /**
  * GET /api/purchases
  * Retrieves a list of purchases with optional filtering
@@ -193,7 +192,10 @@ export async function POST(request: NextRequest) {
     const { items, ...purchaseData } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'At least one purchase item is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'At least one purchase item is required' },
+        { status: 400 }
+      );
     }
 
     // Validate purchase using Zod schema
@@ -278,4 +280,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

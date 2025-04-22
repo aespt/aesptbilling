@@ -87,7 +87,7 @@ export default function CreateInvoicePage() {
           setCurrentInvoiceId(Number(invoiceId));
 
           // Merge the loaded data with current formData to preserve defaults for any missing fields
-          setFormData(currentData => ({
+          setFormData((currentData: InvoiceFormData) => ({
             ...currentData,
             ...result.formData,
           }));
@@ -112,7 +112,7 @@ export default function CreateInvoicePage() {
 
                   // Update ship_to with customer's address if it's empty
                   if (!result.formData.ship_to && customer.address) {
-                    setFormData(currentData => ({
+                    setFormData((currentData: InvoiceFormData) => ({
                       ...currentData,
                       ship_to: customer.address,
                     }));
