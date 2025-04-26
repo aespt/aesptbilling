@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import {
@@ -250,6 +251,7 @@ export default function CreateInvoicePage() {
             ...result.formData,
             // Ensure discount_type is the correct type
             discount_type: result.formData.discount_type as InvoiceFormData['discount_type'],
+            invoice_stage: result.formData.invoice_stage as InvoiceFormData['invoice_stage'],
           }));
 
           // Replace invoice items only if we got items
@@ -553,13 +555,21 @@ export default function CreateInvoicePage() {
     a.remove();
   };
 
+  const getTitleCase = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
   return (
     <>
       {(isSubmitting || isLoadingInvoice) && <FullSpinner />}
       <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
         <div className="mx-auto max-w-screen-2xl">
           <PageHeader
-            heading={isEditMode ? 'Edit Sales Invoice' : 'Create Sales Invoice'}
+            heading={
+              isEditMode
+                ? `Edit ${getTitleCase(formData.invoice_stage as string)} Invoice`
+                : `Create ${getTitleCase(invoiceStage)} Invoice`
+            }
             buttonText="Back to Invoices"
             onButtonClick={() => router.push('/invoices')}
             buttonVariant="secondary"
