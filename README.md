@@ -37,6 +37,26 @@ cp .env.example .env
 
 This project uses PostgreSQL with Docker for easy setup and Drizzle ORM for database interactions.
 
+### One-Step Database Setup
+
+The easiest way to set up the database is to use the single setup command:
+
+```bash
+yarn db:setup
+```
+
+This command will:
+
+1. Create the database if it doesn't exist
+2. Push the schema to the database
+3. Run migrations and seed initial data
+
+If you need to create just the database without other steps:
+
+```bash
+yarn db:create
+```
+
 ### Connection Pooling
 
 The application uses connection pooling to efficiently manage database connections. This helps prevent the "too many clients already" error that can occur when too many simultaneous connections are made to PostgreSQL.
@@ -267,6 +287,8 @@ The project uses Zod for schema validation. Schema files are in `lib/schemas/` d
 - **yarn db:migrate**: Run migrations and seed initial data
 - **yarn db:reset**: Reset database to clean state
 - **yarn db:studio**: Open Drizzle Studio
+- **yarn db:create**: Create the database if it doesn't exist
+- **yarn db:setup**: Complete one-step database setup (create, push, migrate)
 - **yarn docker:up**: Start Docker containers
 - **yarn docker:down**: Stop Docker containers
 

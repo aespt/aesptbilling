@@ -14,14 +14,16 @@
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push:pg",
+    "db:push": "drizzle-kit push",
     "db:migrate": "tsx scripts/init-db.ts",
     "db:reset": "tsx scripts/reset-db.ts",
     "db:studio": "drizzle-kit studio",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "db:seed": "tsx scripts/seed-db.ts",
-    "db:complete-reset": "tsx scripts/complete-reset.ts"
+    "db:complete-reset": "tsx scripts/complete-reset.ts",
+    "db:create": "tsx scripts/create-db.ts",
+    "db:setup": "tsx scripts/db-setup.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
