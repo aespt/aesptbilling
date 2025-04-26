@@ -83,6 +83,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       salesman = salesmanResult;
     }
 
+    const payment = await db
+      .select()
+      .from(PaymentDetailsTable)
+      .where(eq(PaymentDetailsTable.invoice_id, invoiceId))
+      .limit(1);
+
     // Get the invoice items with product details
     const items = await db
       .select({
@@ -155,6 +161,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           salesman ||
           (invoice.salesman_id ? { id: invoice.salesman_id, name: 'Unknown Salesman' } : null),
         items: itemsWithProductDetails,
+        payment: payment || null,
       },
     });
   } catch (error) {

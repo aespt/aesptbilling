@@ -6,6 +6,7 @@ import { db } from '@/lib/drizzle';
 import { CustomersTable } from '@/lib/models/customers';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { InvoicesTable } from '@/lib/models/invoices';
+import { PaymentDetailsTable } from '@/lib/models/payment_details';
 import { ProductsTable } from '@/lib/models/products';
 import { SalesmenTable } from '@/lib/models/salesmen';
 import { type TokenPayload } from '@/lib/schemas/authSchema';
@@ -90,10 +91,12 @@ export async function GET(request: NextRequest) {
         ship_to: InvoicesTable.ship_to,
         customer_name: CustomersTable.name,
         salesman_name: SalesmenTable.name,
+        payment_method: PaymentDetailsTable.payment_method,
       })
       .from(InvoicesTable)
       .leftJoin(CustomersTable, eq(InvoicesTable.customer_id, CustomersTable.id))
       .leftJoin(SalesmenTable, eq(InvoicesTable.salesman_id, SalesmenTable.id))
+      .leftJoin(PaymentDetailsTable, eq(InvoicesTable.id, PaymentDetailsTable.invoice_id))
       .where(and(...conditions))
       .orderBy(InvoicesTable.invoice_date);
 
@@ -137,11 +140,14 @@ export async function GET(request: NextRequest) {
       { header: 'Date', key: 'invoice_date', width: 12 },
       { header: 'Customer', key: 'customer_name', width: 20 },
       { header: 'Salesperson', key: 'salesman_name', width: 20 },
-      { header: 'Sub Total', key: 'sub_total', width: 12 },
       { header: 'Tax Type', key: 'tax_type', width: 10 },
       { header: 'Tax Rate (%)', key: 'tax_rate', width: 12 },
+      { header: 'Value Without Tax', key: 'value_without_tax', width: 15 },
       { header: 'Discount', key: 'discount', width: 12 },
-      { header: 'Total', key: 'total', width: 12 },
+      { header: 'MOP', key: 'payment_method', width: 10 },
+      { header: 'Sub Total', key: 'sub_total', width: 12 },
+      { header: 'Tax Amount', key: 'tax_amount', width: 12 },
+      { header: 'Bill Amount', key: 'total', width: 12 },
       { header: 'Ship From', key: 'ship_from', width: 20 },
       { header: 'Ship To', key: 'ship_to', width: 20 },
     ];
@@ -154,8 +160,20 @@ export async function GET(request: NextRequest) {
       fgColor: { argb: 'FFE0E0E0' },
     };
 
+    const calculateTaxAndTotals = (invoice: any) => {
+      const taxRate = parseFloat(invoice.tax_rate) / 100;
+      const subTotal = parseFloat(invoice.sub_total);
+      const taxAmount = subTotal * taxRate;
+      const discount = parseFloat(invoice.discount);
+
+      return {
+        taxAmount: taxAmount.toFixed(2),
+        totalWithoutTax: (subTotal - taxAmount - discount).toFixed(2),
+      };
+    };
     // Add data to invoices sheet
     invoicesWithItems.forEach(invoice => {
+      const { taxAmount, totalWithoutTax } = calculateTaxAndTotals(invoice);
       invoicesSheet.addRow({
         invoice_number: invoice.invoice_number,
         invoice_date: invoice.invoice_date,
@@ -164,7 +182,10 @@ export async function GET(request: NextRequest) {
         sub_total: invoice.sub_total,
         tax_type: invoice.tax_type,
         tax_rate: invoice.tax_rate,
+        tax_amount: taxAmount,
+        value_without_tax: totalWithoutTax,
         discount: invoice.discount,
+        payment_method: invoice.payment_method,
         total: invoice.total,
         ship_from: invoice.ship_from,
         ship_to: invoice.ship_to,
@@ -174,6 +195,8 @@ export async function GET(request: NextRequest) {
     // Format number columns
     invoicesSheet.getColumn('sub_total').numFmt = '#,##0.00';
     invoicesSheet.getColumn('tax_rate').numFmt = '0.00%';
+    invoicesSheet.getColumn('tax_amount').numFmt = '#,##0.00';
+    invoicesSheet.getColumn('value_without_tax').numFmt = '#,##0.00';
     invoicesSheet.getColumn('discount').numFmt = '#,##0.00';
     invoicesSheet.getColumn('total').numFmt = '#,##0.00';
 
