@@ -540,6 +540,19 @@ export default function CreateInvoicePage() {
     }
   };
 
+  const handleDownload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const response = await fetch(`/api/invoices/pdf/${currentInvoiceId}`);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice-${currentInvoiceId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   return (
     <>
       {(isSubmitting || isLoadingInvoice) && <FullSpinner />}
@@ -582,16 +595,16 @@ export default function CreateInvoicePage() {
 
           <form onSubmit={e => handleSubmit(e, false)}>
             <SalesInvoiceDetails
-              formData={formData}
-              setFormData={setFormData}
+              formData={formData as any}
+              setFormData={newFormData => setFormData(newFormData as any)}
               errors={errors}
               setErrors={setErrors}
-              selectedCustomer={selectedCustomer}
-              setSelectedCustomer={customer => setSelectedCustomer(customer)}
-              selectedSalesman={selectedSalesman}
-              setSelectedSalesman={salesman => setSelectedSalesman(salesman)}
-              customers={Object.values(customersCache)}
-              salesmen={Object.values(salesmenCache)}
+              selectedCustomer={selectedCustomer as any}
+              setSelectedCustomer={customer => setSelectedCustomer(customer as any)}
+              selectedSalesman={selectedSalesman as any}
+              setSelectedSalesman={salesman => setSelectedSalesman(salesman as any)}
+              customers={Object.values(customersCache) as any}
+              salesmen={Object.values(salesmenCache) as any}
             />
 
             <SalesTaxDiscount
@@ -621,14 +634,16 @@ export default function CreateInvoicePage() {
             )}
 
             <div className="mt-6 flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="outlined"
-                onClick={e => handleSubmit(e, true)}
-                disabled={isSubmitting || isLoadingInvoice}
-              >
-                Save as Draft
-              </Button>
+              {isEditMode && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  onClick={e => handleDownload(e)}
+                  disabled={isSubmitting || isLoadingInvoice}
+                >
+                  Download
+                </Button>
+              )}
 
               <Button
                 variant="contained"
