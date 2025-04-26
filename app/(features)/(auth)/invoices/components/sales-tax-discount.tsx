@@ -11,7 +11,7 @@ import {
   Box,
   type SelectChangeEvent,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import type { FormErrors } from '@/lib/types';
 import type { InvoiceFormData } from '@/lib/types/invoice';
@@ -40,10 +40,17 @@ export default function SalesTaxDiscount({
   const [isLoading, setIsLoading] = useState(true);
   const [defaultVatRate, setDefaultVatRate] = useState<VatRate | null>(null);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const vatRatesLoaded = useRef(false);
 
-  // Fetch VAT rates on component mount
+  // Fetch VAT rates on component mount only once
   useEffect(() => {
     const fetchVatRates = async () => {
+      // Skip if already loaded
+      if (vatRatesLoaded.current) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         // This would be replaced with your actual API
         const response = await fetch('/api/vat-rates');
@@ -55,6 +62,7 @@ export default function SalesTaxDiscount({
         if (data.vatRates && data.vatRates.length > 0) {
           const defaultVat = data.vatRates[0];
           setDefaultVatRate(defaultVat);
+          vatRatesLoaded.current = true;
 
           // Set initial VAT data if not already set
           if (!formData.tax_type) {
@@ -74,6 +82,7 @@ export default function SalesTaxDiscount({
         // Mock data
         const mockVatRates = [{ id: 1, vat_percentage: 5, description: 'Standard VAT' }];
         setDefaultVatRate(mockVatRates[0]);
+        vatRatesLoaded.current = true;
 
         // Set initial VAT data with mock data
         if (!formData.tax_type) {
@@ -93,7 +102,8 @@ export default function SalesTaxDiscount({
     };
 
     fetchVatRates();
-  }, [setFormData, formData.tax_type]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle tax type change
   const handleTaxTypeChange = (event: SelectChangeEvent) => {

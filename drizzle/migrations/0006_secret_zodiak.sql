@@ -1,1 +1,0 @@
-ALTER TABLE "products" ALTER COLUMN "part_no" SET NOT NULL;

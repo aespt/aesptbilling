@@ -1,1 +1,0 @@
-ALTER TABLE "invoices" ADD COLUMN "discount_type" "discount_type" DEFAULT 'NONE';

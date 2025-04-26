@@ -20,6 +20,8 @@ interface SalesInvoiceDetailsProps {
   setSelectedCustomer: (customer: Customer | null) => void;
   selectedSalesman: Salesman | null;
   setSelectedSalesman: (salesman: Salesman | null) => void;
+  customers?: Customer[];
+  salesmen?: Salesman[];
 }
 
 // Utility function to generate invoice number
@@ -41,57 +43,24 @@ export default function SalesInvoiceDetails({
   setSelectedCustomer,
   selectedSalesman,
   setSelectedSalesman,
+  customers = [],
+  salesmen = [],
 }: SalesInvoiceDetailsProps) {
-  const [salesmen, setSalesmen] = useState<Salesman[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isCustomerPanelOpen, setIsCustomerPanelOpen] = useState(false);
   const initialized = useRef(false);
 
-  // Fetch customers and salesmen on component mount
+  // Initialize invoice number if not already set
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Generate invoice number if not already set
-        if (!initialized.current && !formData.invoice_number) {
-          setFormData({
-            ...formData,
-            invoice_number: generateInvoiceNumber(),
-          });
-          initialized.current = true;
-        }
-
-        // Fetch salesmen
-        try {
-          const salesmenResponse = await fetch('/api/dropdown/salesmen');
-          if (salesmenResponse.ok) {
-            const salesmenData = await salesmenResponse.json();
-            setSalesmen(salesmenData.salesmen || []);
-          }
-        } catch (error) {
-          console.error('Error fetching salesmen:', error);
-          // Fallback to mock data when error occurs
-        }
-
-        // Fetch customers
-        try {
-          const customersResponse = await fetch('/api/dropdown/customers');
-          if (customersResponse.ok) {
-            const customersData = await customersResponse.json();
-            setCustomers(customersData.customers || []);
-          }
-        } catch (error) {
-          console.error('Error fetching customers:', error);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [formData, setFormData]);
+    if (!initialized.current && !formData.invoice_number) {
+      setFormData({
+        ...formData,
+        invoice_number: generateInvoiceNumber(),
+      });
+      initialized.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle form input changes
   const handleInputChange = (
@@ -159,12 +128,10 @@ export default function SalesInvoiceDetails({
   const handleCustomerAdded = (customerName: string) => {
     setIsCustomerPanelOpen(false);
 
-    // Refresh customers list
+    // Refresh customers list - notify parent about new customer
     fetch('/api/dropdown/customers')
       .then(response => response.json())
       .then(data => {
-        setCustomers(data.customers);
-
         // Find and select the newly added customer
         const newCustomer = data.customers.find((c: Customer) => c.name === customerName);
         if (newCustomer) {

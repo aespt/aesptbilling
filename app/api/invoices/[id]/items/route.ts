@@ -93,7 +93,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             product_name: product?.name || '',
             price: unitPrice,
             mrp: Number(item.mrp),
-            rate: unitPrice,
+            rate: Number(item.mrp),
             qty: item.quantity,
             total: totalPrice,
           };

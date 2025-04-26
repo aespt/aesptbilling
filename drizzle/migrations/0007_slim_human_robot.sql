@@ -1,1 +1,0 @@
-ALTER TABLE "customers" ALTER COLUMN "phone" SET NOT NULL;

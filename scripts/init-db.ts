@@ -52,7 +52,7 @@ async function main() {
         console.log(`ℹ️ Found ${migrationsCount[0].count} migrations in the database`);
 
         // If migrations already exist, don't recreate schema
-        if (parseInt(migrationsCount[0].count) > 0) {
+        if (Number(migrationsCount[0].count) > 0) {
           console.log('ℹ️ Running migrations with existing schema...');
         }
       }
@@ -76,9 +76,17 @@ async function main() {
 
     console.log('🔄 Running migrations...');
 
-    // Run migrations
-    await migrate(drizzle(migrationClient), { migrationsFolder: 'drizzle/migrations' });
-    console.log('✅ Migrations completed successfully');
+    // Add debug logging
+    console.log('Migration folder path:', 'drizzle/migrations');
+
+    try {
+      // Run migrations
+      await migrate(drizzle(migrationClient), { migrationsFolder: 'drizzle/migrations' });
+      console.log('✅ Migrations completed successfully');
+    } catch (error) {
+      console.error('❌ Migration error:', error);
+      throw error;
+    }
 
     // Force create all tables if they don't exist
     const db2 = drizzle(migrationClient);
@@ -112,8 +120,7 @@ async function main() {
           password_hash: '$2b$10$KHi1f67cSdJwoV4wU5AJaeJJp8EPUxvE4v3pHmX/pg2OpdGLqJfZi', // password is 'admin123'
           created_by: 1,
           updated_by: 1,
-          created_at: new Date(),
-          updated_at: new Date(),
+          // Let the defaultNow() handle timestamps
         })
         .execute();
 

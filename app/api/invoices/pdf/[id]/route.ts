@@ -228,7 +228,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     invoiceItems.forEach((item, index) => {
       const product = productsMap.get(item.product_id);
       const invoiceTaxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
-      const unitPrice = parseFloat(item.unit_price.toString());
+      const unitPrice = parseFloat(item.mrp.toString());
       const quantity = parseFloat(item.quantity.toString());
       const vatAmount = ((unitPrice * invoiceTaxRate) / 100) * quantity;
       const totalAmount = parseFloat(item.total_price.toString());
@@ -268,9 +268,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Only add pricing columns if not a delivery invoice
       if (invoiceStage !== 'DELIVERY') {
         rowEl.append(
-          $('<td>')
-            .attr('style', 'padding: 8px; border: 1px solid #ddd')
-            .text(item.unit_price.toString())
+          $('<td>').attr('style', 'padding: 8px; border: 1px solid #ddd').text(item.mrp.toString())
         );
         rowEl.append(
           $('<td>')
@@ -300,10 +298,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     $('thead tr').addClass('table-header-row');
 
     // Fill in the totals
-    const subtotal = parseFloat(invoice.sub_total.toString()).toFixed(2);
+    const subtotal = invoiceItems
+      .reduce((sum, item) => sum + parseFloat(item.total_price.toString()), 0)
+      .toFixed(2);
     const discount = invoice.discount ? parseFloat(invoice.discount.toString()).toFixed(2) : '0.00';
     const taxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
-    const taxAmount = ((parseFloat(subtotal) * taxRate) / 100).toFixed(2);
+    const discountedSubtotal = (parseFloat(subtotal) - parseFloat(discount)).toFixed(2);
+    const taxAmount = ((parseFloat(discountedSubtotal) * taxRate) / 100).toFixed(2);
     const total = parseFloat(invoice.total.toString()).toFixed(2);
 
     $('#subtotal').text(`${subtotal} AED`);
@@ -423,34 +424,119 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             border-top: 1px dotted #999;
             padding-top: 10px;
           }
+          .invoice-footer {
+            width: 100%;
+          }
+
+          .totals-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            margin-top: 10px;
+            gap: 10px;
+          }
+          .signature-section {
+             page-break-inside: avoid;
+          }
         </style>
       </head>
       <body>
         <div class="footer">
-          <div class="text-container">
-            <p style="font-size: 12px; color: #999; margin: 0;">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum
-              has been the industry's standard dummy text ever since the 1500s.
-            </p>
+        <!-- Footer Section -->
+      <div class="invoice-footer signature-section">
+        ${
+          invoiceStage === 'DELIVERY' || invoice.invoice_stage === 'DELIVERY'
+            ? ''
+            : `<div class="totals-container">
+          <div
+            style="width: 50%; padding: 15px; background-color: #f5f5f5"
+            class="terms-conditions"
+          >
+            ${
+              invoiceStage === 'PROFORMA' || invoice.invoice_stage === 'PROFORMA'
+                ? primaryBankDetails
+                  ? `<h4 style="margin: 0 0 10px 0">Bank Details</h4>
+                     <p style="font-size: 12px; margin: 0; font-weight: bold">${primaryBankDetails.name}</p>
+                     <p style="font-size: 12px; margin: 5px 0; white-space: pre-line">${primaryBankDetails.details}</p>`
+                  : `<h4 style="margin: 0 0 10px 0">Bank Details</h4>
+                     <p style="font-size: 12px; margin: 0">No bank details found</p>`
+                : invoiceStage === 'QUOTATION' || invoice.invoice_stage === 'QUOTATION'
+                  ? `<h4 style="margin: 0 0 10px 0">Terms & Conditions</h4>
+                   <p style="font-size: 12px; margin: 0">
+                     By using our services, you confirm that you accept these Terms and Conditions and that
+                     you agree to comply with them.
+                   </p>`
+                  : `<h4 style="margin: 0 0 10px 0">Terms & Conditions</h4>
+                   <p style="font-size: 12px; margin: 0">
+                     By using our services, you confirm that you accept these Terms and Conditions and that
+                     you agree to comply with them.
+                   </p>`
+            }
           </div>
-          <div class="signature-container">
-            <div>
-              <p class="signature-line">
-                Customer Signature
-              </p>
-            </div>
-            <div>
-              <p class="signature-line">
-                For Arabian Auto Equipments and Parts Trading (FZC)
-              </p>
-            </div>
+          <div style="width: 50%; padding: 15px; background-color: #f5f5f5">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+              <tr>
+                <td style="padding: 5px 0; font-weight: bold">Subtotal</td>
+                <td id="subtotal" style="padding: 5px 0; text-align: right">{{subtotal}} AED</td>
+              </tr>
+              <tr>
+                <td id="tax-type" style="padding: 5px 0; font-weight: bold">{{taxType}}</td>
+                <td id="tax-amount" style="padding: 5px 0; text-align: right">{{taxAmount}} AED</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; font-weight: bold">Discount</td>
+                <td id="discount" style="padding: 5px 0; text-align: right">{{discount}} AED</td>
+              </tr>
+              <tr style="border-top: 1px solid #ddd">
+                <td style="padding: 10px 0; font-weight: bold">Invoice Total</td>
+                <td
+                  id="invoice-total"
+                  style="padding: 10px 0; text-align: right; font-weight: bold"
+                >
+                  {{total}} AED
+                </td>
+              </tr>
+            </table>
           </div>
+        </div>`
+        }
+      </div>
+          ${
+            invoiceStage === 'DELIVERY' || invoice.invoice_stage === 'DELIVERY'
+              ? ''
+              : `<div class="text-container">
+                <p style="font-size: 12px; color: #999; margin: 0;">
+                  Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum
+                  has been the industry's standard dummy text ever since the 1500s.
+                </p>
+              </div>
+              <div class="signature-container">
+                <div>
+                  <p class="signature-line">
+                    Customer Signature
+                  </p>
+                </div>
+                <div>
+                  <p class="signature-line">
+                    For Arabian Auto Equipments and Parts Trading (FZC)
+                  </p>
+                </div>
+              </div>`
+          }
         </div>
       </body>
       </html>
       `;
 
-      await footerPage.setContent(footerHtml, { waitUntil: 'networkidle0' });
+      // Replace placeholders with actual values
+      const processedFooterHtml = footerHtml
+        .replace('{{subtotal}}', subtotal)
+        .replace('{{taxType}}', taxType)
+        .replace('{{taxAmount}}', taxAmount)
+        .replace('{{discount}}', discount)
+        .replace('{{total}}', total);
+
+      await footerPage.setContent(processedFooterHtml, { waitUntil: 'networkidle0' });
 
       // Generate just the footer PDF
       const footerPdfBuffer = await footerPage.pdf({
@@ -915,10 +1001,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     $('thead tr').addClass('table-header-row');
 
     // Fill in the totals
-    const subtotal = parseFloat(invoice.sub_total.toString()).toFixed(2);
+    const subtotal = invoiceItems
+      .reduce((sum, item) => sum + parseFloat(item.total_price.toString()), 0)
+      .toFixed(2);
     const discount = invoice.discount ? parseFloat(invoice.discount.toString()).toFixed(2) : '0.00';
     const taxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
-    const taxAmount = ((parseFloat(subtotal) * taxRate) / 100).toFixed(2);
+    const discountedSubtotal = (parseFloat(subtotal) - parseFloat(discount)).toFixed(2);
+    const taxAmount = ((parseFloat(discountedSubtotal) * taxRate) / 100).toFixed(2);
     const total = parseFloat(invoice.total.toString()).toFixed(2);
 
     $('#subtotal').text(`${subtotal} AED`);
@@ -1038,34 +1127,119 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             border-top: 1px dotted #999;
             padding-top: 10px;
           }
+          .invoice-footer {
+            width: 100%;
+          }
+
+          .totals-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            margin-top: 10px;
+            gap: 10px;
+          }
+          .signature-section {
+             page-break-inside: avoid;
+          }
         </style>
       </head>
       <body>
         <div class="footer">
-          <div class="text-container">
-            <p style="font-size: 12px; color: #999; margin: 0;">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum
-              has been the industry's standard dummy text ever since the 1500s.
-            </p>
+        <!-- Footer Section -->
+      <div class="invoice-footer signature-section">
+        ${
+          invoiceStage === 'DELIVERY' || invoice.invoice_stage === 'DELIVERY'
+            ? ''
+            : `<div class="totals-container">
+          <div
+            style="width: 50%; padding: 15px; background-color: #f5f5f5"
+            class="terms-conditions"
+          >
+            ${
+              invoiceStage === 'PROFORMA' || invoice.invoice_stage === 'PROFORMA'
+                ? primaryBankDetails
+                  ? `<h4 style="margin: 0 0 10px 0">Bank Details</h4>
+                     <p style="font-size: 12px; margin: 0; font-weight: bold">${primaryBankDetails.name}</p>
+                     <p style="font-size: 12px; margin: 5px 0; white-space: pre-line">${primaryBankDetails.details}</p>`
+                  : `<h4 style="margin: 0 0 10px 0">Bank Details</h4>
+                     <p style="font-size: 12px; margin: 0">No bank details found</p>`
+                : invoiceStage === 'QUOTATION' || invoice.invoice_stage === 'QUOTATION'
+                  ? `<h4 style="margin: 0 0 10px 0">Terms & Conditions</h4>
+                   <p style="font-size: 12px; margin: 0">
+                     By using our services, you confirm that you accept these Terms and Conditions and that
+                     you agree to comply with them.
+                   </p>`
+                  : `<h4 style="margin: 0 0 10px 0">Terms & Conditions</h4>
+                   <p style="font-size: 12px; margin: 0">
+                     By using our services, you confirm that you accept these Terms and Conditions and that
+                     you agree to comply with them.
+                   </p>`
+            }
           </div>
-          <div class="signature-container">
-            <div>
-              <p class="signature-line">
-                Customer Signature
-              </p>
-            </div>
-            <div>
-              <p class="signature-line">
-                For Arabian Auto Equipments and Parts Trading (FZC)
-              </p>
-            </div>
+          <div style="width: 50%; padding: 15px; background-color: #f5f5f5">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+              <tr>
+                <td style="padding: 5px 0; font-weight: bold">Subtotal</td>
+                <td id="subtotal" style="padding: 5px 0; text-align: right">{{subtotal}} AED</td>
+              </tr>
+              <tr>
+                <td id="tax-type" style="padding: 5px 0; font-weight: bold">{{taxType}}</td>
+                <td id="tax-amount" style="padding: 5px 0; text-align: right">{{taxAmount}} AED</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; font-weight: bold">Discount</td>
+                <td id="discount" style="padding: 5px 0; text-align: right">{{discount}} AED</td>
+              </tr>
+              <tr style="border-top: 1px solid #ddd">
+                <td style="padding: 10px 0; font-weight: bold">Invoice Total</td>
+                <td
+                  id="invoice-total"
+                  style="padding: 10px 0; text-align: right; font-weight: bold"
+                >
+                  {{total}} AED
+                </td>
+              </tr>
+            </table>
           </div>
+        </div>`
+        }
+      </div>
+          ${
+            invoiceStage === 'DELIVERY' || invoice.invoice_stage === 'DELIVERY'
+              ? ''
+              : `<div class="text-container">
+                <p style="font-size: 12px; color: #999; margin: 0;">
+                  Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum
+                  has been the industry's standard dummy text ever since the 1500s.
+                </p>
+              </div>
+              <div class="signature-container">
+                <div>
+                  <p class="signature-line">
+                    Customer Signature
+                  </p>
+                </div>
+                <div>
+                  <p class="signature-line">
+                    For Arabian Auto Equipments and Parts Trading (FZC)
+                  </p>
+                </div>
+              </div>`
+          }
         </div>
       </body>
       </html>
       `;
 
-      await footerPage.setContent(footerHtml, { waitUntil: 'networkidle0' });
+      // Replace placeholders with actual values
+      const processedFooterHtml = footerHtml
+        .replace('{{subtotal}}', subtotal)
+        .replace('{{taxType}}', taxType)
+        .replace('{{taxAmount}}', taxAmount)
+        .replace('{{discount}}', discount)
+        .replace('{{total}}', total);
+
+      await footerPage.setContent(processedFooterHtml, { waitUntil: 'networkidle0' });
 
       // Generate just the footer PDF
       const footerPdfBuffer = await footerPage.pdf({

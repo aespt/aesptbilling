@@ -1,5 +1,7 @@
 import * as dotenv from 'dotenv';
 import postgres from 'postgres';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Load environment variables
 dotenv.config();
@@ -9,6 +11,26 @@ const connectionString = 'postgres://postgres:postgres@localhost:5432/postgres';
 
 async function main() {
   console.log('🔄 Performing complete database reset and migration fix...');
+
+  // Clean up migration files
+  try {
+    console.log('🔄 Deleting migration metadata...');
+    const journalPath = path.join(process.cwd(), 'drizzle', 'migrations', 'meta', '_journal.json');
+
+    if (fs.existsSync(journalPath)) {
+      // Create a clean journal file
+      const cleanJournal = {
+        version: '7',
+        dialect: 'postgresql',
+        entries: [],
+      };
+
+      fs.writeFileSync(journalPath, JSON.stringify(cleanJournal, null, 2));
+      console.log('✅ Reset migration journal file');
+    }
+  } catch (error) {
+    console.error('❌ Error cleaning up migration files:', error);
+  }
 
   // Connect to postgres database to perform operations
   const client = postgres(connectionString, {
@@ -51,7 +73,7 @@ async function main() {
     console.log('🎉 Complete database reset successful');
     console.log('');
     console.log('Now run:');
-    console.log('yarn db:migrate');
+    console.log('npx drizzle-kit push');
   } catch (error) {
     console.error('❌ Error during complete reset:', error);
     process.exit(1);

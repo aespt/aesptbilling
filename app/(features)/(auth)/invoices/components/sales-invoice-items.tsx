@@ -12,7 +12,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 import AddProduct from '@/app/(features)/(auth)/products/components/add-product';
 import Sidepanel from '@/app/shared/components/sidepanel';
@@ -36,10 +36,17 @@ export default function SalesInvoiceItems({
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductPanelOpen, setIsProductPanelOpen] = useState(false);
+  const productsLoaded = useRef(false);
 
-  // Fetch products on component mount
+  // Fetch products only once
   useEffect(() => {
     const fetchProducts = async () => {
+      // Skip if products already loaded
+      if (productsLoaded.current && products.length > 0) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         // This would be replaced with your actual API
         const response = await fetch('/api/products');
@@ -48,6 +55,7 @@ export default function SalesInvoiceItems({
         }
         const data = await response.json();
         setProducts(data.products || []);
+        productsLoaded.current = true;
       } catch (error) {
         console.error('Error fetching products:', error);
         // For now, use mock data
@@ -58,7 +66,7 @@ export default function SalesInvoiceItems({
     };
 
     fetchProducts();
-  }, []);
+  }, [products.length]);
 
   // Add new invoice item
   const addInvoiceItem = () => {
@@ -185,28 +193,41 @@ export default function SalesInvoiceItems({
   };
 
   // Handle product added
-  const handleProductAdded = (productName: string) => {
+  const handleProductAdded = (productName: string, newProduct?: Product) => {
     setIsProductPanelOpen(false);
 
     // Refresh products list
-    fetch('/api/products')
-      .then(response => response.json())
-      .then(data => {
-        setProducts(data.products || []);
+    if (newProduct) {
+      // If we have the new product data, add it directly to state without fetching
+      setProducts(prevProducts => [...prevProducts, newProduct]);
 
-        // Find the newly added product and select it in the first empty item
-        const newProduct = data.products.find((p: Product) => p.name === productName);
-        if (newProduct) {
-          // Find the first item without a product selected
-          const emptyItem = invoiceItems.find(item => !item.product_id);
-          if (emptyItem) {
-            handleProductChange(emptyItem.id, newProduct);
+      // Find the first item without a product selected
+      const emptyItem = invoiceItems.find(item => !item.product_id);
+      if (emptyItem) {
+        handleProductChange(emptyItem.id, newProduct);
+      }
+    } else {
+      // Fallback to API call if we don't have the new product data
+      fetch('/api/products')
+        .then(response => response.json())
+        .then(data => {
+          setProducts(data.products || []);
+          productsLoaded.current = true;
+
+          // Find the newly added product and select it in the first empty item
+          const addedProduct = data.products.find((p: Product) => p.name === productName);
+          if (addedProduct) {
+            // Find the first item without a product selected
+            const emptyItem = invoiceItems.find(item => !item.product_id);
+            if (emptyItem) {
+              handleProductChange(emptyItem.id, addedProduct);
+            }
           }
-        }
-      })
-      .catch(error => {
-        console.error('Error refreshing products:', error);
-      });
+        })
+        .catch(error => {
+          console.error('Error refreshing products:', error);
+        });
+    }
   };
 
   return (

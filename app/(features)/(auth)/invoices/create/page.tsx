@@ -11,6 +11,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+import FullSpinner from '@/app/shared/components/full-spinner';
 import PageHeader from '@/app/shared/components/page-header';
 import Snackbar from '@/app/shared/components/snackbar';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
@@ -42,6 +43,12 @@ export default function CreateInvoicePage() {
   const [selectedSalesman, setSelectedSalesman] = useState<Salesman | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<number | null>(null);
+
+  // Cache for customers and salesmen to avoid unnecessary API calls
+  const [customersCache, setCustomersCache] = useState<Record<number, Customer>>({});
+  const [salesmenCache, setSalesmenCache] = useState<Record<number, Salesman>>({});
+  const [hasLoadedCustomers, setHasLoadedCustomers] = useState(false);
+  const [hasLoadedSalesmen, setHasLoadedSalesmen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<InvoiceFormData>({
@@ -95,6 +102,121 @@ export default function CreateInvoicePage() {
   // Invoice stage
   const [invoiceStage, setInvoiceStage] = useState<'SALE' | 'QUOTATION' | 'PROFORMA'>('SALE');
 
+  // Function to fetch and cache customers with proper loading flags
+  const fetchCustomers = useCallback(
+    async (forceRefresh = false) => {
+      // Return cached data if already loaded and not forcing refresh
+      if (hasLoadedCustomers && !forceRefresh) {
+        return customersCache;
+      }
+
+      // Skip if already loading
+      if (isLoadingInvoice) {
+        return customersCache;
+      }
+
+      try {
+        // Mark as loading
+        setHasLoadedCustomers(true);
+
+        const response = await fetch('/api/dropdown/customers');
+        if (response.ok) {
+          const data = await response.json();
+          const customers = data.customers || [];
+
+          // Build cache object
+          const cache: Record<number, Customer> = {};
+          customers.forEach((customer: Customer) => {
+            cache[customer.id] = customer;
+          });
+
+          setCustomersCache(cache);
+          return cache;
+        }
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        // Reset the loading state if there was an error
+        setHasLoadedCustomers(false);
+      }
+
+      return customersCache;
+    },
+    [customersCache, hasLoadedCustomers, isLoadingInvoice]
+  );
+
+  // Function to fetch and cache salesmen with proper loading flags
+  const fetchSalesmen = useCallback(
+    async (forceRefresh = false) => {
+      // Return cached data if already loaded and not forcing refresh
+      if (hasLoadedSalesmen && !forceRefresh) {
+        return salesmenCache;
+      }
+
+      // Skip if already loading
+      if (isLoadingInvoice) {
+        return salesmenCache;
+      }
+
+      try {
+        // Mark as loading
+        setHasLoadedSalesmen(true);
+
+        const response = await fetch('/api/dropdown/salesmen');
+        if (response.ok) {
+          const data = await response.json();
+          const salesmen = data.salesmen || [];
+
+          // Build cache object
+          const cache: Record<number, Salesman> = {};
+          salesmen.forEach((salesman: Salesman) => {
+            cache[salesman.id] = salesman;
+          });
+
+          setSalesmenCache(cache);
+          return cache;
+        }
+      } catch (error) {
+        console.error('Error fetching salesmen:', error);
+        // Reset the loading state if there was an error
+        setHasLoadedSalesmen(false);
+      }
+
+      return salesmenCache;
+    },
+    [salesmenCache, hasLoadedSalesmen, isLoadingInvoice]
+  );
+
+  // Load all dropdown data on first render only, with URL check
+  useEffect(() => {
+    // Don't fetch if we're in loading state
+    if (isLoadingInvoice) {
+      return;
+    }
+
+    // Check if we have an ID in the URL
+    const id = searchParams.get('id');
+
+    // If we have an ID but haven't loaded the invoice yet, the loadInvoice function will handle data fetching
+    if (id) {
+      return;
+    }
+
+    // Fetch data only once and only if not already loading data
+    if (!hasLoadedCustomers && !hasLoadedSalesmen) {
+      // Use a single Promise.all to load all data at once
+      Promise.all([fetchCustomers(), fetchSalesmen()]).catch(error => {
+        console.error('Error loading dropdown data:', error);
+      });
+    }
+  }, [
+    fetchCustomers,
+    fetchSalesmen,
+    hasLoadedCustomers,
+    hasLoadedSalesmen,
+    searchParams,
+    isLoadingInvoice,
+  ]);
+
   // Load invoice by ID
   const loadInvoice = useCallback(
     async (invoiceId: string) => {
@@ -108,7 +230,14 @@ export default function CreateInvoicePage() {
 
       setIsLoadingInvoice(true);
       try {
+        // Load the invoice first
         const result = await fetchInvoiceById(invoiceId);
+
+        // Once we have the invoice data, fetch dropdown data if needed
+        const [customersData, salesmenData] = await Promise.all([
+          fetchCustomers(),
+          fetchSalesmen(),
+        ]);
 
         if (result) {
           // Set edit mode and current invoice ID
@@ -116,7 +245,7 @@ export default function CreateInvoicePage() {
           setCurrentInvoiceId(Number(invoiceId));
 
           // Merge the loaded data with current formData to preserve defaults for any missing fields
-          setFormData((currentData: InvoiceFormData) => ({
+          setFormData(currentData => ({
             ...currentData,
             ...result.formData,
             // Ensure discount_type is the correct type
@@ -124,7 +253,7 @@ export default function CreateInvoicePage() {
           }));
 
           // Replace invoice items only if we got items
-          if (result.invoiceItems.length > 0) {
+          if (result.invoiceItems && result.invoiceItems.length > 0) {
             setInvoiceItems(result.invoiceItems);
           }
 
@@ -136,50 +265,23 @@ export default function CreateInvoicePage() {
             }));
           }
 
-          // Fetch customer details if customer_id is available
-          if (result.formData.customer_id) {
-            try {
-              const customerResponse = await fetch('/api/dropdown/customers');
-              if (customerResponse.ok) {
-                const customersData = await customerResponse.json();
-                const customer = customersData.customers.find(
-                  (c: Customer) => c.id === result.formData.customer_id
-                );
+          // Set customer data from cache if available
+          if (result.formData.customer_id && customersData[result.formData.customer_id]) {
+            const customer = customersData[result.formData.customer_id];
+            setSelectedCustomer(customer as Customer);
 
-                if (customer) {
-                  setSelectedCustomer(customer);
-
-                  // Update ship_to with customer's address if it's empty
-                  if (!result.formData.ship_to && customer.address) {
-                    setFormData((currentData: InvoiceFormData) => ({
-                      ...currentData,
-                      ship_to: customer.address,
-                    }));
-                  }
-                }
-              }
-            } catch (error) {
-              console.error('Error fetching customer details:', error);
+            // Update ship_to with customer's address if it's empty
+            if (!result.formData.ship_to && customer.address) {
+              setFormData(currentData => ({
+                ...currentData,
+                ship_to: customer.address || '',
+              }));
             }
           }
 
-          // Fetch salesman details if salesman_id is available
-          if (result.formData.salesman_id) {
-            try {
-              const salesmanResponse = await fetch('/api/dropdown/salesmen');
-              if (salesmanResponse.ok) {
-                const salesmenData = await salesmanResponse.json();
-                const salesman = salesmenData.salesmen.find(
-                  (s: Salesman) => s.id === result.formData.salesman_id
-                );
-
-                if (salesman) {
-                  setSelectedSalesman(salesman);
-                }
-              }
-            } catch (error) {
-              console.error('Error fetching salesman details:', error);
-            }
+          // Set salesman data from cache if available
+          if (result.formData.salesman_id && salesmenData[result.formData.salesman_id]) {
+            setSelectedSalesman(salesmenData[result.formData.salesman_id] as Salesman);
           }
 
           showSnackbar('Invoice loaded successfully', 'success');
@@ -193,14 +295,14 @@ export default function CreateInvoicePage() {
         setIsLoadingInvoice(false);
       }
     },
-    [showSnackbar, currentInvoiceId, isLoadingInvoice]
+    [showSnackbar, currentInvoiceId, isLoadingInvoice, fetchCustomers, fetchSalesmen, setFormData]
   );
 
-  // Check for invoice ID in URL query params on component mount
+  // Check for invoice ID in URL query params on component mount only once
   useEffect(() => {
     // Check for any query param that could be an invoice ID
     const id = searchParams.get('id');
-    if (id && id !== invoiceIdLoaded.current) {
+    if (id && id !== invoiceIdLoaded.current && !isLoadingInvoice) {
       invoiceIdLoaded.current = id;
       loadInvoice(id);
     }
@@ -209,7 +311,7 @@ export default function CreateInvoicePage() {
     return () => {
       invoiceIdLoaded.current = null;
     };
-  }, [searchParams, loadInvoice]);
+  }, [searchParams, loadInvoice, isLoadingInvoice]);
 
   // Helper to convert item types for component compatibility
   const adaptInvoiceItemsForSummary = (items: InvoiceItem[]) => {
@@ -427,6 +529,9 @@ export default function CreateInvoicePage() {
         isEditMode ? 'Invoice updated successfully' : 'Invoice created successfully',
         'success'
       );
+      setTimeout(() => {
+        router.push('/invoices');
+      }, 1500);
     } catch (error: unknown) {
       console.error(isEditMode ? 'Error updating invoice:' : 'Error creating invoice:', error);
       showSnackbar(error instanceof Error ? error.message : 'Failed to process invoice', 'error');
@@ -436,112 +541,117 @@ export default function CreateInvoicePage() {
   };
 
   return (
-    <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
-      <div className="mx-auto max-w-screen-2xl">
-        <PageHeader
-          heading={isEditMode ? 'Edit Sales Invoice' : 'Create Sales Invoice'}
-          buttonText="Back to Invoices"
-          onButtonClick={() => router.push('/invoices')}
-          buttonVariant="secondary"
-        />
+    <>
+      {(isSubmitting || isLoadingInvoice) && <FullSpinner />}
+      <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
+        <div className="mx-auto max-w-screen-2xl">
+          <PageHeader
+            heading={isEditMode ? 'Edit Sales Invoice' : 'Create Sales Invoice'}
+            buttonText="Back to Invoices"
+            onButtonClick={() => router.push('/invoices')}
+            buttonVariant="secondary"
+          />
 
-        {/* Invoice Search and Stage Selection */}
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="w-full">
-            <InvoiceSearch
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onOpenModal={() => setIsModalOpen(true)}
+          {/* Invoice Search and Stage Selection */}
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="w-full">
+              <InvoiceSearch
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onOpenModal={() => setIsModalOpen(true)}
+              />
+            </div>
+
+            <div className="w-full">
+              <FormControl fullWidth variant="outlined" size="small">
+                <InputLabel id="invoice-stage-label">Invoice Type</InputLabel>
+                <Select
+                  labelId="invoice-stage-label"
+                  id="invoice-stage"
+                  value={invoiceStage}
+                  onChange={handleInvoiceStageChange}
+                  label="Invoice Type"
+                >
+                  <MenuItem value="SALE">Tax Invoice</MenuItem>
+                  <MenuItem value="QUOTATION">Quotation</MenuItem>
+                  <MenuItem value="PROFORMA">Proforma Invoice</MenuItem>
+                </Select>
+              </FormControl>
+            </div>
+          </div>
+
+          <form onSubmit={e => handleSubmit(e, false)}>
+            <SalesInvoiceDetails
+              formData={formData}
+              setFormData={setFormData}
+              errors={errors}
+              setErrors={setErrors}
+              selectedCustomer={selectedCustomer}
+              setSelectedCustomer={customer => setSelectedCustomer(customer)}
+              selectedSalesman={selectedSalesman}
+              setSelectedSalesman={salesman => setSelectedSalesman(salesman)}
+              customers={Object.values(customersCache)}
+              salesmen={Object.values(salesmenCache)}
             />
-          </div>
 
-          <div className="w-full">
-            <FormControl fullWidth variant="outlined" size="small">
-              <InputLabel id="invoice-stage-label">Invoice Type</InputLabel>
-              <Select
-                labelId="invoice-stage-label"
-                id="invoice-stage"
-                value={invoiceStage}
-                onChange={handleInvoiceStageChange}
-                label="Invoice Type"
+            <SalesTaxDiscount
+              formData={formData}
+              setFormData={setFormData}
+              errors={errors}
+              setErrors={setErrors}
+              onTaxDiscountChange={() => setInvoiceItems([...invoiceItems])}
+              invoiceSubtotal={invoiceItems.reduce((sum, item) => sum + (item.total || 0), 0)}
+            />
+
+            <SalesInvoiceItems
+              invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
+              setInvoiceItems={setInvoiceItems}
+              errors={errors}
+              setErrors={setErrors}
+            />
+
+            <SalesInvoiceSummary
+              invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
+              formData={formData}
+            />
+
+            {/* Show Payment Details only for Sales Invoices */}
+            {invoiceStage === 'SALE' && (
+              <PaymentDetails paymentData={paymentData} setPaymentData={setPaymentData} />
+            )}
+
+            <div className="mt-6 flex justify-end space-x-4">
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={e => handleSubmit(e, true)}
+                disabled={isSubmitting || isLoadingInvoice}
               >
-                <MenuItem value="SALE">Tax Invoice</MenuItem>
-                <MenuItem value="QUOTATION">Quotation</MenuItem>
-                <MenuItem value="PROFORMA">Proforma Invoice</MenuItem>
-              </Select>
-            </FormControl>
-          </div>
+                Save as Draft
+              </Button>
+
+              <Button
+                variant="contained"
+                type="submit"
+                disabled={isSubmitting || isLoadingInvoice}
+                className="bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-300 hover:scale-105"
+              >
+                {isEditMode ? 'Update Invoice' : 'Create Invoice'}
+              </Button>
+            </div>
+          </form>
         </div>
 
-        <form onSubmit={e => handleSubmit(e, false)}>
-          <SalesInvoiceDetails
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            selectedCustomer={selectedCustomer}
-            setSelectedCustomer={customer => setSelectedCustomer(customer)}
-            selectedSalesman={selectedSalesman}
-            setSelectedSalesman={salesman => setSelectedSalesman(salesman)}
-          />
+        {/* Previous Invoices Modal */}
+        <PreviousInvoicesModal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSelectInvoice={loadInvoice}
+        />
 
-          <SalesTaxDiscount
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            onTaxDiscountChange={() => setInvoiceItems([...invoiceItems])}
-            invoiceSubtotal={invoiceItems.reduce((sum, item) => sum + (item.total || 0), 0)}
-          />
-
-          <SalesInvoiceItems
-            invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
-            setInvoiceItems={setInvoiceItems}
-            errors={errors}
-            setErrors={setErrors}
-          />
-
-          <SalesInvoiceSummary
-            invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
-            formData={formData}
-          />
-
-          {/* Show Payment Details only for Sales Invoices */}
-          {invoiceStage === 'SALE' && (
-            <PaymentDetails paymentData={paymentData} setPaymentData={setPaymentData} />
-          )}
-
-          <div className="mt-6 flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outlined"
-              onClick={e => handleSubmit(e, true)}
-              disabled={isSubmitting || isLoadingInvoice}
-            >
-              Save as Draft
-            </Button>
-
-            <Button
-              variant="contained"
-              type="submit"
-              disabled={isSubmitting || isLoadingInvoice}
-              className="bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-300 hover:scale-105"
-            >
-              {isEditMode ? 'Update Invoice' : 'Create Invoice'}
-            </Button>
-          </div>
-        </form>
+        {/* Snackbar for notifications */}
+        <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
       </div>
-
-      {/* Previous Invoices Modal */}
-      <PreviousInvoicesModal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSelectInvoice={loadInvoice}
-      />
-
-      {/* Snackbar for notifications */}
-      <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
-    </div>
+    </>
   );
 }

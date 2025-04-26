@@ -281,7 +281,7 @@ export default function InvoicesListPage() {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
     // Fetch invoices whenever the tab changes to update the filtered data
-    fetchInvoices();
+    // fetchInvoices(); // This is redundant as changing activeTab will trigger the useEffect with fetchInvoices
   };
 
   const handlePageChange = (newPage: number) => {
@@ -384,8 +384,11 @@ export default function InvoicesListPage() {
 
     // Use the provided invoiceId or fall back to selectedInvoice.id
     const id = invoiceId || selectedInvoice.id;
-
-    window.open(`/invoices/pdf/${id}?invoiceStage=${documentType}`, '_blank');
+    if (documentType === '') {
+      window.open(`/invoices/pdf/${id}`, '_blank');
+    } else {
+      window.open(`/invoices/pdf/${id}?invoiceStage=${documentType}`, '_blank');
+    }
 
     handleActionClose();
   };
@@ -608,12 +611,6 @@ export default function InvoicesListPage() {
           {activeTab === 2 ? (
             // Actions for Sales tab
             [
-              <MenuItem key="sale" onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
-                <ListItemIcon>
-                  <ReceiptIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Update Sale</ListItemText>
-              </MenuItem>,
               <MenuItem
                 key="delivery"
                 onClick={() => handleGenerateDocument('DELIVERY', selectedInvoice?.id)}
@@ -623,29 +620,67 @@ export default function InvoicesListPage() {
                 </ListItemIcon>
                 <ListItemText>Generate Delivery Note</ListItemText>
               </MenuItem>,
+              <MenuItem onClick={() => handleGenerateDocument('QUOTATION', selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <FileDownloadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Download Quotation</ListItemText>
+              </MenuItem>,
+              <MenuItem onClick={() => handleGenerateDocument('PROFORMA', selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <FileDownloadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Download Proforma</ListItemText>
+              </MenuItem>,
+              <MenuItem onClick={() => handleGenerateDocument('SALE', selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <FileDownloadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Download Invoice</ListItemText>
+              </MenuItem>,
             ]
           ) : activeTab === 0 ? (
             // Actions for Quotation tab
-            [
+            <>
               <MenuItem key="sale" onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
                 <ListItemIcon>
                   <ReceiptIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText>Update Sale</ListItemText>
-              </MenuItem>,
-            ]
+              </MenuItem>
+              <MenuItem onClick={() => handleGenerateDocument('QUOTATION', selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <FileDownloadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Download Quotation</ListItemText>
+              </MenuItem>
+            </>
           ) : (
             // Actions for Proforma tab
-            <MenuItem onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
-              <ListItemIcon>
-                <ReceiptIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Update Sale</ListItemText>
-            </MenuItem>
+            <>
+              <MenuItem onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <ReceiptIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Update Sale</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleGenerateDocument('QUOTATION', selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <FileDownloadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Download Quotation</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleGenerateDocument('PROFORMA', selectedInvoice?.id)}>
+                <ListItemIcon>
+                  <FileDownloadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Download Proforma</ListItemText>
+              </MenuItem>
+            </>
           )}
         </Menu>
         <Sidepanel isOpen={filterPanelOpen} onClose={() => setFilterPanelOpen(false)} size="small">
-          <InvoiceFilters 
+          <InvoiceFilters
             tempFilters={tempFilters}
             handleFilterChange={handleFilterChange}
             handleApplyFilters={handleApplyFilters}

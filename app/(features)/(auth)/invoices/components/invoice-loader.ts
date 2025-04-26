@@ -27,32 +27,32 @@ interface InvoiceItemData {
  */
 export async function fetchInvoiceById(id: string) {
   try {
-    // Fetch the invoice details
-    const invoiceResponse = await fetch(`/api/invoices/${id}`);
+    // Fetch all data in parallel - invoice details, items and payment data
+    const [invoiceResponse, itemsResponse] = await Promise.all([
+      fetch(`/api/invoices/${id}`),
+      fetch(`/api/invoices/${id}/items`),
+    ]);
 
     if (!invoiceResponse.ok) {
       throw new Error('Failed to fetch invoice');
     }
 
-    const invoiceData = await invoiceResponse.json();
+    if (!itemsResponse.ok) {
+      throw new Error('Failed to fetch invoice items');
+    }
+
+    const [invoiceData, itemsData] = await Promise.all([
+      invoiceResponse.json(),
+      itemsResponse.json(),
+    ]);
+
     const invoice = invoiceData.data;
 
     if (!invoice) {
       throw new Error('Invoice not found');
     }
 
-    // Fetch the invoice items
-    const itemsResponse = await fetch(`/api/invoices/${id}/items`);
-
-    if (!itemsResponse.ok) {
-      throw new Error('Failed to fetch invoice items');
-    }
-
-    const itemsData = await itemsResponse.json();
-
-    console.log('itemsData', itemsData);
-
-    // Fetch payment details if invoice stage is SALE
+    // Fetch payment details only if invoice stage is SALE (this can't be parallelized until we know the invoice stage)
     let paymentData: PaymentData | null = null;
     if (invoice.invoice_stage === 'SALE') {
       try {

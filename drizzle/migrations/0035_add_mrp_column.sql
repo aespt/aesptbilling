@@ -1,1 +1,0 @@
-ALTER TABLE "invoice_items" ADD COLUMN IF NOT EXISTS "mrp" numeric(10, 2) NOT NULL DEFAULT 0; 

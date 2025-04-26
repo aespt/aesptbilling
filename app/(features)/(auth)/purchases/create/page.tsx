@@ -96,14 +96,15 @@ export default function CreatePurchasePage() {
     const subtotal = purchaseItems.reduce((sum, item) => sum + (item.total || 0), 0);
 
     // Get discount as direct value (no longer percentage)
-    const discountValue = typeof formData.discount_rate === 'string' ? 0 : Number(formData.discount_rate) || 0;
+    const discountValue =
+      typeof formData.discount_rate === 'string' ? 0 : Number(formData.discount_rate) || 0;
     // Ensure discount doesn't exceed subtotal
     const discountAmount = Math.min(discountValue, subtotal);
 
     // Calculate tax using tax_rate as a direct value (no longer percentage)
     const taxableAmount = subtotal - discountAmount;
     const taxValue = typeof formData.tax_rate === 'string' ? 0 : Number(formData.tax_rate) || 0;
-    
+
     // Apply tax as absolute value
     const taxAmount = taxValue;
 
@@ -162,7 +163,7 @@ export default function CreatePurchasePage() {
       }
 
       showSnackbar('Purchase created successfully', 'success');
-      
+
       // Redirect back to purchases list
       setTimeout(() => {
         router.push('/purchases');
@@ -176,61 +177,62 @@ export default function CreatePurchasePage() {
   };
 
   return (
-    <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
-      <div className="mx-auto max-w-screen-2xl">
-        <PageHeader
-          heading="Create Purchase"
-          buttonText="Back to Purchases"
-          onButtonClick={() => router.push('/purchases')}
-          buttonVariant="secondary"
-        />
-
-        <form onSubmit={e => handleSubmit(e, false)}>
-          <PurchaseDetails
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-          />
-
-          <PurchaseItems
-            purchaseItems={adaptPurchaseItemsForSummary(purchaseItems)}
-            setPurchaseItems={setPurchaseItems}
-            errors={errors}
-            setErrors={setErrors}
-          />
-
-          <PurchaseTaxDiscount
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            onTaxDiscountChange={handleTaxDiscountChange}
-          />
-
-          <PurchaseSummary
-            purchaseItems={adaptPurchaseItemsForSummary(purchaseItems)}
-            formData={formData}
-          />
-
-          <div className="my-6 flex justify-end space-x-4">
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              className="bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-300 hover:scale-105"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Purchase'}
-            </Button>
-          </div>
-        </form>
-        <Snackbar
-          open={isOpen}
-          message={message}
-          onClose={hideSnackbar}
-        />
+    <>
+      <div className="flex h-64 items-center justify-center">
+        <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
       </div>
-    </div>
+      <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
+        <div className="mx-auto max-w-screen-2xl">
+          <PageHeader
+            heading="Create Purchase"
+            buttonText="Back to Purchases"
+            onButtonClick={() => router.push('/purchases')}
+            buttonVariant="secondary"
+          />
+
+          <form onSubmit={e => handleSubmit(e, false)}>
+            <PurchaseDetails
+              formData={formData}
+              setFormData={setFormData}
+              errors={errors}
+              setErrors={setErrors}
+            />
+
+            <PurchaseItems
+              purchaseItems={adaptPurchaseItemsForSummary(purchaseItems)}
+              setPurchaseItems={setPurchaseItems}
+              errors={errors}
+              setErrors={setErrors}
+            />
+
+            <PurchaseTaxDiscount
+              formData={formData}
+              setFormData={setFormData}
+              errors={errors}
+              setErrors={setErrors}
+              onTaxDiscountChange={handleTaxDiscountChange}
+            />
+
+            <PurchaseSummary
+              purchaseItems={adaptPurchaseItemsForSummary(purchaseItems)}
+              formData={formData}
+            />
+
+            <div className="my-6 flex justify-end space-x-4">
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                className="bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-300 hover:scale-105"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Creating...' : 'Create Purchase'}
+              </Button>
+            </div>
+          </form>
+          <Snackbar open={isOpen} message={message} onClose={hideSnackbar} />
+        </div>
+      </div>
+    </>
   );
-} 
+}
