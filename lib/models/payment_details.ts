@@ -17,8 +17,8 @@ export const PaymentDetailsTable = pgTable('payment_details', {
   invoice_id: integer('invoice_id')
     .notNull()
     .references(() => InvoicesTable.id),
-  payment_method: paymentMethodEnum('payment_method').default('CASH'),
-  payment_status: paymentStatusEnum('payment_status').default('UNPAID'),
+  payment_method: text('payment_method').default('CASH'),
+  payment_status: text('payment_status').default('UNPAID'),
   payment_date: timestamp('payment_date').defaultNow(),
   reference_number: varchar('reference_number', { length: 100 }),
   payment_notes: text('payment_notes'),

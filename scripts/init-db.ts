@@ -21,9 +21,61 @@ const migrationClient = postgres(connectionString, {
 });
 
 async function main() {
-  console.log('🔄 Running migrations...');
+  console.log('🔄 Checking drizzle schema status...');
 
   try {
+    // Check if drizzle schema exists and create it if needed
+    const schemaExists = await migrationClient`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_namespace WHERE nspname = 'drizzle'
+      )
+    `;
+
+    if (schemaExists[0].exists) {
+      console.log('ℹ️ Drizzle schema already exists');
+
+      // Check if __drizzle_migrations table exists
+      const migrationTableExists = await migrationClient`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_schema = 'drizzle' 
+          AND table_name = '__drizzle_migrations'
+        )
+      `;
+
+      if (migrationTableExists[0].exists) {
+        // Get count of migrations in the database
+        const migrationsCount = await migrationClient`
+          SELECT COUNT(*) FROM drizzle.__drizzle_migrations
+        `;
+
+        console.log(`ℹ️ Found ${migrationsCount[0].count} migrations in the database`);
+
+        // If migrations already exist, don't recreate schema
+        if (parseInt(migrationsCount[0].count) > 0) {
+          console.log('ℹ️ Running migrations with existing schema...');
+        }
+      }
+    } else {
+      console.log('ℹ️ Drizzle schema does not exist, creating it...');
+
+      // Create the drizzle schema
+      await migrationClient`CREATE SCHEMA IF NOT EXISTS drizzle`;
+
+      // Create the migrations table
+      await migrationClient`
+        CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
+          id SERIAL PRIMARY KEY,
+          hash text NOT NULL,
+          created_at timestamp with time zone DEFAULT now() NOT NULL
+        )
+      `;
+
+      console.log('✅ Created drizzle schema and migrations table');
+    }
+
+    console.log('🔄 Running migrations...');
+
     // Run migrations
     await migrate(drizzle(migrationClient), { migrationsFolder: 'drizzle/migrations' });
     console.log('✅ Migrations completed successfully');

@@ -5,183 +5,232 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1741445516145,
+      "when": "2024-01-01 00:00:00",
       "tag": "0000_peaceful_karnak",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1741497401201,
+      "when": "2024-01-02 00:00:00",
       "tag": "0003_acoustic_eternals",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "7",
-      "when": 1741497590753,
+      "when": "2024-01-03 00:00:00",
       "tag": "0004_faulty_amazoness",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "7",
-      "when": 1741497913963,
+      "when": "2024-01-04 00:00:00",
       "tag": "0005_spicy_the_fallen",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "7",
-      "when": 1741498114595,
+      "when": "2024-01-05 00:00:00",
       "tag": "0006_secret_zodiak",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1741509846535,
+      "when": "2024-01-06 00:00:00",
       "tag": "0007_slim_human_robot",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "7",
-      "when": 1741791251309,
+      "when": "2024-01-07 00:00:00",
       "tag": "0008_exotic_magneto",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1741795878131,
+      "when": "2024-01-08 00:00:00",
       "tag": "0009_sweet_blade",
       "breakpoints": true
     },
     {
       "idx": 10,
       "version": "7",
-      "when": 1742724504702,
+      "when": "2024-01-09 00:00:00",
       "tag": "0010_normal_valeria_richards",
       "breakpoints": true
     },
     {
       "idx": 11,
       "version": "7",
-      "when": 1742725686686,
+      "when": "2024-01-10 00:00:00",
       "tag": "0011_fluffy_bug",
       "breakpoints": true
     },
     {
       "idx": 12,
       "version": "7",
-      "when": 1742728205112,
+      "when": "2024-01-11 00:00:00",
       "tag": "0012_wise_zaran",
       "breakpoints": true
     },
     {
       "idx": 13,
       "version": "7",
-      "when": 1743387042308,
+      "when": "2024-01-12 00:00:00",
       "tag": "0013_friendly_sphinx",
       "breakpoints": true
     },
     {
       "idx": 14,
       "version": "7",
-      "when": 1743498526650,
+      "when": "2024-01-13 00:00:00",
       "tag": "0014_milky_madame_masque",
       "breakpoints": true
     },
     {
       "idx": 15,
       "version": "7",
-      "when": 1743498743209,
+      "when": "2024-01-14 00:00:00",
       "tag": "0015_magenta_junta",
       "breakpoints": true
     },
     {
       "idx": 16,
       "version": "7",
-      "when": 1743570530212,
+      "when": "2024-01-15 00:00:00",
       "tag": "0016_panoramic_marrow",
       "breakpoints": true
     },
     {
       "idx": 17,
       "version": "7",
-      "when": 1743591812181,
+      "when": "2024-01-16 00:00:00",
       "tag": "0017_many_the_hunter",
       "breakpoints": true
     },
     {
       "idx": 18,
       "version": "7",
-      "when": 1743611930405,
+      "when": "2024-01-17 00:00:00",
       "tag": "0018_fix_user_columns",
       "breakpoints": true
     },
     {
       "idx": 19,
       "version": "7",
-      "when": 1743611930406,
+      "when": "2024-01-18 00:00:00",
       "tag": "0019_add_discount_column",
       "breakpoints": true
     },
     {
       "idx": 21,
       "version": "7",
-      "when": 1743611930408,
+      "when": "2024-01-20 00:00:00",
       "tag": "0021_remove_user_id",
       "breakpoints": true
     },
     {
       "idx": 22,
       "version": "7",
-      "when": 1744264382845,
+      "when": "2024-01-21 00:00:00",
       "tag": "0022_tearful_madame_web",
+      "breakpoints": true
+    },
+    {
+      "idx": 22.5,
+      "version": "7",
+      "when": "2024-01-21 01:00:00",
+      "tag": "0022a_salty_hulk",
       "breakpoints": true
     },
     {
       "idx": 23,
       "version": "7",
-      "when": 1744274957300,
+      "when": "2024-01-22 00:00:00",
       "tag": "0023_wet_zarda",
       "breakpoints": true
     },
     {
       "idx": 24,
       "version": "7",
-      "when": 1744728764949,
+      "when": "2024-01-23 00:00:00",
       "tag": "0024_lucky_captain_universe",
       "breakpoints": true
     },
     {
       "idx": 25,
       "version": "7",
-      "when": 1745036443945,
+      "when": "2024-01-24 00:00:00",
       "tag": "0025_tricky_blonde_phantom",
       "breakpoints": true
     },
     {
       "idx": 26,
       "version": "7",
-      "when": 1744952177972,
-      "tag": "0024_familiar_mysterio",
+      "when": "2024-01-25 00:00:00",
+      "tag": "0026_familiar_mysterio",
       "breakpoints": true
     },
     {
       "idx": 27,
       "version": "7",
-      "when": 1745050475873,
+      "when": "2024-01-26 00:00:00",
       "tag": "0027_grey_blue_marvel",
       "breakpoints": true
     },
     {
       "idx": 28,
       "version": "7",
-      "when": 1745150000000,
+      "when": "2024-01-27 00:00:00",
       "tag": "0028_fix_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": "2024-01-28 00:00:00",
+      "tag": "0029_petite_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": "2024-01-29 00:00:00",
+      "tag": "0030_busy_spot",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": "2024-01-30 00:00:00",
+      "tag": "0031_add_discount_percentage",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": "2024-01-31 00:00:00",
+      "tag": "0032_add_discount_rate",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1745341875570,
+      "tag": "0033_noisy_pandemic",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1745343269012,
+      "tag": "0034_outgoing_metal_master",
       "breakpoints": true
     }
   ]

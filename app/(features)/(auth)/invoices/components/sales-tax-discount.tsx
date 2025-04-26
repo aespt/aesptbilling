@@ -13,7 +13,8 @@ import {
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 
-import type { FormErrors, InvoiceFormData } from '@/lib/types';
+import type { FormErrors } from '@/lib/types';
+import type { InvoiceFormData } from '@/lib/types/invoice';
 
 interface VatRate {
   id: number;
@@ -27,15 +28,18 @@ interface SalesTaxDiscountProps {
   errors: FormErrors;
   setErrors: (errors: FormErrors) => void;
   onTaxDiscountChange: () => void;
+  invoiceSubtotal?: number;
 }
 
 export default function SalesTaxDiscount({
   formData,
   setFormData,
   onTaxDiscountChange,
+  invoiceSubtotal = 0,
 }: SalesTaxDiscountProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [defaultVatRate, setDefaultVatRate] = useState<VatRate | null>(null);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
 
   // Fetch VAT rates on component mount
   useEffect(() => {
@@ -117,6 +121,8 @@ export default function SalesTaxDiscount({
       discount_value: '',
     }));
 
+    // Reset discount amount when type changes
+    setDiscountAmount(0);
     onTaxDiscountChange();
   };
 
@@ -130,6 +136,7 @@ export default function SalesTaxDiscount({
         ...prev,
         discount_value: '', // Store empty string to allow clearing the field
       }));
+      setDiscountAmount(0);
       onTaxDiscountChange();
       return;
     }
@@ -141,10 +148,27 @@ export default function SalesTaxDiscount({
       return;
     }
 
-    setFormData((prev: InvoiceFormData) => ({
-      ...prev,
-      discount_value: isNaN(value) ? 0 : value,
-    }));
+    // Calculate the actual discount amount for percentage discount
+    if (formData.discount_type === 'PERCENTAGE') {
+      const calculatedAmount = (invoiceSubtotal * value) / 100;
+      setDiscountAmount(calculatedAmount);
+
+      // Store the percentage value separately for future reference
+      setFormData((prev: InvoiceFormData) => ({
+        ...prev,
+        discount_value: isNaN(value) ? 0 : value,
+        discount_percentage: isNaN(value) ? 0 : value, // Store the percentage value
+      }));
+    } else if (formData.discount_type === 'FIXED') {
+      setDiscountAmount(value);
+
+      // When using fixed discount, set discount_percentage to 0
+      setFormData((prev: InvoiceFormData) => ({
+        ...prev,
+        discount_value: isNaN(value) ? 0 : value,
+        discount_percentage: 0,
+      }));
+    }
 
     onTaxDiscountChange();
   };
@@ -288,6 +312,16 @@ export default function SalesTaxDiscount({
                     },
                   }}
                 />
+                {formData.discount_type === 'PERCENTAGE' && formData.discount_value !== '' && (
+                  <Typography variant="caption" className="mt-1 block text-gray-500">
+                    Discount Amount:{' '}
+                    {new Intl.NumberFormat('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }).format(discountAmount)}{' '}
+                    AED
+                  </Typography>
+                )}
               </div>
             )}
           </Box>

@@ -45,5 +45,6 @@ export interface InvoiceFormData {
   sgst_percentage: number;
   discount_type: DiscountType;
   discount_value: number | string;
+  discount_percentage?: number;
   [key: string]: string | number | Date | null | undefined;
 }

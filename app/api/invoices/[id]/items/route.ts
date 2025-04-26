@@ -30,6 +30,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid authentication token' }, { status: 401 });
     }
 
+    // Ensure userId is a valid number
+    const userId = typeof payload.userId === 'number' ? payload.userId : Number(payload.userId);
+
+    if (isNaN(userId) || userId <= 0) {
+      return NextResponse.json({ error: 'Invalid user ID in token' }, { status: 400 });
+    }
+
     const invoiceId = parseInt((await params).id);
 
     if (isNaN(invoiceId)) {
@@ -56,6 +63,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         quantity: InvoiceItemsTable.quantity,
         unit_price: InvoiceItemsTable.unit_price,
         total_price: InvoiceItemsTable.total_price,
+        mrp: InvoiceItemsTable.mrp,
       })
       .from(InvoiceItemsTable)
       .where(eq(InvoiceItemsTable.invoice_id, invoiceId));
@@ -84,7 +92,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             part_no: product?.partNo || '',
             product_name: product?.name || '',
             price: unitPrice,
-            mrp: unitPrice,
+            mrp: Number(item.mrp),
             rate: unitPrice,
             qty: item.quantity,
             total: totalPrice,
@@ -136,6 +144,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Invalid authentication token' }, { status: 401 });
     }
 
+    // Ensure userId is a valid number
+    const userId = typeof payload.userId === 'number' ? payload.userId : Number(payload.userId);
+
+    if (isNaN(userId) || userId <= 0) {
+      return NextResponse.json({ error: 'Invalid user ID in token' }, { status: 400 });
+    }
+
     const invoiceId = parseInt((await params).id);
 
     if (isNaN(invoiceId)) {
@@ -156,6 +171,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Parse request body
     const body = await request.json();
 
+    // Make sure body includes mrp, default to unit_price if not provided
+    if (!body.mrp && body.unit_price) {
+      body.mrp = body.unit_price;
+    }
+
     // Validate item data
     const validatedItem = CreateInvoiceItemSchema.parse({
       ...body,
@@ -173,8 +193,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         quantity: validatedItem.quantity,
         unit_price: validatedItem.unit_price.toString(),
         total_price: validatedItem.total_price.toString(),
-        created_by: payload.userId,
-        updated_by: payload.userId,
+        mrp: validatedItem.mrp.toString(),
+        created_by: userId,
+        updated_by: userId,
         created_at: new Date(),
         updated_at: new Date(),
       })

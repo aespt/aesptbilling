@@ -24,10 +24,21 @@ async function main() {
     await client.unsafe(`CREATE DATABASE aespt_db;`);
     console.log('✅ Created fresh database');
 
+    // Connect to the newly created database
+    const aesptClient = postgres('postgres://postgres:postgres@localhost:5432/aespt_db', {
+      max: 1,
+      ssl: false,
+    });
+
+    // Make sure no drizzle schema exists
+    await aesptClient.unsafe(`DROP SCHEMA IF EXISTS drizzle CASCADE;`);
+    console.log('✅ Cleaned up any existing drizzle schema');
+
+    await aesptClient.end();
+
     console.log('🎉 Database reset completed successfully');
     console.log('');
     console.log('Now run:');
-    console.log('yarn db:generate');
     console.log('yarn db:migrate');
   } catch (error) {
     console.error('❌ Error resetting database:', error);

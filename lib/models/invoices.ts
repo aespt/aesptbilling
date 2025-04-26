@@ -9,6 +9,9 @@ export const taxTypeEnum = pgEnum('tax_type', ['VAT', 'GST', 'NONE']);
 
 export const invoiceStageEnum = pgEnum('invoice_stage', ['SALE', 'PROFORMA', 'QUOTATION']);
 
+// Create an enum for discount types
+export const discountTypeEnum = pgEnum('discount_type', ['PERCENTAGE', 'FIXED', 'NONE']);
+
 export const InvoicesTable = pgTable('invoices', {
   id: serial('id').primaryKey(),
   invoice_number: varchar('invoice_number', { length: 50 }).notNull().unique(),
@@ -21,6 +24,8 @@ export const InvoicesTable = pgTable('invoices', {
   tax_rate: decimal('tax_rate', { precision: 5, scale: 2 }).default('0'),
   sub_total: decimal('sub_total', { precision: 10, scale: 2 }).notNull(),
   discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
+  discount_percentage: decimal('discount_percentage', { precision: 5, scale: 2 }).default('0'),
+  discount_type: discountTypeEnum('discount_type').default('NONE'),
   invoice_stage: invoiceStageEnum('invoice_stage').default('SALE'),
   profit: decimal('profit', { precision: 10, scale: 2 }).default('0'),
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
