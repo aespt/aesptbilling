@@ -93,7 +93,11 @@ interface Invoice {
     name: string;
     contact_number: string;
   };
+  discount?: string;
+  sub_total?: string;
   total: string;
+  taxable_amount?: string;
+  invoice_tax?: string;
 }
 
 interface SortConfig {
@@ -254,6 +258,16 @@ export default function InvoicesListPage() {
         }
 
         const data = await response.json();
+        if (data.invoices.length > 0) {
+          data.invoices.forEach((invoice: Invoice) => {
+            let taxableAmount = Number(invoice.sub_total);
+            if (Number(invoice?.discount) > 0) {
+              taxableAmount = Number(invoice.sub_total) - Number(invoice.discount);
+            }
+            invoice.invoice_tax = ((taxableAmount * Number(invoice.tax_rate)) / 100).toFixed(2);
+            invoice.taxable_amount = taxableAmount.toFixed(2);
+          });
+        }
 
         // Set filtered invoices directly from the API response
         setFilteredInvoices(data.invoices);
@@ -537,9 +551,14 @@ export default function InvoicesListPage() {
                       </TableSortLabel>
                     </TableCell>
                     <TableCell className="font-medium">Customer</TableCell>
-                    {activeTab === 2 && <TableCell className="font-medium">MOP</TableCell>}
                     <TableCell className="font-medium">Ship From</TableCell>
                     <TableCell className="font-medium">Ship To</TableCell>
+                    {activeTab === 2 && <TableCell className="font-medium">MOP</TableCell>}
+                    {activeTab === 2 && <TableCell className="font-medium">Gross Amount</TableCell>}
+                    {activeTab === 2 && <TableCell className="font-medium">Discount</TableCell>}
+                    {activeTab === 2 && (
+                      <TableCell className="font-medium">Taxable Amount</TableCell>
+                    )}
                     {activeTab === 2 && <TableCell className="font-medium">TAX</TableCell>}
                     <TableCell align="right" className="font-medium">
                       <TableSortLabel
@@ -576,12 +595,15 @@ export default function InvoicesListPage() {
                         </TableCell>
                         <TableCell>{invoice.salesman.name}</TableCell>
                         <TableCell>{invoice.customer.name}</TableCell>
+                        <TableCell>{invoice.ship_from}</TableCell>
+                        <TableCell>{invoice.ship_to}</TableCell>
                         {activeTab === 2 && (
                           <TableCell>{invoice.payment?.payment_method}</TableCell>
                         )}
-                        <TableCell>{invoice.ship_from}</TableCell>
-                        <TableCell>{invoice.ship_to}</TableCell>
-                        {activeTab === 2 && <TableCell>{invoice.tax_rate}</TableCell>}
+                        {activeTab === 2 && <TableCell>{invoice.sub_total}</TableCell>}
+                        {activeTab === 2 && <TableCell>{invoice.discount}</TableCell>}
+                        {activeTab === 2 && <TableCell>{invoice.taxable_amount}</TableCell>}
+                        {activeTab === 2 && <TableCell>{invoice.invoice_tax}</TableCell>}
                         <TableCell align="right" className="font-bold">
                           {parseFloat(invoice.total).toFixed(2)} AED
                         </TableCell>

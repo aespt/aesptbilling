@@ -3,7 +3,7 @@ import { type InferInsertModel } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-import { db } from '@/lib/drizzle';
+import { db, PaymentDetailsTable } from '@/lib/drizzle';
 import { CustomersTable } from '@/lib/models/customers';
 import { InvoiceItemsTable } from '@/lib/models/invoice_items';
 import { InvoicesTable } from '@/lib/models/invoices';
@@ -237,6 +237,7 @@ export async function GET(request: NextRequest) {
         invoice_date: InvoicesTable.invoice_date,
         salesman_id: InvoicesTable.salesman_id,
         customer_id: InvoicesTable.customer_id,
+        discount: InvoicesTable.discount,
         tax_type: InvoicesTable.tax_type,
         tax_rate: InvoicesTable.tax_rate,
         sub_total: InvoicesTable.sub_total,
@@ -278,11 +279,20 @@ export async function GET(request: NextRequest) {
                 .where(eq(SalesmenTable.id, invoice.salesman_id))
             : [null];
 
+          const [paymentResult] = await db
+            .select({
+              id: PaymentDetailsTable.id,
+              payment_method: PaymentDetailsTable.payment_method,
+            })
+            .from(PaymentDetailsTable)
+            .where(eq(PaymentDetailsTable.invoice_id, invoice.id));
+
           // Return invoice with customer and salesman data
           return {
             ...invoice,
             customer: customerResult || { id: 0, name: 'Unknown', address: '' },
             salesman: salesmanResult || { id: 0, name: 'Unknown', contact_number: '' },
+            payment: paymentResult || null,
           };
         } catch (error) {
           console.error(`Error fetching details for invoice ${invoice.id}:`, error);
