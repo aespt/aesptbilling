@@ -42,6 +42,7 @@ import type { PaginationInfo } from '@/app/shared/components/pagination';
 import PrimaryButton from '@/app/shared/components/primary-button';
 import Sidepanel from '@/app/shared/components/sidepanel';
 import InvoiceFilters from '@/app/(features)/(auth)/invoices/components/invoice-filters';
+import SecondaryButton from '@/app/shared/components/secondary-button';
 
 // Add custom CSS for animations
 const tableRowAnimation = `
@@ -476,15 +477,7 @@ export default function InvoicesListPage() {
           </Typography>
           <div className="flex items-center gap-2">
             {activeTab === 2 && ( // Only show Export button on Sales tab
-              <Button
-                startIcon={<FileDownloadIcon />}
-                variant="contained"
-                color="primary"
-                onClick={handleExportExcel}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Export Excel
-              </Button>
+              <SecondaryButton onClick={handleExportExcel} label="Export" />
             )}
             <IconButton
               onClick={() => setFilterPanelOpen(true)}

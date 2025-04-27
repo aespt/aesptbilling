@@ -136,20 +136,18 @@ export async function GET(request: NextRequest) {
 
     // Define columns for invoices sheet
     invoicesSheet.columns = [
-      { header: 'Invoice Number', key: 'invoice_number', width: 15 },
       { header: 'Date', key: 'invoice_date', width: 12 },
-      { header: 'Customer', key: 'customer_name', width: 20 },
+      { header: 'Invoice Number', key: 'invoice_number', width: 15 },
       { header: 'Salesperson', key: 'salesman_name', width: 20 },
-      { header: 'Tax Type', key: 'tax_type', width: 10 },
-      { header: 'Tax Rate (%)', key: 'tax_rate', width: 12 },
-      { header: 'Value Without Tax', key: 'value_without_tax', width: 15 },
-      { header: 'Discount', key: 'discount', width: 12 },
-      { header: 'MOP', key: 'payment_method', width: 10 },
-      { header: 'Sub Total', key: 'sub_total', width: 12 },
-      { header: 'Tax Amount', key: 'tax_amount', width: 12 },
-      { header: 'Bill Amount', key: 'total', width: 12 },
+      { header: 'Customer', key: 'customer_name', width: 20 },
       { header: 'Ship From', key: 'ship_from', width: 20 },
       { header: 'Ship To', key: 'ship_to', width: 20 },
+      { header: 'MOP', key: 'payment_method', width: 10 },
+      { header: 'Gross Amount', key: 'sub_total', width: 12 },
+      { header: 'Discount', key: 'discount', width: 12 },
+      { header: 'Taxable Amount', key: 'taxable_amount', width: 12 },
+      { header: 'Tax', key: 'invoice_tax', width: 12 },
+      { header: 'Bill Amount', key: 'total', width: 12 },
     ];
 
     // Add headers styling
@@ -163,40 +161,41 @@ export async function GET(request: NextRequest) {
     const calculateTaxAndTotals = (invoice: any) => {
       const taxRate = parseFloat(invoice.tax_rate) / 100;
       const subTotal = parseFloat(invoice.sub_total);
-      const taxAmount = subTotal * taxRate;
       const discount = parseFloat(invoice.discount);
+      let taxableAmount = parseFloat(invoice.sub_total);
+      if (parseFloat(invoice.discount) > 0) {
+        taxableAmount = subTotal - discount;
+      }
+      const invoiceTax = (taxableAmount * taxRate).toFixed(2);
 
       return {
-        taxAmount: taxAmount.toFixed(2),
-        totalWithoutTax: (subTotal - taxAmount - discount).toFixed(2),
+        invoiceTax,
+        taxableAmount,
       };
     };
     // Add data to invoices sheet
     invoicesWithItems.forEach(invoice => {
-      const { taxAmount, totalWithoutTax } = calculateTaxAndTotals(invoice);
+      const { invoiceTax, taxableAmount } = calculateTaxAndTotals(invoice);
       invoicesSheet.addRow({
-        invoice_number: invoice.invoice_number,
         invoice_date: invoice.invoice_date,
-        customer_name: invoice.customer_name,
+        invoice_number: invoice.invoice_number,
         salesman_name: invoice.salesman_name,
-        sub_total: invoice.sub_total,
-        tax_type: invoice.tax_type,
-        tax_rate: invoice.tax_rate,
-        tax_amount: taxAmount,
-        value_without_tax: totalWithoutTax,
-        discount: invoice.discount,
-        payment_method: invoice.payment_method,
-        total: invoice.total,
+        customer_name: invoice.customer_name,
         ship_from: invoice.ship_from,
         ship_to: invoice.ship_to,
+        payment_method: invoice.payment_method,
+        sub_total: invoice.sub_total,
+        discount: invoice.discount,
+        taxable_amount: taxableAmount,
+        invoice_tax: invoiceTax,
+        total: invoice.total,
       });
     });
 
     // Format number columns
     invoicesSheet.getColumn('sub_total').numFmt = '#,##0.00';
-    invoicesSheet.getColumn('tax_rate').numFmt = '0.00%';
-    invoicesSheet.getColumn('tax_amount').numFmt = '#,##0.00';
-    invoicesSheet.getColumn('value_without_tax').numFmt = '#,##0.00';
+    invoicesSheet.getColumn('taxable_amount').numFmt = '#,##0.00';
+    invoicesSheet.getColumn('invoice_tax').numFmt = '#,##0.00';
     invoicesSheet.getColumn('discount').numFmt = '#,##0.00';
     invoicesSheet.getColumn('total').numFmt = '#,##0.00';
 

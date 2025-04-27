@@ -14,6 +14,7 @@ import PurchaseDetails from '@/app/(features)/(auth)/purchases/components/purcha
 import PurchaseItems from '@/app/(features)/(auth)/purchases/components/purchase-items';
 import PurchaseSummary from '@/app/(features)/(auth)/purchases/components/purchase-summary';
 import PurchaseTaxDiscount from '@/app/(features)/(auth)/purchases/components/purchase-tax-discount';
+import FullSpinner from '@/app/shared/components/full-spinner';
 
 export default function CreatePurchasePage() {
   const router = useRouter();
@@ -178,9 +179,7 @@ export default function CreatePurchasePage() {
 
   return (
     <>
-      <div className="flex h-64 items-center justify-center">
-        <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
-      </div>
+      {isSubmitting && <FullSpinner />}
       <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
         <div className="mx-auto max-w-screen-2xl">
           <PageHeader
