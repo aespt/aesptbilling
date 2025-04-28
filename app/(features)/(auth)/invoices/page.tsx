@@ -5,12 +5,9 @@ import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReceiptIcon from '@mui/icons-material/Receipt';
-import SearchIcon from '@mui/icons-material/Search';
 import {
-  Autocomplete,
   Box,
-  Drawer,
-  InputAdornment,
+  IconButton,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -24,25 +21,20 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
-  IconButton,
-  Button,
   Tabs,
-  TextField,
   Typography,
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import type * as DayJS from 'dayjs';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
+import InvoiceFilters from '@/app/(features)/(auth)/invoices/components/invoice-filters';
 import Pagination from '@/app/shared/components/pagination';
 import type { PaginationInfo } from '@/app/shared/components/pagination';
-import PrimaryButton from '@/app/shared/components/primary-button';
-import Sidepanel from '@/app/shared/components/sidepanel';
-import InvoiceFilters from '@/app/(features)/(auth)/invoices/components/invoice-filters';
 import SecondaryButton from '@/app/shared/components/secondary-button';
+import Sidepanel from '@/app/shared/components/sidepanel';
 
 // Add custom CSS for animations
 const tableRowAnimation = `
@@ -81,6 +73,10 @@ interface Invoice {
   invoice_type: string;
   invoice_stage: 'SALE' | 'PROFORMA' | 'QUOTATION';
   tax_rate: string;
+  parent_invoice: {
+    id: number;
+    invoice_number: string;
+  };
   payment: {
     payment_method: string;
   };
@@ -546,6 +542,9 @@ export default function InvoicesListPage() {
                     <TableCell className="font-medium">Customer</TableCell>
                     <TableCell className="font-medium">Ship From</TableCell>
                     <TableCell className="font-medium">Ship To</TableCell>
+                    {activeTab >= 0 && (
+                      <TableCell className="font-medium">Parent Invoice</TableCell>
+                    )}
                     {activeTab === 2 && <TableCell className="font-medium">MOP</TableCell>}
                     {activeTab === 2 && <TableCell className="font-medium">Gross Amount</TableCell>}
                     {activeTab === 2 && <TableCell className="font-medium">Discount</TableCell>}
@@ -590,6 +589,14 @@ export default function InvoicesListPage() {
                         <TableCell>{invoice.customer.name}</TableCell>
                         <TableCell>{invoice.ship_from}</TableCell>
                         <TableCell>{invoice.ship_to}</TableCell>
+                        {activeTab >= 0 && (
+                          <TableCell
+                            className="cursor-pointer font-medium text-blue-600"
+                            onClick={() => handleInvoiceClick(invoice.parent_invoice?.id)}
+                          >
+                            {invoice.parent_invoice?.invoice_number}
+                          </TableCell>
+                        )}
                         {activeTab === 2 && (
                           <TableCell>{invoice.payment?.payment_method}</TableCell>
                         )}
@@ -645,19 +652,28 @@ export default function InvoicesListPage() {
                   </ListItemIcon>
                   <ListItemText>Generate Delivery Note</ListItemText>
                 </MenuItem>,
-                <MenuItem onClick={() => handleGenerateDocument('QUOTATION', selectedInvoice?.id)}>
+                <MenuItem
+                  key="quotation"
+                  onClick={() => handleGenerateDocument('QUOTATION', selectedInvoice?.id)}
+                >
                   <ListItemIcon>
                     <FileDownloadIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText>Download Quotation</ListItemText>
                 </MenuItem>,
-                <MenuItem onClick={() => handleGenerateDocument('PROFORMA', selectedInvoice?.id)}>
+                <MenuItem
+                  key="proforma"
+                  onClick={() => handleGenerateDocument('PROFORMA', selectedInvoice?.id)}
+                >
                   <ListItemIcon>
                     <FileDownloadIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText>Download Proforma</ListItemText>
                 </MenuItem>,
-                <MenuItem onClick={() => handleGenerateDocument('SALE', selectedInvoice?.id)}>
+                <MenuItem
+                  key="sale"
+                  onClick={() => handleGenerateDocument('SALE', selectedInvoice?.id)}
+                >
                   <ListItemIcon>
                     <FileDownloadIcon fontSize="small" />
                   </ListItemIcon>

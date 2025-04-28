@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import { pgTable, serial, varchar, timestamp, decimal, integer, pgEnum } from 'drizzle-orm/pg-core';
 
 import { CustomersTable } from './customers';
@@ -20,6 +21,7 @@ export const InvoicesTable = pgTable('invoices', {
     .notNull()
     .references(() => CustomersTable.id),
   salesman_id: integer('salesman_id').references(() => SalesmenTable.id),
+  parent_invoice_id: integer('parent_invoice_id'),
   tax_type: taxTypeEnum('tax_type').default('NONE'),
   tax_rate: decimal('tax_rate', { precision: 5, scale: 2 }).default('0'),
   sub_total: decimal('sub_total', { precision: 10, scale: 2 }).notNull(),
@@ -36,3 +38,10 @@ export const InvoicesTable = pgTable('invoices', {
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const invoicesRelations = relations(InvoicesTable, ({ one }) => ({
+  parent: one(InvoicesTable, {
+    fields: [InvoicesTable.parent_invoice_id],
+    references: [InvoicesTable.id],
+  }),
+}));

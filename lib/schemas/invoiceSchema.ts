@@ -19,6 +19,7 @@ export const InvoiceSchema = BaseSchema.extend({
   user_id: z.number(),
   customer_id: z.number(),
   salesmen_id: z.number().min(1, { message: 'Salesperson name is required' }),
+  parent_invoice_id: z.number().optional().nullable(),
   tax_type: TaxTypeEnum.default('NONE'),
   invoice_stage: InvoiceStageEnum.default('SALE'),
   tax_rate: z.number().nonnegative().default(0),

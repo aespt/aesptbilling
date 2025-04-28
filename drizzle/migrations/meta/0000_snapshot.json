@@ -1,6 +1,6 @@
 {
-  "id": "b6f69fb4-f021-4985-97cf-d7758e1ed996",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "caa13f66-eb46-436c-a185-4e4cc8f50439",
+  "prevId": "b6f69fb4-f021-4985-97cf-d7758e1ed996",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -571,6 +571,12 @@
         },
         "salesman_id": {
           "name": "salesman_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_invoice_id": {
+          "name": "parent_invoice_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false

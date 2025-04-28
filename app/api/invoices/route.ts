@@ -246,6 +246,7 @@ export async function GET(request: NextRequest) {
         ship_from: InvoicesTable.ship_from,
         ship_to: InvoicesTable.ship_to,
         invoice_stage: InvoicesTable.invoice_stage,
+        parent_invoice_id: InvoicesTable.parent_invoice_id,
       })
       .from(InvoicesTable)
       .where(conditions.length ? and(...conditions) : undefined)
@@ -266,6 +267,18 @@ export async function GET(request: NextRequest) {
             })
             .from(CustomersTable)
             .where(eq(CustomersTable.id, invoice.customer_id));
+
+          // Declare parentInvoice variable at this scope level
+          let parentInvoice = null;
+
+          if (invoice.parent_invoice_id) {
+            const [parentInvoiceResult] = await db
+              .select()
+              .from(InvoicesTable)
+              .where(eq(InvoicesTable.id, invoice.parent_invoice_id));
+
+            parentInvoice = parentInvoiceResult;
+          }
 
           // Fetch salesman information
           const [salesmanResult] = invoice.salesman_id
@@ -293,6 +306,7 @@ export async function GET(request: NextRequest) {
             customer: customerResult || { id: 0, name: 'Unknown', address: '' },
             salesman: salesmanResult || { id: 0, name: 'Unknown', contact_number: '' },
             payment: paymentResult || null,
+            parent_invoice: parentInvoice,
           };
         } catch (error) {
           console.error(`Error fetching details for invoice ${invoice.id}:`, error);

@@ -448,7 +448,12 @@ export default function CreateInvoicePage() {
 
   // Handle invoice stage change
   const handleInvoiceStageChange = (event: SelectChangeEvent) => {
-    setInvoiceStage(event.target.value as 'SALE' | 'QUOTATION' | 'PROFORMA');
+    const newStage = event.target.value as 'SALE' | 'QUOTATION' | 'PROFORMA';
+    setInvoiceStage(newStage);
+    setFormData(prev => ({
+      ...prev,
+      invoice_stage: newStage,
+    }));
   };
 
   // Handle form submission
