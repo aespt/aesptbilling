@@ -102,6 +102,10 @@ export default function CreateInvoicePage() {
 
   // Invoice stage
   const [invoiceStage, setInvoiceStage] = useState<'SALE' | 'QUOTATION' | 'PROFORMA'>('SALE');
+  const [originalInvoiceStage, setOriginalInvoiceStage] = useState<
+    'SALE' | 'QUOTATION' | 'PROFORMA' | null
+  >(null);
+  const [originalInvoiceNumber, setOriginalInvoiceNumber] = useState<string | null>(null);
 
   // Function to fetch and cache customers with proper loading flags
   const fetchCustomers = useCallback(
@@ -244,6 +248,14 @@ export default function CreateInvoicePage() {
           // Set edit mode and current invoice ID
           setIsEditMode(true);
           setCurrentInvoiceId(Number(invoiceId));
+
+          // Set invoice stage from API data if available, otherwise default to SALE
+          const apiInvoiceStage = result.formData.invoice_stage || 'SALE';
+          setInvoiceStage(apiInvoiceStage);
+          setOriginalInvoiceStage(apiInvoiceStage);
+
+          // Store original invoice number
+          setOriginalInvoiceNumber(result.formData.invoice_number);
 
           // Merge the loaded data with current formData to preserve defaults for any missing fields
           setFormData(currentData => ({
@@ -450,10 +462,40 @@ export default function CreateInvoicePage() {
   const handleInvoiceStageChange = (event: SelectChangeEvent) => {
     const newStage = event.target.value as 'SALE' | 'QUOTATION' | 'PROFORMA';
     setInvoiceStage(newStage);
+
+    // If in edit mode and stage changes from original, exit edit mode and generate new invoice number
+    if (isEditMode && newStage !== originalInvoiceStage) {
+      setIsEditMode(false);
+      // Generate new invoice number
+      const newInvoiceNumber = generateInvoiceNumber();
+      setFormData(prev => ({
+        ...prev,
+        invoice_number: newInvoiceNumber,
+      }));
+    }
+    // If not in edit mode and stage matches original, enter edit mode and restore original invoice number
+    else if (!isEditMode && newStage === originalInvoiceStage && originalInvoiceNumber) {
+      setIsEditMode(true);
+      setFormData(prev => ({
+        ...prev,
+        invoice_number: originalInvoiceNumber,
+      }));
+    }
+
     setFormData(prev => ({
       ...prev,
       invoice_stage: newStage,
     }));
+  };
+
+  // Utility function to generate invoice number
+  const generateInvoiceNumber = () => {
+    const lastNumber = parseInt(localStorage.getItem('lastInvoiceNumber') || '1000');
+    const newNumber = lastNumber + 1;
+    localStorage.setItem('lastInvoiceNumber', newNumber.toString());
+    return `INV-${new Date().getFullYear()}${(new Date().getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
   };
 
   // Handle form submission
@@ -495,6 +537,8 @@ export default function CreateInvoicePage() {
         profit,
         // Include payment details
         payment: paymentData,
+        // Include parent_id if not in edit mode and we have a current invoice ID
+        parent_id: !isEditMode && currentInvoiceId ? currentInvoiceId : null,
       };
 
       let response;

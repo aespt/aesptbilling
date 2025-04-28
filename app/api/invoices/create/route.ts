@@ -49,8 +49,6 @@ export async function POST(request: NextRequest) {
       invoiceData.discount_percentage === '' ? 0 : invoiceData.discount_percentage;
     const safeProfit = invoiceData.profit === '' ? 0 : invoiceData.profit;
 
-    console.log('invoiceData', invoiceData);
-
     // Start transaction
     return await db.transaction(async tx => {
       // Create invoice record
@@ -78,6 +76,7 @@ export async function POST(request: NextRequest) {
           ship_from: invoiceData.ship_from,
           profit: safeProfit,
           invoice_stage: invoiceData.invoice_stage,
+          parent_invoice_id: invoiceData.parent_id || null,
           created_by: userId,
           updated_by: userId,
         })

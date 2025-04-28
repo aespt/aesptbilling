@@ -306,7 +306,12 @@ export async function GET(request: NextRequest) {
             customer: customerResult || { id: 0, name: 'Unknown', address: '' },
             salesman: salesmanResult || { id: 0, name: 'Unknown', contact_number: '' },
             payment: paymentResult || null,
-            parent_invoice: parentInvoice,
+            parent_invoice: parentInvoice
+              ? {
+                  id: parentInvoice?.id,
+                  invoice_number: parentInvoice?.invoice_number,
+                }
+              : null,
           };
         } catch (error) {
           console.error(`Error fetching details for invoice ${invoice.id}:`, error);
