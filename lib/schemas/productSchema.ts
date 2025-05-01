@@ -5,7 +5,10 @@ import { BaseCreateSchema, BaseSchema } from './baseSchema';
 // Zod schema for product validation
 export const ProductSchema = BaseSchema.extend({
   id: z.number().optional(),
-  part_no: z.string(),
+  part_no: z
+    .string()
+    .min(1, { message: 'Part number is required' })
+    .refine(val => val.trim().length > 0, { message: 'Part number cannot be empty' }),
   name: z.string().min(2, { message: 'Product name must be at least 2 characters' }),
   description: z.string().optional(),
   price: z.number().positive({ message: 'Price must be positive' }),

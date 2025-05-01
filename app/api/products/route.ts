@@ -1,4 +1,4 @@
-import { desc, eq, sql, or, ilike } from 'drizzle-orm';
+import { desc, eq, sql, or, ilike, and, ne } from 'drizzle-orm';
 import { type InferInsertModel } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
@@ -72,6 +72,20 @@ export async function POST(request: Request) {
     // Validate the input using Zod schema
     const validatedData = CreateProductSchema.parse(body);
 
+    // Check if part number already exists
+    const existingProduct = await db
+      .select()
+      .from(ProductsTable)
+      .where(eq(ProductsTable.partNo, validatedData.part_no))
+      .limit(1);
+
+    if (existingProduct.length > 0) {
+      return NextResponse.json(
+        { error: 'Product with this part number already exists' },
+        { status: 409 }
+      );
+    }
+
     // Convert price to string for decimal type if needed
     const priceValue =
       typeof validatedData.price === 'number'
@@ -133,6 +147,22 @@ export async function PUT(request: Request) {
 
     // Validate the input using Zod schema for updates
     const validatedData = UpdateProductSchema.parse(body);
+
+    // If part_no is being updated, check if it's unique
+    if (validatedData.part_no !== undefined) {
+      const existingProduct = await db
+        .select()
+        .from(ProductsTable)
+        .where(and(eq(ProductsTable.partNo, validatedData.part_no), ne(ProductsTable.id, body.id)))
+        .limit(1);
+
+      if (existingProduct.length > 0) {
+        return NextResponse.json(
+          { error: 'Product with this part number already exists' },
+          { status: 409 }
+        );
+      }
+    }
 
     // Prepare update data
     const updateData: Partial<InferInsertModel<typeof ProductsTable>> = {};
