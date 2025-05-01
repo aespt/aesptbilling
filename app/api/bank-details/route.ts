@@ -62,8 +62,6 @@ export async function POST(request: NextRequest) {
       updated_by: validatedData.updated_by || 'system',
     };
 
-    console.log('Bank details being inserted:', newBankDetails);
-
     // Insert into database
     const insertedBankDetails = await db
       .insert(BankDetailsTable)
