@@ -279,7 +279,6 @@ export default function ProductsPage() {
   const handleSearch = (query: string) => {
     // Only log and update search query if it's a user-initiated search
     if (isSearchUserInitiated.current) {
-      console.log('query', query);
       setSearchQuery(query);
       setPage(1); // Reset to first page when searching
     }
