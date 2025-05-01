@@ -3,7 +3,9 @@
 
 import {
   Button,
+  Checkbox,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
@@ -28,6 +30,7 @@ import SalesInvoiceDetails from '../components/sales-invoice-details';
 import SalesInvoiceItems from '../components/sales-invoice-items';
 import SalesInvoiceSummary from '../components/sales-invoice-summary';
 import SalesTaxDiscount from '../components/sales-tax-discount';
+import UsedProductInvoiceDetails from '../components/used-product-invoice-details';
 
 export default function CreateInvoicePage() {
   const router = useRouter();
@@ -61,12 +64,15 @@ export default function CreateInvoicePage() {
     ship_to: '',
     status: 'DRAFT',
     // Tax and discount fields
+    is_used: false,
     tax_type: 'VAT',
     vat_percentage: 5,
     cgst_percentage: 0,
     sgst_percentage: 0,
     discount_type: 'PERCENTAGE',
     discount_value: 0,
+    subtotal: '',
+    actual_rate: '',
   });
 
   // Payment Details State
@@ -106,6 +112,14 @@ export default function CreateInvoicePage() {
     'SALE' | 'QUOTATION' | 'PROFORMA' | null
   >(null);
   const [originalInvoiceNumber, setOriginalInvoiceNumber] = useState<string | null>(null);
+
+  // State to store the invoice calculations from SalesInvoiceSummary
+  const [invoiceCalculations, setInvoiceCalculations] = useState({
+    subtotal: 0,
+    discount: 0,
+    tax: 0,
+    total: 0,
+  });
 
   // Function to fetch and cache customers with proper loading flags
   const fetchCustomers = useCallback(
@@ -400,44 +414,16 @@ export default function CreateInvoicePage() {
     return !Object.values(newErrors).some(error => error);
   };
 
-  // Calculate invoice totals including tax and discount
-  const calculateInvoiceTotals = () => {
-    const subtotal = invoiceItems.reduce((sum, item) => sum + (item.total || 0), 0);
-
-    // Calculate discount
-    let discountAmount = 0;
-    if (formData.discount_type === 'PERCENTAGE') {
-      const discountValue = formData.discount_value === '' ? 0 : Number(formData.discount_value);
-      discountAmount = (subtotal * discountValue) / 100;
-    } else if (formData.discount_type === 'FIXED') {
-      const discountValue = formData.discount_value === '' ? 0 : Number(formData.discount_value);
-      discountAmount = Math.min(discountValue, subtotal);
+  const calculateProfit = (items: InvoiceItem[]) => {
+    // If it's a used product, calculate profit differently
+    if (formData.is_used) {
+      const sellingPrice = Number(formData.total) || 0;
+      const actualPrice = Number(formData.actual_rate) || 0;
+      const actualPriceAfterDiscount = actualPrice - invoiceCalculations.discount;
+      return sellingPrice - actualPriceAfterDiscount;
     }
 
-    // Calculate tax
-    const taxableAmount = subtotal - discountAmount;
-    let taxAmount = 0;
-
-    if (formData.tax_type === 'VAT') {
-      taxAmount = (taxableAmount * formData.vat_percentage) / 100;
-    } else if (formData.tax_type === 'GST') {
-      const cgstAmount = (taxableAmount * formData.cgst_percentage) / 100;
-      const sgstAmount = (taxableAmount * formData.sgst_percentage) / 100;
-      taxAmount = cgstAmount + sgstAmount;
-    }
-
-    const total = taxableAmount + taxAmount;
-
-    return {
-      subtotal,
-      discount: discountAmount,
-      tax: taxAmount,
-      total,
-    };
-  };
-
-  const calculateProfit = (items: InvoiceItem[], discountValue: number | string) => {
-    // Calculate profit for each item
+    // For non-used products, keep the existing calculation
     const itemProfits = items.map(item => {
       if (!item.product_id) {
         return 0;
@@ -451,11 +437,13 @@ export default function CreateInvoicePage() {
     // Sum up all item profits
     const totalProfit = itemProfits.reduce((sum, profit) => sum + profit, 0);
 
-    // Apply discount to profit
-    const numericDiscount = discountValue === '' ? 0 : Number(discountValue);
-    const discountedProfit = totalProfit - numericDiscount;
+    // Apply discount to profit proportionally
+    if (invoiceCalculations.discount > 0 && invoiceCalculations.subtotal > 0) {
+      const discountRatio = invoiceCalculations.discount / invoiceCalculations.subtotal;
+      return totalProfit * (1 - discountRatio);
+    }
 
-    return discountedProfit;
+    return totalProfit;
   };
 
   // Handle invoice stage change
@@ -509,13 +497,9 @@ export default function CreateInvoicePage() {
 
     setIsSubmitting(true);
     try {
-      const totals = calculateInvoiceTotals();
-
       let profit = 0;
       if (invoiceStage === 'SALE') {
-        profit = calculateProfit(invoiceItems, totals.discount);
-      } else {
-        profit = 0;
+        profit = calculateProfit(invoiceItems);
       }
 
       // Store the discount percentage if discount type is PERCENTAGE
@@ -529,11 +513,11 @@ export default function CreateInvoicePage() {
         status: saveAsDraft ? 'DRAFT' : 'PENDING',
         invoice_stage: invoiceStage,
         items: invoiceItems.filter(item => item.product_id), // Only send items with a product selected
-        subtotal: totals.subtotal,
-        discount: totals.discount,
+        subtotal: invoiceCalculations.subtotal,
+        discount: invoiceCalculations.discount,
         discount_percentage: discountPercentage,
-        tax: totals.tax,
-        total: totals.total,
+        tax: invoiceCalculations.tax,
+        total: invoiceCalculations.total,
         profit,
         // Include payment details
         payment: paymentData,
@@ -625,7 +609,26 @@ export default function CreateInvoicePage() {
           />
 
           {/* Invoice Search and Stage Selection */}
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="w-full">
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formData.is_used}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        is_used: e.target.checked,
+                      })
+                    }
+                    size="small"
+                    disabled={isEditMode}
+                  />
+                }
+                label="Used Products Invoice"
+                className="mt-2"
+              />
+            </div>
             <div className="w-full">
               <InvoiceSearch
                 searchTerm={searchTerm}
@@ -682,9 +685,20 @@ export default function CreateInvoicePage() {
               setErrors={setErrors}
             />
 
+            {formData.is_used && (
+              <UsedProductInvoiceDetails
+                invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
+                formData={formData}
+                setFormData={setFormData}
+                errors={errors}
+                setErrors={setErrors}
+              />
+            )}
+
             <SalesInvoiceSummary
               invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
               formData={formData}
+              onCalculationsChange={setInvoiceCalculations}
             />
 
             {/* Show Payment Details only for Sales Invoices */}

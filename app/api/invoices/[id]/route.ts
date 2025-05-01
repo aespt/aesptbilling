@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
-import { ZodError } from 'zod';
 
 import { db } from '@/lib/drizzle';
 import { CustomersTable } from '@/lib/models/customers';
@@ -10,7 +9,6 @@ import { PaymentDetailsTable } from '@/lib/models/payment_details';
 import { ProductsTable } from '@/lib/models/products';
 import { SalesmenTable } from '@/lib/models/salesmen';
 import { type TokenPayload } from '@/lib/schemas/authSchema';
-import { UpdateInvoiceSchema } from '@/lib/schemas/invoiceSchema';
 import { AUTH_COOKIE_NAME, verifyToken } from '@/lib/utils/jwt';
 
 /**
@@ -177,18 +175,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  */
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // Get the auth token from cookies
-    const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+    // Get auth token from cookies
+    const authToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    if (!authToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Verify token
-    const payload = verifyToken<TokenPayload>(token);
-
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid authentication token' }, { status: 401 });
+    const payload = verifyToken(authToken) as TokenPayload;
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     // Ensure userId is a valid number
@@ -198,127 +195,58 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid user ID in token' }, { status: 400 });
     }
 
-    const invoiceId = parseInt((await params).id);
+    const { id } = await params;
+    const invoiceId = parseInt(id);
 
-    if (isNaN(invoiceId)) {
+    if (isNaN(invoiceId) || invoiceId <= 0) {
       return NextResponse.json({ error: 'Invalid invoice ID' }, { status: 400 });
     }
 
-    // Check if invoice exists
-    const existingInvoices = await db
-      .select({ id: InvoicesTable.id })
-      .from(InvoicesTable)
-      .where(eq(InvoicesTable.id, invoiceId))
-      .limit(1);
-
-    if (existingInvoices.length === 0) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
-    }
-
-    // Parse request body
     const body = await request.json();
 
+    // Start transaction
     return await db.transaction(async tx => {
       // Validate invoice data (except items)
-      const validatedData = UpdateInvoiceSchema.parse({
-        ...body,
-        updated_by: payload.username,
-      });
+      const existingInvoice = await tx
+        .select()
+        .from(InvoicesTable)
+        .where(eq(InvoicesTable.id, invoiceId))
+        .limit(1);
 
-      // Update invoice details
-      const updateData: any = {
+      if (!existingInvoice || existingInvoice.length === 0) {
+        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+      }
+
+      // Update invoice record
+      const updateData = {
+        invoice_number: body.invoice_number,
+        invoice_date: new Date(body.date),
+        customer_id: body.customer_id,
+        salesman_id: body.salesman_id || null,
+        tax_type: body.tax_type,
+        tax_rate: String(
+          body.tax_type === 'VAT'
+            ? body.vat_percentage
+            : body.tax_type === 'GST'
+              ? body.cgst_percentage + body.sgst_percentage
+              : 0
+        ),
+        sub_total: String(body.subtotal || 0),
+        total: String(body.total || 0),
+        discount: body.discount === '' ? 0 : body.discount,
+        discount_type: body.discount_type || 'NONE',
+        discount_percentage: body.discount_percentage === '' ? 0 : body.discount_percentage,
+        ship_to: body.ship_to,
+        ship_from: body.ship_from,
+        profit: body.profit === '' ? 0 : body.profit,
+        invoice_stage: body.invoice_stage,
+        parent_invoice_id: body.parent_id || null,
+        is_used: body.is_used || false,
         updated_by: userId,
         updated_at: new Date(),
       };
 
-      if (validatedData.invoice_number !== undefined) {
-        updateData.invoice_number = validatedData.invoice_number;
-      }
-
-      if (validatedData.invoice_date !== undefined) {
-        updateData.invoice_date = validatedData.invoice_date;
-      }
-
-      if (validatedData.customer_id !== undefined) {
-        updateData.customer_id = validatedData.customer_id;
-      }
-
-      // Handle the mismatch between schema (salesmen_id) and database column (salesman_id)
-      if (validatedData.salesmen_id !== undefined) {
-        updateData.salesman_id = validatedData.salesmen_id;
-      }
-
-      if (validatedData.tax_type !== undefined) {
-        updateData.tax_type = validatedData.tax_type as 'VAT' | 'GST' | 'NONE';
-      }
-
-      if (validatedData.tax_rate !== undefined) {
-        updateData.tax_rate =
-          typeof validatedData.tax_rate === 'string' && validatedData.tax_rate === ''
-            ? '0'
-            : validatedData.tax_rate.toString();
-      }
-
-      if (validatedData.discount_type !== undefined) {
-        updateData.discount_type = validatedData.discount_type as 'PERCENTAGE' | 'FIXED' | 'NONE';
-      }
-
-      if (validatedData.invoice_stage !== undefined) {
-        updateData.invoice_stage = validatedData.invoice_stage as 'SALE' | 'PROFORMA' | 'QUOTATION';
-      }
-
-      if (validatedData.ship_to !== undefined) {
-        updateData.ship_to = validatedData.ship_to;
-      }
-
-      if (validatedData.ship_from !== undefined) {
-        updateData.ship_from = validatedData.ship_from;
-      }
-
-      if (validatedData.sub_total !== undefined) {
-        updateData.sub_total =
-          typeof validatedData.sub_total === 'string' && validatedData.sub_total === ''
-            ? '0'
-            : validatedData.sub_total.toString();
-      }
-
-      if (body.discount !== undefined) {
-        updateData.discount =
-          typeof body.discount === 'string' && body.discount === ''
-            ? '0'
-            : body.discount.toString();
-      }
-
-      if (body.tax !== undefined) {
-        updateData.tax =
-          typeof body.tax === 'string' && body.tax === '' ? '0' : body.tax.toString();
-      }
-
-      if (validatedData.total !== undefined) {
-        updateData.total =
-          typeof validatedData.total === 'string' && validatedData.total === ''
-            ? '0'
-            : validatedData.total.toString();
-      }
-
-      if (body.profit !== undefined) {
-        updateData.profit =
-          typeof body.profit === 'string' && body.profit === '' ? '0' : body.profit.toString();
-      }
-
-      if (body.discount_percentage !== undefined) {
-        updateData.discount_percentage =
-          typeof body.discount_percentage === 'string' && body.discount_percentage === ''
-            ? '0'
-            : body.discount_percentage.toString();
-      }
-
-      // Update the invoice
-      const [updatedInvoice] = await tx
-        .update(InvoicesTable)
-        .set(updateData)
-        .where(eq(InvoicesTable.id, invoiceId))
-        .returning();
+      await tx.update(InvoicesTable).set(updateData).where(eq(InvoicesTable.id, invoiceId));
 
       // Handle invoice items
       if (body.items && Array.isArray(body.items)) {
@@ -337,9 +265,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             product_id:
               typeof item.product_id === 'string' ? parseInt(item.product_id) : item.product_id,
             quantity: item.qty || item.quantity || 1,
-            unit_price: (item.price || 0).toString(),
-            total_price: (item.total || 0).toString(),
-            mrp: (item.mrp || 0).toString(),
+            unit_price: body.is_used ? '0' : (item.price || 0).toString(),
+            total_price: body.is_used ? '0' : (item.total || 0).toString(),
+            mrp: body.is_used ? '0' : (item.mrp || 0).toString(),
             created_by: userId,
             updated_by: userId,
             created_at: new Date(),
@@ -358,79 +286,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         .from(InvoiceItemsTable)
         .where(eq(InvoiceItemsTable.invoice_id, invoiceId));
 
-      // Update or create payment details if invoice stage is SALE
-      if (body.invoice_stage === 'SALE' && body.payment) {
-        // Check if payment record already exists
-        const existingPayment = await tx
-          .select()
-          .from(PaymentDetailsTable)
-          .where(eq(PaymentDetailsTable.invoice_id, invoiceId));
-
-        if (existingPayment && existingPayment.length > 0) {
-          // Update existing payment
-          await tx
-            .update(PaymentDetailsTable)
-            .set({
-              payment_method: body.payment.payment_method || 'CASH',
-              payment_status: body.payment.payment_status || 'UNPAID',
-              payment_date: body.payment.payment_date
-                ? new Date(body.payment.payment_date)
-                : new Date(),
-              reference_number: body.payment.reference_number || null,
-              payment_notes: body.payment.payment_notes || null,
-              updated_at: new Date(),
-            })
-            .where(eq(PaymentDetailsTable.invoice_id, invoiceId));
-        } else {
-          // Create new payment record
-          await tx.insert(PaymentDetailsTable).values({
-            invoice_id: invoiceId,
-            payment_method: body.payment.payment_method || 'CASH',
-            payment_status: body.payment.payment_status || 'UNPAID',
-            payment_date: body.payment.payment_date
-              ? new Date(body.payment.payment_date)
-              : new Date(),
-            reference_number: body.payment.reference_number || null,
-            payment_notes: body.payment.payment_notes || null,
-          });
-        }
-      } else if (body.invoice_stage !== 'SALE') {
-        // If invoice is not a SALE, remove any existing payment records
-        await tx.delete(PaymentDetailsTable).where(eq(PaymentDetailsTable.invoice_id, invoiceId));
-      }
-
-      return NextResponse.json({
-        message: 'Invoice updated successfully',
-        data: {
-          id: updatedInvoice.id,
-          invoice_number: updatedInvoice.invoice_number,
+      return NextResponse.json(
+        {
+          message: 'Invoice updated successfully',
+          data: {
+            id: invoiceId,
+            items: updatedItems,
+          },
         },
-        items: updatedItems.length,
-      });
+        { status: 200 }
+      );
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating invoice:', error);
-
-    // Handle validation errors
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    // Handle unique constraint violations
-    if (
-      error instanceof Error &&
-      error.message.includes('duplicate key value violates unique constraint')
-    ) {
-      return NextResponse.json(
-        { error: 'An invoice with this invoice number already exists' },
-        { status: 409 }
-      );
-    }
-
-    return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update invoice';
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
 

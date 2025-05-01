@@ -1,28 +1,42 @@
 'use client';
 
 import { Typography, Box, Paper, Divider } from '@mui/material';
+import { useEffect } from 'react';
 
 import type { InvoiceFormData, InvoiceItem } from '@/lib/types/invoice';
 
 interface SalesInvoiceSummaryProps {
   invoiceItems: InvoiceItem[];
   formData: InvoiceFormData;
+  onCalculationsChange?: (calculations: {
+    subtotal: number;
+    discount: number;
+    tax: number;
+    total: number;
+  }) => void;
 }
 
-export default function SalesInvoiceSummary({ invoiceItems, formData }: SalesInvoiceSummaryProps) {
+export default function SalesInvoiceSummary({
+  invoiceItems,
+  formData,
+  onCalculationsChange,
+}: SalesInvoiceSummaryProps) {
   // Calculate subtotal (sum of all item totals)
   const subtotal = invoiceItems.reduce((sum, item) => sum + (item.total || 0), 0);
 
+  // For used products, use the selling rate as the new subtotal
+  const effectiveSubtotal = formData.is_used ? Number(formData.total) || 0 : subtotal;
+
   // Calculate discount
   const discountAmount = calculateDiscount(
-    subtotal,
+    effectiveSubtotal,
     formData.discount_type,
     formData.discount_value,
     formData.discount_percentage
   );
 
   // Calculate tax on subtotal after discount
-  const taxableAmount = subtotal - discountAmount;
+  const taxableAmount = effectiveSubtotal - discountAmount;
   const taxAmount = calculateTax(
     taxableAmount,
     formData.tax_type,
@@ -33,6 +47,18 @@ export default function SalesInvoiceSummary({ invoiceItems, formData }: SalesInv
 
   // Calculate total
   const total = taxableAmount + taxAmount;
+
+  // Send calculated values to parent component
+  useEffect(() => {
+    if (onCalculationsChange) {
+      onCalculationsChange({
+        subtotal: effectiveSubtotal,
+        discount: discountAmount,
+        tax: taxAmount,
+        total: total,
+      });
+    }
+  }, [effectiveSubtotal, discountAmount, taxAmount, total, onCalculationsChange]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -114,9 +140,9 @@ export default function SalesInvoiceSummary({ invoiceItems, formData }: SalesInv
               {/* Subtotal Row */}
               <Box className="flex items-center justify-between py-2">
                 <Typography variant="body2" className="text-gray-600">
-                  Subtotal
+                  {formData.is_used ? 'Selling Rate' : 'Subtotal'}
                 </Typography>
-                <Typography variant="body1">{formatCurrency(subtotal)}</Typography>
+                <Typography variant="body1">{formatCurrency(effectiveSubtotal)}</Typography>
               </Box>
 
               {/* Discount Row - Only shown if discount exists */}

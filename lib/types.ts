@@ -57,6 +57,7 @@ export interface InvoiceItem {
   total: number;
   price: number;
   mrp: number;
+  is_used: boolean;
 }
 
 // Customer interface

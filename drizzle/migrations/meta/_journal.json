@@ -15,6 +15,13 @@
       "when": "2024-04-27T16:30:32.235Z",
       "tag": "0001_mute_the_liberteens",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1745863456062,
+      "tag": "0002_unknown_rhino",
+      "breakpoints": true
     }
   ]
 }

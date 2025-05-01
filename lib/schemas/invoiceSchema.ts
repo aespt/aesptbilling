@@ -16,6 +16,7 @@ export const InvoiceSchema = BaseSchema.extend({
   id: z.number().optional(),
   invoice_number: z.string().min(1, { message: 'Invoice number is required' }),
   invoice_date: z.date().default(() => new Date()),
+  is_used: z.boolean().default(false),
   user_id: z.number(),
   customer_id: z.number(),
   salesmen_id: z.number().min(1, { message: 'Salesperson name is required' }),
