@@ -1,5 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, serial, varchar, timestamp, decimal, integer, pgEnum } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  serial,
+  varchar,
+  timestamp,
+  decimal,
+  integer,
+  pgEnum,
+  boolean,
+} from 'drizzle-orm/pg-core';
 
 import { CustomersTable } from './customers';
 import { SalesmenTable } from './salesmen';
@@ -17,6 +26,7 @@ export const InvoicesTable = pgTable('invoices', {
   id: serial('id').primaryKey(),
   invoice_number: varchar('invoice_number', { length: 50 }).notNull().unique(),
   invoice_date: timestamp('invoice_date').defaultNow().notNull(),
+  is_used: boolean('is_used').default(false),
   customer_id: integer('customer_id')
     .notNull()
     .references(() => CustomersTable.id),

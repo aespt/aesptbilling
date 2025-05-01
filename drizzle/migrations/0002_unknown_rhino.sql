@@ -1,0 +1,1 @@
+ALTER TABLE "invoices" ADD COLUMN "is_used" boolean DEFAULT false;

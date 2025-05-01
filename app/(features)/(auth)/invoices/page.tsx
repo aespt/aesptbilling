@@ -643,6 +643,12 @@ export default function InvoicesListPage() {
           {activeTab === 2
             ? // Actions for Sales tab
               [
+                <MenuItem key="update" onClick={() => handleSaleUpdate(selectedInvoice?.id)}>
+                  <ListItemIcon>
+                    <LocalShippingIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Update Sale</ListItemText>
+                </MenuItem>,
                 <MenuItem
                   key="delivery"
                   onClick={() => handleGenerateDocument('DELIVERY', selectedInvoice?.id)}

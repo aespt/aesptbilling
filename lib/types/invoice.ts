@@ -38,6 +38,7 @@ export interface InvoiceFormData {
   customer_id: number | null;
   ship_to: string;
   status: string;
+  is_used: boolean;
   // Tax and discount fields
   tax_type: TaxType;
   vat_percentage: number;
@@ -46,5 +47,5 @@ export interface InvoiceFormData {
   discount_type: DiscountType;
   discount_value: number | string;
   discount_percentage?: number;
-  [key: string]: string | number | Date | null | undefined;
+  [key: string]: string | number | Date | null | undefined | boolean;
 }

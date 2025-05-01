@@ -413,6 +413,7 @@ export async function POST(request: NextRequest) {
           tax_rate: validatedInvoice.tax_rate.toString(),
           sub_total: validatedInvoice.sub_total.toString(),
           total: validatedInvoice.total.toString(),
+          is_used: validatedInvoice.is_used,
           created_by: parseInt(validatedInvoice.created_by || '0'),
           updated_by: parseInt(validatedInvoice.updated_by || '0'),
           created_at: new Date(),

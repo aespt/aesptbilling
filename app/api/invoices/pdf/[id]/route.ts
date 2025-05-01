@@ -298,9 +298,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     $('thead tr').addClass('table-header-row');
 
     // Fill in the totals
-    const subtotal = invoiceItems
-      .reduce((sum, item) => sum + parseFloat(item.total_price.toString()), 0)
-      .toFixed(2);
+    const subtotal = invoice.sub_total
+      ? parseFloat(invoice.sub_total.toString()).toFixed(2)
+      : '0.00';
     const discount = invoice.discount ? parseFloat(invoice.discount.toString()).toFixed(2) : '0.00';
     const taxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
     const discountedSubtotal = (parseFloat(subtotal) - parseFloat(discount)).toFixed(2);
