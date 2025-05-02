@@ -98,10 +98,11 @@ export default function PurchaseItems({
     // Update the item with the selected product details
     const updatedItems = purchaseItems.map(existingItem => {
       if (existingItem.id === item.id) {
-        const price = typeof selectedProduct?.price === 'string' 
-          ? parseFloat(selectedProduct.price) 
-          : selectedProduct?.price || 0;
-          
+        const price =
+          typeof selectedProduct?.price === 'string'
+            ? parseFloat(selectedProduct.price)
+            : selectedProduct?.price || 0;
+
         return {
           ...existingItem,
           product_id: selectedProduct?.id || null,
@@ -363,16 +364,11 @@ export default function PurchaseItems({
           <Typography variant="body2" className="mb-4 text-gray-500">
             No items added to this purchase yet
           </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
-            onClick={handleAddItem}
-            size="small"
-          >
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddItem} size="small">
             Add First Item
           </Button>
         </Box>
       )}
     </Paper>
   );
-} 
+}

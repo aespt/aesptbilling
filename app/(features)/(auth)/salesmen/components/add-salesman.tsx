@@ -10,10 +10,12 @@ import type { Salesman } from '@/lib/types';
 
 // Define the validation schema using Zod
 const salesmanFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  contact_number: z.string().min(10, "Contact number must be at least 10 characters")
-    .max(20, "Contact number must not exceed 20 characters"),
-  email: z.string().email("Invalid email address"),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  contact_number: z
+    .string()
+    .min(10, 'Contact number must be at least 10 characters')
+    .max(20, 'Contact number must not exceed 20 characters'),
+  email: z.string().email('Invalid email address'),
 });
 
 // Infer the type from the schema
@@ -187,13 +189,16 @@ export default function AddSalesman({
             <ErrorMessage message={errors.contact_number?.message} />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Email</label>
+            <label htmlFor="email" className="text-sm font-medium text-gray-700">
+              Email
+            </label>
             <Controller
               name="email"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="email"
                   variant="outlined"
                   fullWidth
                   size="small"

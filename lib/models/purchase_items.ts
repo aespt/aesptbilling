@@ -1,7 +1,7 @@
 import { pgTable, serial, integer, decimal, timestamp } from 'drizzle-orm/pg-core';
 
-import { PurchasesTable } from './purchases';
 import { ProductsTable } from './products';
+import { PurchasesTable } from './purchases';
 import { UsersTable } from './users';
 
 export const PurchaseItemsTable = pgTable('purchase_items', {
@@ -19,4 +19,4 @@ export const PurchaseItemsTable = pgTable('purchase_items', {
   updated_by: integer('updated_by').references(() => UsersTable.id),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
-}); 
+});

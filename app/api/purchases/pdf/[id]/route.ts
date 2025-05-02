@@ -1,18 +1,15 @@
 import { eq } from 'drizzle-orm';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import PDFDocument from 'pdfkit';
 
 import { db } from '@/lib/drizzle';
+import { ProductsTable } from '@/lib/models/products';
 import { PurchaseItemsTable } from '@/lib/models/purchase_items';
 import { PurchasesTable } from '@/lib/models/purchases';
-import { ProductsTable } from '@/lib/models/products';
 import { SuppliersTable } from '@/lib/models/suppliers';
-import { AUTH_COOKIE_NAME, verifyToken } from '@/lib/utils/jwt';
+import { AUTH_COOKIE_NAME } from '@/lib/utils/jwt';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-): Promise<NextResponse> {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Get the auth token from cookies
     const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -21,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const purchaseId = parseInt(params.id);
+    const purchaseId = parseInt((await params).id);
     if (isNaN(purchaseId)) {
       return NextResponse.json({ error: 'Invalid purchase ID' }, { status: 400 });
     }
@@ -50,12 +47,12 @@ export async function GET(
 
     // Fetch product details for each purchase item
     const itemsWithProducts = await Promise.all(
-      purchaseItems.map(async (item) => {
+      purchaseItems.map(async item => {
         const [product] = await db
           .select()
           .from(ProductsTable)
           .where(eq(ProductsTable.id, item.product_id));
-        
+
         return {
           ...item,
           product,
@@ -79,13 +76,19 @@ export async function GET(
   }
 }
 
-async function generatePDF(purchase: any, supplier: any, items: any[]): Promise<Buffer> {
+async function generatePDF(
+  purchase: typeof PurchasesTable.$inferSelect,
+  supplier: typeof SuppliersTable.$inferSelect,
+  items: (typeof PurchaseItemsTable.$inferSelect & {
+    product?: typeof ProductsTable.$inferSelect;
+  })[]
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ margin: 50 });
       const chunks: Buffer[] = [];
 
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', chunk => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
@@ -100,11 +103,8 @@ async function generatePDF(purchase: any, supplier: any, items: any[]): Promise<
         .moveDown();
 
       // Supplier Info
-      doc
-        .fontSize(14)
-        .text('Supplier', { underline: true })
-        .fontSize(12);
-      
+      doc.fontSize(14).text('Supplier', { underline: true }).fontSize(12);
+
       if (supplier) {
         doc
           .text(`Name: ${supplier.name}`)
@@ -113,7 +113,7 @@ async function generatePDF(purchase: any, supplier: any, items: any[]): Promise<
       } else {
         doc.text('Supplier information not available');
       }
-      
+
       doc.moveDown();
 
       // Ship From
@@ -144,7 +144,7 @@ async function generatePDF(purchase: any, supplier: any, items: any[]): Promise<
 
       // Table rows
       let y = tableTop + 30;
-      items.forEach((item) => {
+      items.forEach(item => {
         if (y > 700) {
           doc.addPage();
           y = 50;
@@ -152,41 +152,57 @@ async function generatePDF(purchase: any, supplier: any, items: any[]): Promise<
 
         doc
           .fontSize(10)
-          .text(item.product?.part_no || '', 50, y)
+          .text(item.product?.partNo || '', 50, y)
           .text(item.product?.description || '', 150, y, { width: 140 })
           .text(String(item.quantity), 300, y, { width: 40, align: 'right' })
           .text(`$${parseFloat(item.rate).toFixed(2)}`, 350, y, { width: 70, align: 'right' })
-          .text(`$${parseFloat(item.total_price).toFixed(2)}`, 450, y, { width: 70, align: 'right' });
+          .text(`$${parseFloat(item.total_price).toFixed(2)}`, 450, y, {
+            width: 70,
+            align: 'right',
+          });
 
         y += 20;
       });
 
-      doc
-        .moveTo(50, y)
-        .lineTo(520, y)
-        .stroke();
+      doc.moveTo(50, y).lineTo(520, y).stroke();
 
       // Summary
       y += 20;
       doc
         .fontSize(10)
         .text('Subtotal:', 350, y, { width: 70, align: 'right' })
-        .text(`$${parseFloat(purchase.sub_total).toFixed(2)}`, 450, y, { width: 70, align: 'right' });
+        .text(`$${parseFloat(purchase.sub_total).toFixed(2)}`, 450, y, {
+          width: 70,
+          align: 'right',
+        });
 
       y += 15;
       doc
         .fontSize(10)
         .text('Discount:', 350, y, { width: 70, align: 'right' })
-        .text(`$${parseFloat(purchase.discount || '0').toFixed(2)}`, 450, y, { width: 70, align: 'right' });
+        .text(`$${parseFloat(purchase.discount?.toString() || '0').toFixed(2)}`, 450, y, {
+          width: 70,
+          align: 'right',
+        });
 
       if (purchase.tax_type !== 'NONE') {
         y += 15;
         doc
           .fontSize(10)
-          .text(`${purchase.tax_type} (${parseFloat(purchase.tax_rate).toFixed(2)}%):`, 350, y, { width: 70, align: 'right' })
           .text(
-            `$${((parseFloat(purchase.sub_total) - parseFloat(purchase.discount || '0')) * parseFloat(purchase.tax_rate) / 100).toFixed(2)}`,
-            450, y, { width: 70, align: 'right' }
+            `${purchase.tax_type} (${parseFloat(purchase.tax_rate?.toString() || '0').toFixed(2)}%):`,
+            350,
+            y,
+            {
+              width: 70,
+              align: 'right',
+            }
+          )
+          .text(
+            `$${(((parseFloat(purchase.sub_total.toString()) - parseFloat(purchase.discount?.toString() || '0')) * parseFloat(purchase.tax_rate?.toString() || '0')) / 100).toFixed(2)}`,
+            450,
+            y,
+            { width: 70, align: 'right' }
           );
       }
 
@@ -211,4 +227,4 @@ async function generatePDF(purchase: any, supplier: any, items: any[]): Promise<
       reject(error);
     }
   });
-} 
+}

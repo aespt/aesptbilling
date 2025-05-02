@@ -8,7 +8,8 @@ export * from './vat_master';
 export * from './gst_master';
 export * from './suppliers';
 export * from './salesmen';
-export * from './sales';
+// Export only the table from sales to avoid duplicate enum export
+export { SalesTable } from './sales';
 export * from './address';
 export * from './bank_details';
 export * from './payment_details';

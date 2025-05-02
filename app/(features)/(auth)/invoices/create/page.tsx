@@ -12,7 +12,7 @@ import {
   type SelectChangeEvent,
 } from '@mui/material';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 
 import FullSpinner from '@/app/shared/components/full-spinner';
 import PageHeader from '@/app/shared/components/page-header';
@@ -32,7 +32,8 @@ import SalesInvoiceSummary from '../components/sales-invoice-summary';
 import SalesTaxDiscount from '../components/sales-tax-discount';
 import UsedProductInvoiceDetails from '../components/used-product-invoice-details';
 
-export default function CreateInvoicePage() {
+// Main component that contains all the invoice form logic
+function InvoiceForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
@@ -741,5 +742,19 @@ export default function CreateInvoicePage() {
         <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
       </div>
     </>
+  );
+}
+
+// Loading fallback component
+function LoadingFallback() {
+  return <FullSpinner />;
+}
+
+// Main export that wraps the InvoiceForm with Suspense
+export default function CreateInvoicePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <InvoiceForm />
+    </Suspense>
   );
 }

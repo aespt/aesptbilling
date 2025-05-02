@@ -61,18 +61,24 @@ export async function POST(request: Request) {
     const validatedData = CreateSalesmanSchema.parse(body);
 
     // Insert the new salesman into the database
-    const newSalesman = await db.insert(SalesmenTable).values({
-      name: validatedData.name,
-      contact_number: validatedData.contact_number,
-      email: validatedData.email,
-      created_at: new Date(),
-      updated_at: new Date(),
-    }).returning();
-    
-    return NextResponse.json({ 
-      message: 'Salesman created successfully',
-      salesman: newSalesman[0]
-    }, { status: 201 });
+    const newSalesman = await db
+      .insert(SalesmenTable)
+      .values({
+        name: validatedData.name,
+        contact_number: validatedData.contact_number,
+        email: validatedData.email,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      .returning();
+
+    return NextResponse.json(
+      {
+        message: 'Salesman created successfully',
+        salesman: newSalesman[0],
+      },
+      { status: 201 }
+    );
   } catch (error: unknown) {
     console.error('Error creating salesman:', error);
 
@@ -105,11 +111,17 @@ export async function PUT(request: Request) {
     const updateData: Partial<InferInsertModel<typeof SalesmenTable>> = {
       updated_at: new Date(),
     };
-    
-    if (validatedData.name !== undefined){ updateData.name = validatedData.name;}
-    if (validatedData.contact_number !== undefined){ updateData.contact_number = validatedData.contact_number;}
-    if (validatedData.email !== undefined){ updateData.email = validatedData.email;}
-    
+
+    if (validatedData.name !== undefined) {
+      updateData.name = validatedData.name;
+    }
+    if (validatedData.contact_number !== undefined) {
+      updateData.contact_number = validatedData.contact_number;
+    }
+    if (validatedData.email !== undefined) {
+      updateData.email = validatedData.email;
+    }
+
     // Update the salesman in the database
     const updatedSalesman = await db
       .update(SalesmenTable)

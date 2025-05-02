@@ -1,6 +1,15 @@
 'use client';
 
-import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography } from '@mui/material';
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import type { PurchaseFormData, PurchaseItem } from '@/lib/types';
@@ -17,7 +26,7 @@ export default function PurchaseSummary({ purchaseItems, formData }: PurchaseSum
   const [total, setTotal] = useState(0);
 
   // Calculate totals when items or tax/discount changes
-  useEffect(() => {    
+  useEffect(() => {
     // Calculate subtotal from all items
     const itemsSubtotal = purchaseItems.reduce((sum, item) => sum + (item.total || 0), 0);
     setSubtotal(itemsSubtotal);
@@ -96,4 +105,4 @@ export default function PurchaseSummary({ purchaseItems, formData }: PurchaseSum
       </Box>
     </Paper>
   );
-} 
+}

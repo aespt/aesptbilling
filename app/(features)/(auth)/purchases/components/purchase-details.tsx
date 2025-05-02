@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import Sidepanel from '@/app/shared/components/sidepanel';
 import type { FormErrors, PurchaseFormData } from '@/lib/types';
+
 import AddSupplier from '../../suppliers/components/add-supplier';
 
 interface Supplier {
@@ -157,10 +158,10 @@ export default function PurchaseDetails({
         </Box>
 
         <Box className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4 md:flex-row">
             {/* Left side - Purchase information */}
             <div className="w-full md:w-1/2">
-              <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex flex-col gap-3 md:flex-row">
                 {/* Left column of the left side */}
                 <div className="w-full md:w-1/2">
                   <div className="space-y-4">
@@ -227,8 +228,8 @@ export default function PurchaseDetails({
                   size="small"
                   className="h-full"
                   InputProps={{
-                    className: "h-full",
-                    style: { height: "160px" }
+                    className: 'h-full',
+                    style: { height: '160px' },
                   }}
                 />
               </div>
@@ -340,12 +341,9 @@ export default function PurchaseDetails({
         </Box>
       </Paper>
 
-      <Sidepanel
-        isOpen={isSupplierPanelOpen}
-        onClose={() => setIsSupplierPanelOpen(false)}
-      >
+      <Sidepanel isOpen={isSupplierPanelOpen} onClose={() => setIsSupplierPanelOpen(false)}>
         <AddSupplier onClose={() => setIsSupplierPanelOpen(false)} />
       </Sidepanel>
     </>
   );
-} 
+}

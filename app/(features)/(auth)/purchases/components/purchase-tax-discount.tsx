@@ -1,11 +1,6 @@
 'use client';
 
-import { 
-  Box, 
-  Paper, 
-  TextField, 
-  Typography 
-} from '@mui/material';
+import { Box, Paper, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import type { FormErrors, PurchaseFormData } from '@/lib/types';
@@ -21,14 +16,12 @@ interface PurchaseTaxDiscountProps {
 export default function PurchaseTaxDiscount({
   formData,
   setFormData,
-  errors,
-  setErrors,
   onTaxDiscountChange,
 }: PurchaseTaxDiscountProps) {
   // Track input focus state
   const [isTaxFocused, setIsTaxFocused] = useState(false);
   const [isDiscountFocused, setIsDiscountFocused] = useState(false);
-  
+
   // Local state to track input values
   const [taxValue, setTaxValue] = useState<string | number>(formData.tax_rate ?? 0);
   const [discountValue, setDiscountValue] = useState<string | number>(formData.discount_rate ?? 0);
@@ -45,7 +38,7 @@ export default function PurchaseTaxDiscount({
       setFormData({
         ...formData,
         tax_rate: 0,
-        discount_rate: 0
+        discount_rate: 0,
       });
     }
   }, [formData, setFormData]);
@@ -55,8 +48,10 @@ export default function PurchaseTaxDiscount({
     e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
   ) => {
     const { name, value } = e.target;
-    
-    if (!name) return;
+
+    if (!name) {
+      return;
+    }
 
     // Update local state for immediate feedback
     if (name === 'tax_rate') {
@@ -67,10 +62,10 @@ export default function PurchaseTaxDiscount({
 
     // Allow empty string or convert to number
     const numericValue = value === '' ? 0 : Number(value);
-    
+
     // Create a copy of formData to avoid reference issues
     const updatedFormData = { ...formData };
-    
+
     // Update specific field
     if (name === 'tax_rate') {
       updatedFormData.tax_rate = numericValue;
@@ -80,12 +75,12 @@ export default function PurchaseTaxDiscount({
       updatedFormData.discount_value = numericValue;
       updatedFormData.discount_type = 'FIXED';
     }
-    
+
     // For tax_rate, ensure proper tax field is updated
     if (name === 'tax_rate') {
       updatedFormData.vat_percentage = 0; // We're using absolute values
     }
-    
+
     // Update the form data
     setFormData(updatedFormData);
 
@@ -109,9 +104,9 @@ export default function PurchaseTaxDiscount({
       </Box>
 
       <Box className="p-4">
-        <div className="flex flex-wrap -mx-2">
+        <div className="-mx-2 flex flex-wrap">
           {/* Tax Section */}
-          <div className="w-full sm:w-1/2 px-2 mb-4 sm:mb-0">
+          <div className="mb-4 w-full px-2 sm:mb-0 sm:w-1/2">
             <div className="space-y-2">
               <Typography variant="subtitle2" className="font-medium text-gray-700">
                 Tax Amount
@@ -138,7 +133,7 @@ export default function PurchaseTaxDiscount({
                       setTaxValue(0);
                       setFormData({
                         ...formData,
-                        tax_rate: 0
+                        tax_rate: 0,
                       });
                       onTaxDiscountChange();
                     }
@@ -149,7 +144,7 @@ export default function PurchaseTaxDiscount({
           </div>
 
           {/* Discount Section */}
-          <div className="w-full sm:w-1/2 px-2">
+          <div className="w-full px-2 sm:w-1/2">
             <div className="space-y-2">
               <Typography variant="subtitle2" className="font-medium text-gray-700">
                 Discount Amount
@@ -176,7 +171,7 @@ export default function PurchaseTaxDiscount({
                       setDiscountValue(0);
                       setFormData({
                         ...formData,
-                        discount_rate: 0
+                        discount_rate: 0,
                       });
                       onTaxDiscountChange();
                     }
@@ -189,4 +184,4 @@ export default function PurchaseTaxDiscount({
       </Box>
     </Paper>
   );
-} 
+}

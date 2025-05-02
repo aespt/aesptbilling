@@ -5,9 +5,12 @@ import { BaseCreateSchema, BaseSchema } from './baseSchema';
 // Zod schema for salesman validation
 export const SalesmanSchema = BaseSchema.extend({
   id: z.number().optional(),
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  contact_number: z.string().min(10).max(20, { message: "Contact number must be between 10 and 20 characters" }),
-  email: z.string().email({ message: "Invalid email address" }),
+  name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
+  contact_number: z
+    .string()
+    .min(10)
+    .max(20, { message: 'Contact number must be between 10 and 20 characters' }),
+  email: z.string().email({ message: 'Invalid email address' }),
 });
 
 // Zod schema for creating a new salesman

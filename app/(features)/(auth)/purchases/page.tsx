@@ -1,10 +1,8 @@
 'use client';
 
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import SearchIcon from '@mui/icons-material/Search';
 import {
   Typography,
-  Box,
   Paper,
   Table,
   TableBody,
@@ -15,22 +13,15 @@ import {
   TableSortLabel,
   Drawer,
   IconButton,
-  Button,
-  TextField,
-  InputAdornment,
-  Autocomplete,
-  MenuItem,
 } from '@mui/material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import type * as DayJS from 'dayjs';
+import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 
 import Pagination from '@/app/shared/components/pagination';
 import type { PaginationInfo } from '@/app/shared/components/pagination';
 import PrimaryButton from '@/app/shared/components/primary-button';
-import Link from 'next/link';
+
 import PurchaseFilters from './components/purchase-filters';
 
 // Add custom CSS for animations

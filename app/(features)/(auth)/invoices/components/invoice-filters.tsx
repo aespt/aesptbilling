@@ -1,21 +1,11 @@
 'use client';
 
 import SearchIcon from '@mui/icons-material/Search';
-import {
-  Typography,
-  Box,
-  TextField,
-  InputAdornment,
-  Autocomplete,
-  MenuItem,
-  Button,
-} from '@mui/material';
+import { TextField, InputAdornment, Autocomplete } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import type * as DayJS from 'dayjs';
-
-import PrimaryButton from '@/app/shared/components/primary-button';
 
 interface Customer {
   id: number;
@@ -75,7 +65,9 @@ export default function InvoiceFilters({
           <div className="space-y-6 p-6">
             {/* Date From Filter */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Date From</label>
+              <label htmlFor="dateFrom" className="text-sm font-medium text-gray-700">
+                Date From
+              </label>
               <DatePicker
                 value={tempFilters.dateFrom}
                 onChange={newValue => handleFilterChange('dateFrom', newValue)}
@@ -91,7 +83,9 @@ export default function InvoiceFilters({
 
             {/* Date To Filter */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Date To</label>
+              <label htmlFor="dateTo" className="text-sm font-medium text-gray-700">
+                Date To
+              </label>
               <DatePicker
                 value={tempFilters.dateTo}
                 onChange={newValue => handleFilterChange('dateTo', newValue)}
@@ -107,7 +101,9 @@ export default function InvoiceFilters({
 
             {/* Invoice Number Filter */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Invoice Number</label>
+              <label htmlFor="invoiceNumber" className="text-sm font-medium text-gray-700">
+                Invoice Number
+              </label>
               <TextField
                 fullWidth
                 size="small"
@@ -127,7 +123,9 @@ export default function InvoiceFilters({
 
             {/* Sales Person Filter - Autocomplete */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Sales Person</label>
+              <label htmlFor="salesPerson" className="text-sm font-medium text-gray-700">
+                Sales Person
+              </label>
               <Autocomplete
                 options={salesmen}
                 loading={loadingDropdowns}
@@ -158,7 +156,9 @@ export default function InvoiceFilters({
 
             {/* Customer Filter - Autocomplete */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Customer</label>
+              <label htmlFor="customer" className="text-sm font-medium text-gray-700">
+                Customer
+              </label>
               <Autocomplete
                 options={customers}
                 loading={loadingDropdowns}
@@ -232,4 +232,4 @@ export default function InvoiceFilters({
       </div>
     </LocalizationProvider>
   );
-} 
+}

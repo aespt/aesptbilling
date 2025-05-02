@@ -8,7 +8,12 @@ interface PageHeaderProps {
   buttonVariant?: 'primary' | 'secondary';
 }
 
-export default function PageHeader({ heading, buttonText, onButtonClick, buttonVariant = 'primary' }: PageHeaderProps) {
+export default function PageHeader({
+  heading,
+  buttonText,
+  onButtonClick,
+  buttonVariant = 'primary',
+}: PageHeaderProps) {
   return (
     <div className="mb-6 flex items-center justify-between">
       <h1 className="text-2xl font-bold text-gray-800">{heading}</h1>
@@ -19,8 +24,12 @@ export default function PageHeader({ heading, buttonText, onButtonClick, buttonV
       >
         {buttonText}
       </Button> */}
-      {buttonText && buttonVariant === 'primary' && <PrimaryButton label={buttonText} onClick={onButtonClick} />}
-      {buttonText && buttonVariant === 'secondary' && <SecondaryButton label={buttonText} onClick={onButtonClick} />}
+      {buttonText && buttonVariant === 'primary' && (
+        <PrimaryButton label={buttonText} onClick={onButtonClick} />
+      )}
+      {buttonText && buttonVariant === 'secondary' && (
+        <SecondaryButton label={buttonText} onClick={onButtonClick} />
+      )}
       {/* <PrimaryButton label={buttonText} onClick={onButtonClick} /> */}
     </div>
   );

@@ -1,26 +1,23 @@
 'use client';
 
-import { Button, Menu, MenuItem } from '@mui/material';
-import { usePopupState, bindTrigger, bindMenu } from 'material-ui-popup-state/hooks';
+import { Button } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-import PageHeader from '@/app/shared/components/page-header';
-import Snackbar from '@/app/shared/components/snackbar';
-import useSnackbar from '@/app/shared/hooks/useSnackbar';
-import type { FormErrors, PurchaseFormData, PurchaseItem } from '@/lib/types';
 
 import PurchaseDetails from '@/app/(features)/(auth)/purchases/components/purchase-details';
 import PurchaseItems from '@/app/(features)/(auth)/purchases/components/purchase-items';
 import PurchaseSummary from '@/app/(features)/(auth)/purchases/components/purchase-summary';
 import PurchaseTaxDiscount from '@/app/(features)/(auth)/purchases/components/purchase-tax-discount';
 import FullSpinner from '@/app/shared/components/full-spinner';
+import PageHeader from '@/app/shared/components/page-header';
+import Snackbar from '@/app/shared/components/snackbar';
+import useSnackbar from '@/app/shared/hooks/useSnackbar';
+import type { FormErrors, PurchaseFormData, PurchaseItem } from '@/lib/types';
 
 export default function CreatePurchasePage() {
   const router = useRouter();
-  const { isOpen, message, type, showSnackbar, hideSnackbar } = useSnackbar();
+  const { isOpen, message, showSnackbar, hideSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const popupState = usePopupState({ variant: 'popover', popupId: 'purchaseActions' });
 
   // Helper to convert item types for component compatibility
   const adaptPurchaseItemsForSummary = (items: PurchaseItem[]) => {

@@ -68,6 +68,8 @@ export interface Customer {
   contact_person: string;
   email: string;
   phone: string;
+  trn: string;
+  updated_at: string;
 }
 
 // Salesman interface
@@ -75,5 +77,18 @@ export interface Salesman {
   id: number;
   name: string;
   email: string;
-  phone: string;
+  contact_number: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Supplier interface
+export interface Supplier {
+  id: number;
+  name: string;
+  address: string;
+  tax_registration_number: string;
+  contact_number: string;
+  created_at: string;
+  updated_at: string;
 }

@@ -158,12 +158,12 @@ export async function GET(request: NextRequest) {
       fgColor: { argb: 'FFE0E0E0' },
     };
 
-    const calculateTaxAndTotals = (invoice: any) => {
-      const taxRate = parseFloat(invoice.tax_rate) / 100;
-      const subTotal = parseFloat(invoice.sub_total);
-      const discount = parseFloat(invoice.discount);
-      let taxableAmount = parseFloat(invoice.sub_total);
-      if (parseFloat(invoice.discount) > 0) {
+    const calculateTaxAndTotals = (invoice: (typeof invoicesWithItems)[0]) => {
+      const taxRate = parseFloat(invoice.tax_rate?.toString() || '0') / 100;
+      const subTotal = parseFloat(invoice.sub_total?.toString() || '0');
+      const discount = parseFloat(invoice.discount?.toString() || '0');
+      let taxableAmount = subTotal;
+      if (discount > 0) {
         taxableAmount = subTotal - discount;
       }
       const invoiceTax = (taxableAmount * taxRate).toFixed(2);

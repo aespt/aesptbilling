@@ -1,15 +1,7 @@
 'use client';
 
+import { Box, Button, IconButton, TextField, Typography } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { 
-  Box,
-  TextField,
-  Typography,
-  Button,
-  IconButton,
-  Divider,
-  CircularProgress,
-} from '@mui/material';
 import { FiX } from 'react-icons/fi';
 
 // UI representation of bank details
@@ -40,17 +32,17 @@ interface AddBankDetailsProps {
   bankDetailsToEdit?: BankDetails | null;
 }
 
-export default function AddBankDetails({ 
-  onClose, 
-  onBankDetailsAdded, 
-  onBankDetailsUpdated, 
-  bankDetailsToEdit 
+export default function AddBankDetails({
+  onClose,
+  onBankDetailsAdded,
+  onBankDetailsUpdated,
+  bankDetailsToEdit,
 }: AddBankDetailsProps) {
   // Setup state for the form
   const [bankDetails, setBankDetails] = useState<ApiBankDetails>({
     name: '',
     details: '',
-    is_primary: false
+    is_primary: false,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,9 +66,9 @@ export default function AddBankDetails({
     const { name, value } = e.target;
     setBankDetails(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear errors when field is edited
     if (errors[name]) {
       setErrors(prev => {
@@ -90,10 +82,14 @@ export default function AddBankDetails({
   // Validate form input
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
-    if (!bankDetails.name) newErrors.name = 'Bank name is required';
-    if (!bankDetails.details) newErrors.details = 'Bank details are required';
-    
+
+    if (!bankDetails.name) {
+      newErrors.name = 'Bank name is required';
+    }
+    if (!bankDetails.details) {
+      newErrors.details = 'Bank details are required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -104,27 +100,27 @@ export default function AddBankDetails({
       id: apiBankDetails.id || 0,
       name: apiBankDetails.name,
       details: apiBankDetails.details,
-      isPrimary: apiBankDetails.is_primary
+      isPrimary: apiBankDetails.is_primary,
     };
   };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-    
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
-    
+
     try {
       // Ensure is_primary is always false when creating or updating
       const bankDetailsData = {
         ...bankDetails,
-        is_primary: false
+        is_primary: false,
       };
-      
-      console.log('Sending bank details data:', bankDetailsData);
-      
+
       if (bankDetailsToEdit) {
         // Update existing bank details
         const response = await fetch(`/api/bank-details/${bankDetails.id}`, {
@@ -134,14 +130,12 @@ export default function AddBankDetails({
           },
           body: JSON.stringify(bankDetailsData),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to update bank details');
         }
-        
+
         const result = await response.json();
-        console.log('Update response:', result);
-        
         // Call the callback with UI-formatted bank details
         onBankDetailsUpdated?.(convertToUiBankDetails(result.bankDetails));
       } else {
@@ -153,18 +147,16 @@ export default function AddBankDetails({
           },
           body: JSON.stringify(bankDetailsData),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to create bank details');
         }
-        
+
         const result = await response.json();
-        console.log('Create response:', result);
-        
         // Call the callback with UI-formatted bank details
         onBankDetailsAdded?.(convertToUiBankDetails(result.bankDetails));
       }
-      
+
       onClose();
     } catch (error) {
       console.error('Error submitting bank details:', error);
@@ -175,9 +167,9 @@ export default function AddBankDetails({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b">
+      <div className="flex items-center justify-between border-b p-4">
         <Typography variant="h6" className="font-medium">
           {bankDetailsToEdit ? 'Edit Bank Details' : 'Add New Bank Details'}
         </Typography>
@@ -185,7 +177,7 @@ export default function AddBankDetails({
           <FiX />
         </IconButton>
       </div>
-      
+
       {/* Form */}
       <Box component="form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
         <div className="space-y-6">
@@ -202,7 +194,7 @@ export default function AddBankDetails({
             error={!!errors.name}
             helperText={errors.name}
           />
-          
+
           {/* Bank Details */}
           <TextField
             label="Bank Details"
@@ -216,22 +208,25 @@ export default function AddBankDetails({
             size="small"
             required
             error={!!errors.details}
-            helperText={errors.details || 'Enter all bank details including account number, IFSC, branch, etc.'}
+            helperText={
+              errors.details ||
+              'Enter all bank details including account number, IFSC, branch, etc.'
+            }
           />
-          
+
           {/* General error message */}
           {errors.submit && (
-            <div className="text-red-500 text-sm p-2 bg-red-50 rounded">{errors.submit}</div>
+            <div className="rounded bg-red-50 p-2 text-sm text-red-500">{errors.submit}</div>
           )}
         </div>
       </Box>
-      
+
       {/* Footer with action buttons */}
-      <div className="border-t p-4 flex justify-end space-x-3">
+      <div className="flex justify-end space-x-3 border-t p-4">
         <Button
           variant="outlined"
           onClick={onClose}
-          className="border-gray-300 text-gray-700 flex-1"
+          className="flex-1 border-gray-300 text-gray-700"
           disabled={isSubmitting}
         >
           Cancel
@@ -240,19 +235,21 @@ export default function AddBankDetails({
           variant="contained"
           type="submit"
           onClick={handleSubmit}
-          className="cursor-pointer flex-1 px-4 py-2.5 rounded-md overflow-hidden bg-gradient-to-r from-red-500 to-blue-500 text-white hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:hover:scale-100"
+          className="flex-1 cursor-pointer overflow-hidden rounded-md bg-gradient-to-r from-red-500 to-blue-500 px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
           disabled={isSubmitting}
         >
           {isSubmitting ? (
             <div className="flex items-center">
-              <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+              <div className="mr-2 size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               <span>Saving...</span>
             </div>
+          ) : bankDetailsToEdit ? (
+            'Update Bank Details'
           ) : (
-            bankDetailsToEdit ? 'Update Bank Details' : 'Add Bank Details'
+            'Add Bank Details'
           )}
         </Button>
       </div>
     </div>
   );
-} 
+}

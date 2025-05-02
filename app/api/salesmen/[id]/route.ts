@@ -59,7 +59,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         name: body.name,
         contact_number: body.contact_number,
         email: body.email,
-        updated_at: new Date()
+        updated_at: new Date(),
       })
       .where(eq(SalesmenTable.id, salesmanId))
       .returning();

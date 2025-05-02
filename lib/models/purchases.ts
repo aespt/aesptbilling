@@ -6,7 +6,12 @@ import { UsersTable } from './users';
 // Create an enum for tax types
 export const purchaseTaxTypeEnum = pgEnum('purchase_tax_type', ['VAT', 'GST', 'NONE']);
 
-export const purchaseTypeEnum = pgEnum('purchase_type', ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION']);
+export const purchaseTypeEnum = pgEnum('purchase_type', [
+  'TAX',
+  'DELIVERY',
+  'PROFORMA',
+  'QUOTATION',
+]);
 
 export const PurchasesTable = pgTable('purchases', {
   id: serial('id').primaryKey(),
@@ -27,4 +32,4 @@ export const PurchasesTable = pgTable('purchases', {
   updated_by: integer('updated_by').references(() => UsersTable.id),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
-}); 
+});

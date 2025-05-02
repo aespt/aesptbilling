@@ -148,8 +148,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       })
     );
 
-    console.log(itemsWithProductDetails);
-
     return NextResponse.json({
       success: true,
       data: {

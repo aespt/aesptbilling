@@ -41,4 +41,4 @@ export const UpdatePurchaseSchema = CreatePurchaseSchema.partial();
 
 // Types derived from Zod schema
 export type PurchaseInput = z.infer<typeof CreatePurchaseSchema>;
-export type PurchaseUpdate = z.infer<typeof UpdatePurchaseSchema>; 
+export type PurchaseUpdate = z.infer<typeof UpdatePurchaseSchema>;

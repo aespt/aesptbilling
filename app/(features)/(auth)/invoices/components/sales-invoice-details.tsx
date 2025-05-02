@@ -46,7 +46,7 @@ export default function SalesInvoiceDetails({
   customers = [],
   salesmen = [],
 }: SalesInvoiceDetailsProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [isCustomerPanelOpen, setIsCustomerPanelOpen] = useState(false);
   const initialized = useRef(false);
 

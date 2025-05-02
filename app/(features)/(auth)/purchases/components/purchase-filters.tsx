@@ -1,12 +1,7 @@
 'use client';
 
 import SearchIcon from '@mui/icons-material/Search';
-import {
-  TextField,
-  InputAdornment,
-  Autocomplete,
-  MenuItem,
-} from '@mui/material';
+import { TextField, InputAdornment, Autocomplete } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -46,7 +41,6 @@ export default function PurchaseFilters({
   handleResetFilters,
   suppliers,
   loadingDropdowns,
-  purchaseTypeOptions,
 }: PurchaseFiltersProps) {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -62,7 +56,9 @@ export default function PurchaseFilters({
           <div className="space-y-6 p-6">
             {/* Date From Filter */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Date From</label>
+              <label htmlFor="dateFrom" className="text-sm font-medium text-gray-700">
+                Date From
+              </label>
               <DatePicker
                 value={tempFilters.dateFrom}
                 onChange={newValue => handleFilterChange('dateFrom', newValue)}
@@ -78,7 +74,9 @@ export default function PurchaseFilters({
 
             {/* Date To Filter */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Date To</label>
+              <label htmlFor="dateTo" className="text-sm font-medium text-gray-700">
+                Date To
+              </label>
               <DatePicker
                 value={tempFilters.dateTo}
                 onChange={newValue => handleFilterChange('dateTo', newValue)}
@@ -94,7 +92,9 @@ export default function PurchaseFilters({
 
             {/* Purchase Number Filter */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Purchase Number</label>
+              <label htmlFor="purchaseNumber" className="text-sm font-medium text-gray-700">
+                Purchase Number
+              </label>
               <TextField
                 fullWidth
                 size="small"
@@ -114,7 +114,9 @@ export default function PurchaseFilters({
 
             {/* Supplier Filter - Autocomplete */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Supplier</label>
+              <label htmlFor="supplier" className="text-sm font-medium text-gray-700">
+                Supplier
+              </label>
               <Autocomplete
                 options={suppliers}
                 loading={loadingDropdowns}
@@ -167,4 +169,4 @@ export default function PurchaseFilters({
       </div>
     </LocalizationProvider>
   );
-} 
+}
