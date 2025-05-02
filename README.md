@@ -291,6 +291,83 @@ The project uses Zod for schema validation. Schema files are in `lib/schemas/` d
 - **yarn db:setup**: Complete one-step database setup (create, push, migrate)
 - **yarn docker:up**: Start Docker containers
 - **yarn docker:down**: Stop Docker containers
+- **yarn release:patch**: Create a patch release (for bug fixes)
+- **yarn release:minor**: Create a minor release (for new features)
+- **yarn release:major**: Create a major release (for breaking changes)
+- **yarn release**: Create a release with automatic version determination
+
+## Release Process
+
+This project uses `commit-and-tag-version` to manage versioning and releases. The process follows semantic versioning principles:
+
+- **Patch releases (0.0.x)**: Bug fixes and minor improvements
+- **Minor releases (0.x.0)**: New features that don't break existing functionality
+- **Major releases (x.0.0)**: Breaking changes that require updates to consuming code
+
+### Creating a Release
+
+1. Ensure all changes are committed to your branch
+2. Merge your changes to the main branch
+3. Pull the latest changes from the main branch:
+   ```bash
+   git checkout main
+   git pull
+   ```
+4. Create a release based on the type of changes:
+
+   ```bash
+   # For bug fixes:
+   yarn release:patch
+
+   # For new features:
+   yarn release:minor
+
+   # For breaking changes:
+   yarn release:major
+
+   # Or let the tool determine the version:
+   yarn release
+   ```
+
+The release process will:
+
+1. Fetch existing git tags
+2. Bump the version in package.json according to semantic versioning
+3. Update the CHANGELOG.md with details from your commits
+4. Create a git commit with these changes
+5. Create a git tag for the new version
+6. Push both the commit and tag to the remote repository
+
+### Version Alignment
+
+The release process ensures that:
+
+- The version in package.json is automatically updated to match the git tag
+- Git tags are created with a "v" prefix (e.g., v1.0.0)
+- CHANGELOG.md is organized by version numbers
+- All artifacts (package.json version, git tags, and CHANGELOG.md) remain in sync
+
+This automated alignment means you never have to manually update version numbers, reducing the risk of inconsistencies between your codebase and version control system.
+
+### Commit Message Format
+
+For the most effective changelog generation, format your commit messages following conventional commits:
+
+- `fix: message` - for bug fixes (patch release)
+- `feat: message` - for new features (minor release)
+- `feat!: message` or `fix!: message` - for breaking changes (major release)
+- `docs: message` - for documentation changes
+- `chore: message` - for maintenance tasks
+- `refactor: message` - for code refactoring
+- `test: message` - for adding or updating tests
+
+Example:
+
+```
+feat: add customer export functionality
+
+This adds the ability to export customer data to Excel format.
+```
 
 ## Password Reset Feature
 

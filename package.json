@@ -23,7 +23,11 @@
     "db:seed": "tsx scripts/seed-db.ts",
     "db:complete-reset": "tsx scripts/complete-reset.ts",
     "db:create": "tsx scripts/create-db.ts",
-    "db:setup": "tsx scripts/db-setup.ts"
+    "db:setup": "tsx scripts/db-setup.ts",
+    "release:patch": "commit-and-tag-version --release-as patch",
+    "release:minor": "commit-and-tag-version --release-as minor",
+    "release:major": "commit-and-tag-version --release-as major",
+    "release": "commit-and-tag-version"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -87,6 +91,7 @@
     "@types/react-is": "^19",
     "@typescript-eslint/eslint-plugin": "^8.26.0",
     "@typescript-eslint/parser": "^8.26.0",
+    "commit-and-tag-version": "^12.5.1",
     "eslint-config-prettier": "^10.0.2",
     "eslint-import-resolver-typescript": "^3.8.3",
     "eslint-plugin-import": "^2.31.0",

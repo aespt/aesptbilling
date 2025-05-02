@@ -121,7 +121,7 @@ export default function Sidebar() {
         <div className="border-t border-gray-200 p-4">
           {!isCollapsed && (
             <div className="text-xs text-gray-500">
-              <p>© 2024 AESPT</p>
+              <p>© 2025 AESPT</p>
               <p>Wholesale Spare Parts</p>
             </div>
           )}

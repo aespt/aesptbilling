@@ -1,0 +1,27 @@
+{
+  "packageFiles": [
+    {
+      "filename": "package.json",
+      "type": "json"
+    }
+  ],
+  "bumpFiles": [
+    {
+      "filename": "package.json",
+      "type": "json"
+    }
+  ],
+  "skip": {
+    "tag": false,
+    "changelog": false,
+    "commit": false
+  },
+  "scripts": {
+    "preinstall": "yarn",
+    "postinstall": "yarn",
+    "prebump": "git fetch --tags",
+    "postbump": "yarn",
+    "postchangelog": "git add CHANGELOG.md package.json",
+    "posttag": "git push && git push --tags"
+  }
+}
