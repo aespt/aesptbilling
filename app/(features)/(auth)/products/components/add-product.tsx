@@ -6,11 +6,14 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 
-import type { Product } from '@/lib/types';
+import type { Product } from '@/lib/drizzle';
 
 // Define the validation schema using Zod
 const productFormSchema = z.object({
-  partNo: z.string().min(1, 'Part number is required'),
+  partNo: z
+    .string()
+    .min(1, 'Part number is required')
+    .refine(val => val.trim().length > 0, { message: 'Part number cannot be empty' }),
   partName: z.string().min(2, 'Product name must be at least 2 characters'),
   description: z.string().optional(),
   price: z.preprocess(
@@ -131,6 +134,10 @@ export default function AddProduct({
 
         if (!response.ok) {
           const errorData = await response.json();
+          // Check for duplicate part number error
+          if (response.status === 409) {
+            throw new Error('A product with this part number already exists');
+          }
           throw new Error(errorData.error || 'Failed to update product');
         }
 
@@ -150,6 +157,10 @@ export default function AddProduct({
 
         if (!response.ok) {
           const errorData = await response.json();
+          // Check for duplicate part number error
+          if (response.status === 409) {
+            throw new Error('A product with this part number already exists');
+          }
           throw new Error(errorData.error || 'Failed to create product');
         }
 
@@ -274,65 +285,74 @@ export default function AddProduct({
             />
             <ErrorMessage message={errors.description?.message} />
           </div>
-          
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Price</label>
-              <Controller
-                name="price"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    type="number"
-                    placeholder="Enter price"
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ step: 0.01 }}
-                    error={!!errors.price}
-                    value={field.value === 0 && !isSubmitted ? '' : field.value}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? '' : parseFloat(e.target.value);
-                      field.onChange(value);
-                    }}
-                  />
-                )}
-              />
-              <ErrorMessage message={errors.price?.message} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Selling Price</label>
-              <Controller
-                name="mrp"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    type="number"
-                    placeholder="Enter selling price"
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ step: 0.01 }}
-                    error={!!errors.mrp}
-                    value={field.value === 0 && !isSubmitted ? '' : field.value}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? '' : parseFloat(e.target.value);
-                      field.onChange(value);
-                    }}
-                  />
-                )}
-              />
-              <ErrorMessage message={errors.mrp?.message} />
-            </div>
-            <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Brand</label>
+
+          <div className="space-y-1">
+            <label htmlFor="price" className="text-sm font-medium text-gray-700">
+              Price
+            </label>
+            <Controller
+              name="price"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  id="price"
+                  fullWidth
+                  type="number"
+                  placeholder="Enter price"
+                  variant="outlined"
+                  size="small"
+                  inputProps={{ step: 0.01 }}
+                  error={!!errors.price}
+                  value={field.value === 0 && !isSubmitted ? '' : field.value}
+                  onChange={e => {
+                    const value = e.target.value === '' ? '' : parseFloat(e.target.value);
+                    field.onChange(value);
+                  }}
+                />
+              )}
+            />
+            <ErrorMessage message={errors.price?.message} />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="mrp" className="text-sm font-medium text-gray-700">
+              Selling Price
+            </label>
+            <Controller
+              name="mrp"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  id="mrp"
+                  fullWidth
+                  type="number"
+                  placeholder="Enter selling price"
+                  variant="outlined"
+                  size="small"
+                  inputProps={{ step: 0.01 }}
+                  error={!!errors.mrp}
+                  value={field.value === 0 && !isSubmitted ? '' : field.value}
+                  onChange={e => {
+                    const value = e.target.value === '' ? '' : parseFloat(e.target.value);
+                    field.onChange(value);
+                  }}
+                />
+              )}
+            />
+            <ErrorMessage message={errors.mrp?.message} />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="brand" className="text-sm font-medium text-gray-700">
+              Brand
+            </label>
             <Controller
               name="brand"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="brand"
                   fullWidth
                   placeholder="Enter brand"
                   variant="outlined"
@@ -342,9 +362,11 @@ export default function AddProduct({
             />
             <ErrorMessage message={errors.brand?.message} />
           </div>
-          
-          <div className="space-y-1 hidden">
-            <label className="text-sm font-medium text-gray-700">Quantity</label>
+
+          <div className="hidden space-y-1">
+            <label htmlFor="count" className="text-sm font-medium text-gray-700">
+              Quantity
+            </label>
             <Controller
               name="count"
               control={control}

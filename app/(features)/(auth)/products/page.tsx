@@ -23,7 +23,7 @@ import Sidepanel from '@/app/shared/components/sidepanel';
 import Snackbar from '@/app/shared/components/snackbar';
 import useConfirmation from '@/app/shared/hooks/useConfirmation';
 import useSnackbar from '@/app/shared/hooks/useSnackbar';
-import type { Product } from '@/lib/types';
+import type { Product } from '@/lib/drizzle';
 
 import AddProduct from './components/add-product';
 
@@ -220,7 +220,11 @@ export default function ProductsPage() {
   };
 
   // Format price to display with 2 decimal places
-  const formatPrice = (price: number | string) => {
+  const formatPrice = (price: number | string | null) => {
+    if (price === null) {
+      return '0.00';
+    }
+
     // Convert price to number if it's not already
     const numericPrice = typeof price === 'number' ? price : parseFloat(price);
 
@@ -233,8 +237,9 @@ export default function ProductsPage() {
   };
 
   // Format date to a more readable format
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | Date) => {
+    const date = dateString instanceof Date ? dateString : new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -274,7 +279,6 @@ export default function ProductsPage() {
   const handleSearch = (query: string) => {
     // Only log and update search query if it's a user-initiated search
     if (isSearchUserInitiated.current) {
-      console.log('query', query);
       setSearchQuery(query);
       setPage(1); // Reset to first page when searching
     }
@@ -392,7 +396,7 @@ export default function ProductsPage() {
       {/* Snackbar for notifications */}
       <Snackbar open={isOpen} message={message} type={type} onClose={hideSnackbar} />
 
-      <Sidepanel isOpen={isSidepanelOpen} onClose={handleCloseSidepanel} size="small">
+      <Sidepanel isOpen={isSidepanelOpen} onClose={handleCloseSidepanel} size="medium">
         <div className="h-screen">
           <AddProduct
             productToEdit={selectedProduct}
