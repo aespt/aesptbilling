@@ -15,7 +15,7 @@ const connectionString =
 
 // Configure connection pool
 const sql = postgres(connectionString, {
-  ssl: false,
+  ssl: true,
   // Connection pool configuration
   max: 10, // Maximum number of connections in the pool
   idle_timeout: 30, // Close idle connections after 30 seconds

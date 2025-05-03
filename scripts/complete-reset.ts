@@ -35,7 +35,7 @@ async function main() {
   // Connect to postgres database to perform operations
   const client = postgres(connectionString, {
     max: 1,
-    ssl: false,
+    ssl: true,
   });
 
   try {
@@ -50,7 +50,7 @@ async function main() {
     // Step 3: Connect to the newly created database
     const aesptClient = postgres('postgres://postgres:postgres@localhost:5432/aespt_db', {
       max: 1,
-      ssl: false,
+      ssl: true,
     });
 
     // Step 4: Create a fresh drizzle schema

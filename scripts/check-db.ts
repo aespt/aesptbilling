@@ -13,7 +13,7 @@ async function main() {
 
   // Create a client
   const client = postgres(connectionString, {
-    ssl: false,
+    ssl: true,
   });
 
   try {
