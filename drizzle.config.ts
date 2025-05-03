@@ -13,7 +13,7 @@ export default {
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
     database: process.env.PGDATABASE || 'aespt_db',
-    ssl: true,
+    ssl: false,
   },
   verbose: true,
   strict: true,

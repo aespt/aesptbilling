@@ -22,7 +22,7 @@ async function createDatabase() {
     max: 1,
     idle_timeout: 30,
     connect_timeout: 15,
-    ssl: true,
+    ssl: false,
   });
 
   try {

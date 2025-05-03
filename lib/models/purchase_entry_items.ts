@@ -19,4 +19,4 @@ export const PurchaseEntryItemsTable = pgTable('purchase_entry_items', {
   updated_by: integer('updated_by').references(() => UsersTable.id),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
-}); 
+});

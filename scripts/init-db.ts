@@ -17,7 +17,7 @@ const migrationClient = postgres(connectionString, {
   max: 3, // Limit connections for migrations
   idle_timeout: 30,
   connect_timeout: 15,
-  ssl: true,
+  ssl: false,
 });
 
 async function main() {
