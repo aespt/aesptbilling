@@ -1,12 +1,17 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "yarn build",
+  "devCommand": "yarn dev",
+  "installCommand": "yarn install",
+  "framework": "nextjs",
   "functions": {
-    "app/api/invoices/pdf/[id]/route.ts": {
+    "app/api/invoices/pdf/**/*.ts": {
       "memory": 1024,
       "maxDuration": 60
     }
   },
-  "buildCommand": "yarn build",
-  "installCommand": "yarn install",
-  "outputDirectory": ".next",
-  "crons": []
+  "crons": [],
+  "github": {
+    "silent": true
+  }
 }

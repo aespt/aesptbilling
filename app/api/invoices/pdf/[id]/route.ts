@@ -27,14 +27,27 @@ async function getBrowser(launchOptions: Parameters<typeof launch>[0]): Promise<
       // Access the default export
       const chromium = chromiumModule.default;
 
+      // Set fonts for better rendering
+      try {
+        await chromium.font(
+          'https://raw.githack.com/googlei18n/noto-emoji/master/fonts/NotoColorEmoji.ttf'
+        );
+      } catch (fontError) {
+        console.warn('Could not load emoji font, continuing anyway:', fontError);
+      }
+
+      // Configure proper browser launch
       return launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        args: [...chromium.args, '--font-render-hinting=none'],
+        defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
         headless: true,
       });
     } catch (error) {
       console.error('Failed to load chromium:', error);
-      throw error;
+      throw new Error(
+        `Failed to initialize browser in Vercel environment: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
   // Running locally
@@ -61,6 +74,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       url.searchParams.get('invoicestage') ||
       url.searchParams.get('InvoiceStage') ||
       url.searchParams.get('INVOICESTAGE');
+
+    // Debugging information
+    console.log(`Processing PDF for invoice ID: ${invoiceId}, stage: ${invoiceStage || 'default'}`);
+    console.log(`Running in environment: ${process.env.NODE_ENV}`);
+    console.log(`Vercel deployment: ${process.env.AWS_LAMBDA_FUNCTION_VERSION ? 'Yes' : 'No'}`);
 
     // Get invoice data from database
     const invoices = await db.select().from(InvoicesTable).where(eq(InvoicesTable.id, invoiceId));
@@ -723,6 +741,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error('Error generating PDF:', error);
 
+    // Provide detailed error information
+    let errorMessage = 'Failed to generate PDF';
+    let errorDetails = '';
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || '';
+    } else {
+      errorDetails = String(error);
+    }
+
     // Make sure to close browser if an error occurs
     if (browser) {
       try {
@@ -734,8 +763,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(
       {
-        error: 'Failed to generate PDF',
-        details: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
+        details: errorDetails,
+        environment: process.env.NODE_ENV,
+        isVercel: Boolean(process.env.AWS_LAMBDA_FUNCTION_VERSION),
       },
       { status: 500 }
     );
@@ -764,6 +795,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       requestBody.InvoiceStage ||
       requestBody.INVOICESTAGE ||
       'SALE';
+
+    // Debugging information
+    console.log(`Processing PDF (POST) for invoice ID: ${invoiceId}, stage: ${invoiceStage}`);
+    console.log(`Running in environment: ${process.env.NODE_ENV}`);
+    console.log(`Vercel deployment: ${process.env.AWS_LAMBDA_FUNCTION_VERSION ? 'Yes' : 'No'}`);
 
     // Get invoice data from database
     const invoices = await db.select().from(InvoicesTable).where(eq(InvoicesTable.id, invoiceId));
@@ -1427,6 +1463,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   } catch (error) {
     console.error('Error generating PDF:', error);
 
+    // Provide detailed error information
+    let errorMessage = 'Failed to generate PDF';
+    let errorDetails = '';
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || '';
+    } else {
+      errorDetails = String(error);
+    }
+
     // Make sure to close browser if an error occurs
     if (browser) {
       try {
@@ -1438,8 +1485,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json(
       {
-        error: 'Failed to generate PDF',
-        details: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
+        details: errorDetails,
+        environment: process.env.NODE_ENV,
+        isVercel: Boolean(process.env.AWS_LAMBDA_FUNCTION_VERSION),
       },
       { status: 500 }
     );

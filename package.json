@@ -7,7 +7,7 @@
   "packageManager": "yarn@4.7.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "yarn install-chromium && node scripts/verify-chromium.js && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -27,7 +27,8 @@
     "release:patch": "commit-and-tag-version --release-as patch",
     "release:minor": "commit-and-tag-version --release-as minor",
     "release:major": "commit-and-tag-version --release-as major",
-    "release": "commit-and-tag-version"
+    "release": "commit-and-tag-version",
+    "install-chromium": "node node_modules/@sparticuz/chromium/install.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -114,7 +115,8 @@
   "vercel": {
     "installCommand": "yarn install",
     "includedFiles": [
-      "node_modules/@sparticuz/chromium/**/*"
+      "node_modules/@sparticuz/chromium/**/*",
+      ".cache/puppeteer/**/*"
     ],
     "regions": [
       "fra1"
