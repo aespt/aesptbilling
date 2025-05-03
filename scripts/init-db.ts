@@ -10,7 +10,7 @@ import { UsersTable } from '../lib/models';
 dotenv.config();
 
 // Connection string with explicit credentials
-const connectionString = 'postgres://postgres:postgres@localhost:5432/aespt_db';
+const connectionString = process.env.DATABASE_URL || '';
 
 // For migrations - don't use SSL for local development
 const migrationClient = postgres(connectionString, {

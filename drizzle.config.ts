@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as dotenv from 'dotenv';
 import type { Config } from 'drizzle-kit';
-
 dotenv.config();
 
 export default {
@@ -18,3 +18,8 @@ export default {
   verbose: true,
   strict: true,
 } satisfies Config;
+// import { neon } from '@neondatabase/serverless';
+// import { drizzle } from 'drizzle-orm/neon-http';
+
+// const sql = neon(process.env.DATABASE_URL!);
+// export const db = drizzle(sql);
