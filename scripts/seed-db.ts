@@ -10,7 +10,6 @@ async function main() {
   try {
     const result = await seed();
     console.log('Database seeding completed successfully!');
-    console.log('Summary:');
     console.log(`- ${result.products.length} products created`);
     console.log(`- ${result.customers.length} customers created`);
     console.log(`- ${result.gstEntries.length} GST entries created`);
