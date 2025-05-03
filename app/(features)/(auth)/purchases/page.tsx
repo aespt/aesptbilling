@@ -13,6 +13,9 @@ import {
   TableSortLabel,
   Drawer,
   IconButton,
+  Tabs,
+  Tab,
+  Box,
 } from '@mui/material';
 import type * as DayJS from 'dayjs';
 import Link from 'next/link';
@@ -21,6 +24,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Pagination from '@/app/shared/components/pagination';
 import type { PaginationInfo } from '@/app/shared/components/pagination';
 import PrimaryButton from '@/app/shared/components/primary-button';
+
+import PurchaseEntryFilters from '../purchase-entries/components/purchase-entry-filters';
 
 import PurchaseFilters from './components/purchase-filters';
 
@@ -59,6 +64,20 @@ interface Purchase {
   total: string;
 }
 
+interface PurchaseEntry {
+  id: number;
+  purchaseentry_number: string;
+  purchaseentry_date: string;
+  ship_from: string;
+  purchase_type: string;
+  supplier: {
+    id: number;
+    name: string;
+    address: string;
+  };
+  total: string;
+}
+
 interface SortConfig {
   field: string;
   direction: 'asc' | 'desc';
@@ -72,7 +91,41 @@ interface FilterOptions {
   purchaseType: string | null;
 }
 
+interface PurchaseEntryFilterOptions {
+  dateFrom: DayJS.Dayjs | null;
+  dateTo: DayJS.Dayjs | null;
+  purchaseEntryNumber: string;
+  supplier: Supplier | null;
+  purchaseType: string | null;
+}
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 export default function PurchasesListPage() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Purchases state
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -102,11 +155,54 @@ export default function PurchasesListPage() {
     supplier: null,
     purchaseType: null,
   });
+
+  // Purchase Entries state
+  const [purchaseEntries, setPurchaseEntries] = useState<PurchaseEntry[]>([]);
+  const [loadingEntries, setLoadingEntries] = useState(true);
+  const [entriesPagination, setEntriesPagination] = useState<PaginationInfo>({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    pageSize: 10,
+    hasNext: false,
+    hasPrev: false,
+  });
+  const [entriesSort, setEntriesSort] = useState<SortConfig>({
+    field: 'purchaseentry_date',
+    direction: 'desc',
+  });
+  const [entriesFilterDrawerOpen, setEntriesFilterDrawerOpen] = useState(false);
+  const [entriesFilters, setEntriesFilters] = useState<PurchaseEntryFilterOptions>({
+    dateFrom: null,
+    dateTo: null,
+    purchaseEntryNumber: '',
+    supplier: null,
+    purchaseType: null,
+  });
+  const [entriesTempFilters, setEntriesTempFilters] = useState<PurchaseEntryFilterOptions>({
+    dateFrom: null,
+    dateTo: null,
+    purchaseEntryNumber: '',
+    supplier: null,
+    purchaseType: null,
+  });
+
+  // Shared state
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
 
   // Define purchase type options
   const purchaseTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
+
+  // Handle tab change
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    if (newValue === 0) {
+      fetchPurchases();
+    } else {
+      fetchPurchaseEntries();
+    }
+  };
 
   // Fetch dropdown data
   useEffect(() => {
@@ -126,12 +222,18 @@ export default function PurchasesListPage() {
       }
     };
 
-    if (filterDrawerOpen) {
-      setTempFilters(filters);
+    if (filterDrawerOpen || entriesFilterDrawerOpen) {
+      if (filterDrawerOpen) {
+        setTempFilters(filters);
+      }
+      if (entriesFilterDrawerOpen) {
+        setEntriesTempFilters(entriesFilters);
+      }
       fetchDropdownData();
     }
-  }, [filterDrawerOpen]);
+  }, [filterDrawerOpen, entriesFilterDrawerOpen, filters, entriesFilters]);
 
+  // Purchases fetch
   const fetchPurchases = useCallback(
     async (overrideFilters?: FilterOptions) => {
       setLoading(true);
@@ -198,11 +300,88 @@ export default function PurchasesListPage() {
     [pagination.currentPage, pagination.pageSize, sort, filters]
   );
 
+  // Purchase Entries fetch
+  const fetchPurchaseEntries = useCallback(
+    async (overrideFilters?: PurchaseEntryFilterOptions) => {
+      setLoadingEntries(true);
+
+      // Use override filters if provided, otherwise use state filters
+      const filtersToUse = overrideFilters || entriesFilters;
+
+      try {
+        // Build query parameters with null checks and default values
+        const params = new URLSearchParams({
+          page: (entriesPagination?.currentPage ?? 1).toString(),
+          limit: (entriesPagination?.pageSize ?? 10).toString(),
+          sortField: entriesSort.field,
+          sortOrder: entriesSort.direction,
+        });
+
+        // Add date filters if set
+        if (filtersToUse.dateFrom) {
+          params.append('dateFrom', filtersToUse.dateFrom.format('YYYY-MM-DD'));
+        }
+
+        if (filtersToUse.dateTo) {
+          params.append('dateTo', filtersToUse.dateTo.format('YYYY-MM-DD'));
+        }
+
+        // Add text filters if set
+        if (filtersToUse.purchaseEntryNumber.trim()) {
+          params.append('purchaseEntryNumber', filtersToUse.purchaseEntryNumber.trim());
+        }
+
+        // Add supplier filter if set
+        if (filtersToUse.supplier) {
+          params.append('supplier', filtersToUse.supplier.name);
+        }
+
+        // Add purchase type filter if set
+        if (filtersToUse.purchaseType) {
+          params.append('purchaseType', filtersToUse.purchaseType);
+        }
+
+        const response = await fetch(`/api/purchase-entries?${params.toString()}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch purchase entries');
+        }
+
+        const data = await response.json();
+        setPurchaseEntries(data.purchaseEntries);
+        // Ensure pagination data has all required fields
+        setEntriesPagination({
+          total: data.pagination.total ?? 0,
+          totalPages: data.pagination.totalPages ?? 1,
+          currentPage: data.pagination.page ?? 1,
+          pageSize: data.pagination.pageSize ?? 10,
+          hasNext: data.pagination.hasNext ?? false,
+          hasPrev: data.pagination.hasPrev ?? false,
+        });
+      } catch (error) {
+        console.error('Error fetching purchase entries:', error);
+      } finally {
+        setLoadingEntries(false);
+      }
+    },
+    [entriesPagination.currentPage, entriesPagination.pageSize, entriesSort, entriesFilters]
+  );
+
   // Load purchases on initial page load and when filters change
   useEffect(() => {
-    fetchPurchases();
-  }, [fetchPurchases]);
+    if (activeTab === 0) {
+      fetchPurchases();
+    }
+  }, [activeTab, fetchPurchases]);
 
+  // Load purchase entries when tab is active and when filters change
+  useEffect(() => {
+    if (activeTab === 1) {
+      fetchPurchaseEntries();
+    }
+  }, [activeTab, fetchPurchaseEntries]);
+
+  // Purchases handlers
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({
       ...prev,
@@ -261,6 +440,65 @@ export default function PurchasesListPage() {
     }));
   };
 
+  // Purchase Entries handlers
+  const handleEntriesPageChange = (newPage: number) => {
+    setEntriesPagination(prev => ({
+      ...prev,
+      currentPage: newPage,
+    }));
+  };
+
+  const handleEntriesRowsPerPageChange = (newPageSize: number) => {
+    setEntriesPagination(prev => ({
+      ...prev,
+      pageSize: newPageSize,
+      currentPage: 1, // Reset to first page when changing page size
+    }));
+  };
+
+  const handleEntriesSortChange = (field: string) => {
+    setEntriesSort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const handleEntriesFilterChange = (
+    key: keyof PurchaseEntryFilterOptions,
+    value: Supplier | DayJS.Dayjs | string | null
+  ) => {
+    setEntriesTempFilters(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleEntriesApplyFilters = () => {
+    setEntriesFilters(entriesTempFilters);
+    setEntriesFilterDrawerOpen(false);
+    setEntriesPagination(prev => ({
+      ...prev,
+      currentPage: 1, // Reset to first page when applying filters
+    }));
+  };
+
+  const handleEntriesResetFilters = () => {
+    const resetFilters = {
+      dateFrom: null,
+      dateTo: null,
+      purchaseEntryNumber: '',
+      supplier: null,
+      purchaseType: null,
+    };
+    setEntriesTempFilters(resetFilters);
+    setEntriesFilters(resetFilters);
+    setEntriesFilterDrawerOpen(false);
+    setEntriesPagination(prev => ({
+      ...prev,
+      currentPage: 1, // Reset to first page when clearing filters
+    }));
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -270,134 +508,249 @@ export default function PurchasesListPage() {
     window.location.href = `/purchases/${purchaseId}`;
   };
 
+  const handlePurchaseEntryClick = (purchaseEntryId: number) => {
+    window.location.href = `/purchase-entries/${purchaseEntryId}`;
+  };
+
   return (
     <div className="mt-16 px-4 py-2 md:ml-[280px] md:px-6">
       <div className="mx-auto max-w-screen-2xl">
         <style>{tableRowAnimation}</style>
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
-            Purchases
+            Purchases & Entries
           </Typography>
           <div className="flex flex-col gap-3 sm:flex-row">
-            {/* <TextField
-              variant="outlined"
-              placeholder="Search purchases..."
-              size="small"
-              value={filters.purchaseNumber}
-              onChange={e => handleFilterChange('purchaseNumber', e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-              className="w-full sm:w-64"
-            /> */}
             <IconButton
-              onClick={() => setFilterDrawerOpen(true)}
+              onClick={() =>
+                activeTab === 0 ? setFilterDrawerOpen(true) : setEntriesFilterDrawerOpen(true)
+              }
               aria-label="filter"
               color="primary"
               className="bg-blue-50 hover:bg-blue-100"
             >
               <FilterAltIcon />
             </IconButton>
-            <Link href="/purchases/create">
-              <PrimaryButton label="+ New Purchase" />
+            <Link href={activeTab === 0 ? '/purchases/create' : '/purchase-entries/create'}>
+              <PrimaryButton label={activeTab === 0 ? '+ New Purchase' : '+ New Purchase Entry'} />
             </Link>
           </div>
         </div>
 
-        <TableContainer component={Paper} className="border border-gray-200 shadow-md">
-          <Table>
-            <TableHead className="bg-gray-50">
-              <TableRow>
-                <TableCell>
-                  <TableSortLabel
-                    active={sort.field === 'purchase_number'}
-                    direction={sort.field === 'purchase_number' ? sort.direction : 'asc'}
-                    onClick={() => handleSortChange('purchase_number')}
-                  >
-                    Purchase No.
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sort.field === 'purchase_date'}
-                    direction={sort.field === 'purchase_date' ? sort.direction : 'asc'}
-                    onClick={() => handleSortChange('purchase_date')}
-                  >
-                    Date
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sort.field === 'supplier'}
-                    direction={sort.field === 'supplier' ? sort.direction : 'asc'}
-                    onClick={() => handleSortChange('supplier')}
-                  >
-                    Supplier
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>Ship From</TableCell>
-                <TableCell>Purchase Type</TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sort.field === 'total'}
-                    direction={sort.field === 'total' ? sort.direction : 'asc'}
-                    onClick={() => handleSortChange('total')}
-                  >
-                    Total
-                  </TableSortLabel>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="purchase tabs"
+            variant="fullWidth"
+            textColor="primary"
+            indicatorColor="primary"
+            sx={{
+              '& .MuiTab-root': {
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                textTransform: 'none',
+              },
+            }}
+          >
+            <Tab label="Purchases" id="purchases-tab" aria-controls="purchases-panel" />
+            <Tab
+              label="Purchase Entries"
+              id="purchase-entries-tab"
+              aria-controls="purchase-entries-panel"
+            />
+          </Tabs>
+        </Box>
+
+        {/* Purchases Tab Panel */}
+        <TabPanel value={activeTab} index={0}>
+          <TableContainer component={Paper} className="border border-gray-200 shadow-md">
+            <Table>
+              <TableHead className="bg-gray-50">
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    Loading...
+                  <TableCell>
+                    <TableSortLabel
+                      active={sort.field === 'purchase_number'}
+                      direction={sort.field === 'purchase_number' ? sort.direction : 'asc'}
+                      onClick={() => handleSortChange('purchase_number')}
+                    >
+                      Purchase No.
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sort.field === 'purchase_date'}
+                      direction={sort.field === 'purchase_date' ? sort.direction : 'asc'}
+                      onClick={() => handleSortChange('purchase_date')}
+                    >
+                      Date
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sort.field === 'supplier'}
+                      direction={sort.field === 'supplier' ? sort.direction : 'asc'}
+                      onClick={() => handleSortChange('supplier')}
+                    >
+                      Supplier
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>Ship From</TableCell>
+                  <TableCell>Purchase Type</TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sort.field === 'total'}
+                      direction={sort.field === 'total' ? sort.direction : 'asc'}
+                      onClick={() => handleSortChange('total')}
+                    >
+                      Total
+                    </TableSortLabel>
                   </TableCell>
                 </TableRow>
-              ) : purchases.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    No purchases found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                purchases.map((purchase, index) => (
-                  <TableRow
-                    key={purchase.id}
-                    hover
-                    onClick={() => handlePurchaseClick(purchase.id)}
-                    className="cursor-pointer transition-all hover:bg-gray-50"
-                    style={{
-                      animation: `fadeIn 0.3s ease-out forwards`,
-                      animationDelay: `${index * 0.05}s`,
-                    }}
-                  >
-                    <TableCell>{purchase.purchase_number}</TableCell>
-                    <TableCell>{formatDate(purchase.purchase_date)}</TableCell>
-                    <TableCell>{purchase.supplier.name}</TableCell>
-                    <TableCell>{purchase.ship_from}</TableCell>
-                    <TableCell>{purchase.purchase_type}</TableCell>
-                    <TableCell>${parseFloat(purchase.total).toFixed(2)}</TableCell>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Loading...
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : purchases.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      No purchases found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  purchases.map((purchase, index) => (
+                    <TableRow
+                      key={purchase.id}
+                      hover
+                      onClick={() => handlePurchaseClick(purchase.id)}
+                      className="cursor-pointer transition-all hover:bg-gray-50"
+                      style={{
+                        animation: `fadeIn 0.3s ease-out forwards`,
+                        animationDelay: `${index * 0.05}s`,
+                      }}
+                    >
+                      <TableCell>{purchase.purchase_number}</TableCell>
+                      <TableCell>{formatDate(purchase.purchase_date)}</TableCell>
+                      <TableCell>{purchase.supplier.name}</TableCell>
+                      <TableCell>{purchase.ship_from}</TableCell>
+                      <TableCell>{purchase.purchase_type}</TableCell>
+                      <TableCell>${parseFloat(purchase.total).toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        <Pagination
-          paginationInfo={pagination}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handleRowsPerPageChange}
-          itemName="purchases"
-        />
+          <Pagination
+            paginationInfo={pagination}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handleRowsPerPageChange}
+            itemName="purchases"
+          />
+        </TabPanel>
 
-        {/* Filter Drawer */}
+        {/* Purchase Entries Tab Panel */}
+        <TabPanel value={activeTab} index={1}>
+          <TableContainer component={Paper} className="border border-gray-200 shadow-md">
+            <Table>
+              <TableHead className="bg-gray-50">
+                <TableRow>
+                  <TableCell>
+                    <TableSortLabel
+                      active={entriesSort.field === 'purchaseentry_number'}
+                      direction={
+                        entriesSort.field === 'purchaseentry_number' ? entriesSort.direction : 'asc'
+                      }
+                      onClick={() => handleEntriesSortChange('purchaseentry_number')}
+                    >
+                      Purchase Entry No.
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={entriesSort.field === 'purchaseentry_date'}
+                      direction={
+                        entriesSort.field === 'purchaseentry_date' ? entriesSort.direction : 'asc'
+                      }
+                      onClick={() => handleEntriesSortChange('purchaseentry_date')}
+                    >
+                      Date
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={entriesSort.field === 'supplier'}
+                      direction={entriesSort.field === 'supplier' ? entriesSort.direction : 'asc'}
+                      onClick={() => handleEntriesSortChange('supplier')}
+                    >
+                      Supplier
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>Ship From</TableCell>
+                  <TableCell>Purchase Type</TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={entriesSort.field === 'total'}
+                      direction={entriesSort.field === 'total' ? entriesSort.direction : 'asc'}
+                      onClick={() => handleEntriesSortChange('total')}
+                    >
+                      Total
+                    </TableSortLabel>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loadingEntries ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : purchaseEntries.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      No purchase entries found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  purchaseEntries.map((entry, index) => (
+                    <TableRow
+                      key={entry.id}
+                      hover
+                      onClick={() => handlePurchaseEntryClick(entry.id)}
+                      className="cursor-pointer transition-all hover:bg-gray-50"
+                      style={{
+                        animation: `fadeIn 0.3s ease-out forwards`,
+                        animationDelay: `${index * 0.05}s`,
+                      }}
+                    >
+                      <TableCell>{entry.purchaseentry_number}</TableCell>
+                      <TableCell>{formatDate(entry.purchaseentry_date)}</TableCell>
+                      <TableCell>{entry.supplier.name}</TableCell>
+                      <TableCell>{entry.ship_from}</TableCell>
+                      <TableCell>{entry.purchase_type}</TableCell>
+                      <TableCell>${parseFloat(entry.total).toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Pagination
+            paginationInfo={entriesPagination}
+            onPageChange={handleEntriesPageChange}
+            onPageSizeChange={handleEntriesRowsPerPageChange}
+            itemName="purchase entries"
+          />
+        </TabPanel>
+
+        {/* Purchases Filter Drawer */}
         <Drawer
           anchor="right"
           open={filterDrawerOpen}
@@ -411,6 +764,26 @@ export default function PurchasesListPage() {
             handleFilterChange={handleFilterChange}
             handleApplyFilters={handleApplyFilters}
             handleResetFilters={handleResetFilters}
+            suppliers={suppliers}
+            loadingDropdowns={loadingDropdowns}
+            purchaseTypeOptions={purchaseTypeOptions}
+          />
+        </Drawer>
+
+        {/* Purchase Entries Filter Drawer */}
+        <Drawer
+          anchor="right"
+          open={entriesFilterDrawerOpen}
+          onClose={() => setEntriesFilterDrawerOpen(false)}
+          PaperProps={{
+            sx: { width: { xs: '100%', sm: 400 } },
+          }}
+        >
+          <PurchaseEntryFilters
+            tempFilters={entriesTempFilters}
+            handleFilterChange={handleEntriesFilterChange}
+            handleApplyFilters={handleEntriesApplyFilters}
+            handleResetFilters={handleEntriesResetFilters}
             suppliers={suppliers}
             loadingDropdowns={loadingDropdowns}
             purchaseTypeOptions={purchaseTypeOptions}
