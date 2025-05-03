@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { generateInvoicePdf } from '@/app/firebase/client';
 
 // Define invoice interface with necessary properties
 interface Invoice {
@@ -38,19 +39,89 @@ const PrintButton = ({ invoiceId }: { invoiceId: string | string[] | undefined }
       // Get current query parameters
       const queryParams = window.location.search;
 
-      const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`);
-      const pdfBlob = await response.blob();
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const printWindow = window.open(pdfUrl, '_blank');
+      // First try the API endpoint (will work locally or if using alternative PDF generation)
+      try {
+        const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`);
+        if (!response.ok) {
+          throw new Error('API endpoint for PDF generation failed');
+        }
+        const pdfBlob = await response.blob();
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const printWindow = window.open(pdfUrl, '_blank');
 
-      if (printWindow) {
-        printWindow.addEventListener('load', () => {
-          printWindow.print();
-        });
+        if (printWindow) {
+          printWindow.addEventListener('load', () => {
+            printWindow.print();
+          });
+        }
+      } catch (apiError) {
+        console.warn(
+          'API PDF generation failed, falling back to Firebase Cloud Function:',
+          apiError
+        );
+
+        // Get invoice stage from query params
+        const urlParams = new URLSearchParams(queryParams);
+        const invoiceStage = urlParams.get('invoiceStage');
+
+        // Call Firebase Cloud Function directly
+        const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
+        if (!invoiceResponse.ok) {
+          throw new Error('Failed to load invoice details');
+        }
+
+        // Get the HTML template
+        const templateResponse = await fetch('/app/templates/invoice-template.html');
+        if (!templateResponse.ok) {
+          throw new Error('Failed to load invoice template');
+        }
+
+        const invoiceData = await invoiceResponse.json();
+        const htmlTemplate = await templateResponse.text();
+
+        try {
+          // Call Firebase function to generate PDF
+          const result = await generateInvoicePdf({
+            invoiceId: parseInt(invoiceId.toString()),
+            invoiceStage,
+            htmlTemplate,
+            invoice: invoiceData.data,
+            // Other required data would be fetched by the API route
+          });
+
+          const responseData = result.data as {
+            success: boolean;
+            pdfBase64: string;
+            filename: string;
+          };
+
+          if (responseData.success) {
+            // Convert base64 to blob
+            const byteCharacters = atob(responseData.pdfBase64);
+            const byteArrays = [];
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteArrays.push(byteCharacters.charCodeAt(i));
+            }
+            const pdfBlob = new Blob([new Uint8Array(byteArrays)], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+            const printWindow = window.open(pdfUrl, '_blank');
+            if (printWindow) {
+              printWindow.addEventListener('load', () => {
+                printWindow.print();
+              });
+            }
+          } else {
+            throw new Error('Firebase function failed to generate PDF');
+          }
+        } catch (firebaseError) {
+          console.error('Firebase PDF generation failed:', firebaseError);
+          window.print(); // Fallback to browser printing
+        }
       }
     } catch (error) {
       console.error('Error printing PDF:', error);
-      window.print();
+      window.print(); // Fallback to browser printing
     }
   };
 

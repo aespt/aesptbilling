@@ -59,6 +59,8 @@
     "eslint": "8.57.1",
     "eslint-config-next": "^15.2.1",
     "exceljs": "^4.4.0",
+    "firebase": "^11.6.1",
+    "firebase-admin": "^13.3.0",
     "framer-motion": "^12.4.7",
     "jose": "^6.0.8",
     "jsonwebtoken": "^9.0.2",
