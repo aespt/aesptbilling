@@ -2919,6 +2919,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@puppeteer/browsers@npm:2.10.3":
+  version: 2.10.3
+  resolution: "@puppeteer/browsers@npm:2.10.3"
+  dependencies:
+    debug: "npm:^4.4.0"
+    extract-zip: "npm:^2.0.1"
+    progress: "npm:^2.0.3"
+    proxy-agent: "npm:^6.5.0"
+    semver: "npm:^7.7.1"
+    tar-fs: "npm:^3.0.8"
+    yargs: "npm:^17.7.2"
+  bin:
+    browsers: lib/cjs/main-cli.js
+  checksum: 10c0/b94eb922ca5d4cd6fb3be3d56284ba1e2a7c1f9e7fc83eae647de958e38f1fa27d63c4ae5656de6bcb708d9effa0a54c5efd53dd2e22f90fe50d357225d92ce8
+  languageName: node
+  linkType: hard
+
 "@puppeteer/browsers@npm:2.8.0":
   version: 2.8.0
   resolution: "@puppeteer/browsers@npm:2.8.0"
@@ -3094,6 +3111,16 @@ __metadata:
   version: 1.11.0
   resolution: "@rushstack/eslint-patch@npm:1.11.0"
   checksum: 10c0/abea8d8cf2f4f50343f74abd6a8173c521ddd09b102021f5aa379ef373c40af5948b23db0e87eca1682e559e09d97d3f0c48ea71edad682c6bf72b840c8675b3
+  languageName: node
+  linkType: hard
+
+"@sparticuz/chromium@npm:^133.0.0":
+  version: 133.0.0
+  resolution: "@sparticuz/chromium@npm:133.0.0"
+  dependencies:
+    follow-redirects: "npm:^1.15.9"
+    tar-fs: "npm:^3.0.8"
+  checksum: 10c0/186ff9dc7d0502c0766e7f9d9d929c1cf057adff287f13f725beaa94a5d2a1db6dd94dfb4f3d3e7bfa9b03bf37984ea9f8c1543f29b207d58303e053a6890839
   languageName: node
   linkType: hard
 
@@ -4621,6 +4648,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chrome-aws-lambda@npm:^10.1.0":
+  version: 10.1.0
+  resolution: "chrome-aws-lambda@npm:10.1.0"
+  dependencies:
+    lambdafs: "npm:^2.0.3"
+  peerDependencies:
+    puppeteer-core: ^10.1.0
+  checksum: 10c0/968efb72640a99c0648cdf96f31260f07fcb3a6231ad8dec45bcd61f4e07e6f7f47cdbbc7fd91e34cd35632549eeec61e91845b47ee31ba9a0a1b4e2057b2b50
+  languageName: node
+  linkType: hard
+
 "chromium-bidi@npm:2.1.2":
   version: 2.1.2
   resolution: "chromium-bidi@npm:2.1.2"
@@ -4630,6 +4668,18 @@ __metadata:
   peerDependencies:
     devtools-protocol: "*"
   checksum: 10c0/2a62674a99c4c0fb7dd50770f0477366d6fcf7e2f94d1188c74e73da741e7878bd2078a55e1081be4bffd87d5797eae7c03b9c0346caf481b71eda280c11a36a
+  languageName: node
+  linkType: hard
+
+"chromium-bidi@npm:4.1.1":
+  version: 4.1.1
+  resolution: "chromium-bidi@npm:4.1.1"
+  dependencies:
+    mitt: "npm:^3.0.1"
+    zod: "npm:^3.24.1"
+  peerDependencies:
+    devtools-protocol: "*"
+  checksum: 10c0/2250efff48bd66ad5fbf31da23392550ff3be541f24533afee8d1785c1f7532e969cbe2d9cebc986e7dd101520a14d59b317b748426fca73827f43ae4b63893a
   languageName: node
   linkType: hard
 
@@ -5547,6 +5597,13 @@ __metadata:
   version: 0.0.1413902
   resolution: "devtools-protocol@npm:0.0.1413902"
   checksum: 10c0/5feeda3952bb48a404fe8b50da8d7645e8b132fdbeac85726f4130f629de15dba3bfc858f240dc4173a130d09ca8a26942548406703f378d1fde0011483ef491
+  languageName: node
+  linkType: hard
+
+"devtools-protocol@npm:0.0.1439962":
+  version: 0.0.1439962
+  resolution: "devtools-protocol@npm:0.0.1439962"
+  checksum: 10c0/fb25e6731262ee47aa4764b6711670d29fcdfc6487882c0c9583083714b60153d3748c9195f50290cdfb9fae2f34547b67743a94132d586b3cf56324f7c683da
   languageName: node
   linkType: hard
 
@@ -6967,6 +7024,16 @@ __metadata:
   version: 3.3.3
   resolution: "flatted@npm:3.3.3"
   checksum: 10c0/e957a1c6b0254aa15b8cce8533e24165abd98fadc98575db082b786b5da1b7d72062b81bfdcd1da2f4d46b6ed93bec2434e62333e9b4261d79ef2e75a10dd538
+  languageName: node
+  linkType: hard
+
+"follow-redirects@npm:^1.15.9":
+  version: 1.15.9
+  resolution: "follow-redirects@npm:1.15.9"
+  peerDependenciesMeta:
+    debug:
+      optional: true
+  checksum: 10c0/5829165bd112c3c0e82be6c15b1a58fa9dcfaede3b3c54697a82fe4a62dd5ae5e8222956b448d2f98e331525f05d00404aba7d696de9e761ef6e42fdc780244f
   languageName: node
   linkType: hard
 
@@ -8475,6 +8542,17 @@ __metadata:
   version: 6.0.3
   resolution: "kind-of@npm:6.0.3"
   checksum: 10c0/61cdff9623dabf3568b6445e93e31376bee1cdb93f8ba7033d86022c2a9b1791a1d9510e026e6465ebd701a6dd2f7b0808483ad8838341ac52f003f512e0b4c4
+  languageName: node
+  linkType: hard
+
+"lambdafs@npm:^2.0.3":
+  version: 2.1.1
+  resolution: "lambdafs@npm:2.1.1"
+  dependencies:
+    tar-fs: "npm:*"
+  bin:
+    lambdafs: bin/brotli.js
+  checksum: 10c0/eec9780fb2e34376c31a6c0c6d2ac2f8cc664e48f3531304bb5286018696c465403729bf1a1b42e9f1fef617959948048042af9f64205cfe75e703a06f07915a
   languageName: node
   linkType: hard
 
@@ -10183,6 +10261,7 @@ __metadata:
     "@mui/system": "npm:^6.4.8"
     "@mui/x-date-pickers": "npm:^7.28.0"
     "@neondatabase/serverless": "npm:^1.0.0"
+    "@sparticuz/chromium": "npm:^133.0.0"
     "@types/bcrypt": "npm:^5.0.2"
     "@types/bcryptjs": "npm:^2.4.6"
     "@types/jsonwebtoken": "npm:^9.0.9"
@@ -10201,6 +10280,7 @@ __metadata:
     bcrypt: "npm:^5.1.1"
     bcryptjs: "npm:^3.0.2"
     cheerio: "npm:^1.0.0"
+    chrome-aws-lambda: "npm:^10.1.0"
     commit-and-tag-version: "npm:^12.5.1"
     cookies-next: "npm:^5.1.0"
     date-fns: "npm:2.30.0"
@@ -10235,6 +10315,7 @@ __metadata:
     prettier: "npm:^3.5.3"
     prettier-plugin-tailwindcss: "npm:^0.6.11"
     puppeteer: "npm:^24.4.0"
+    puppeteer-core: "npm:^24.8.0"
     react: "npm:19.0.0"
     react-dom: "npm:19.0.0"
     react-hook-form: "npm:^7.54.2"
@@ -10453,6 +10534,20 @@ __metadata:
     typed-query-selector: "npm:^2.12.0"
     ws: "npm:^8.18.1"
   checksum: 10c0/59da89a34112ab5c668027f489022e115212cbbeabe9fef051a89097676c7617636d0a05e66fb1cf4e0c15c423244871b4a75a5b262308a67e8dc1261f5eea25
+  languageName: node
+  linkType: hard
+
+"puppeteer-core@npm:^24.8.0":
+  version: 24.8.0
+  resolution: "puppeteer-core@npm:24.8.0"
+  dependencies:
+    "@puppeteer/browsers": "npm:2.10.3"
+    chromium-bidi: "npm:4.1.1"
+    debug: "npm:^4.4.0"
+    devtools-protocol: "npm:0.0.1439962"
+    typed-query-selector: "npm:^2.12.0"
+    ws: "npm:^8.18.1"
+  checksum: 10c0/4dfebda965ef2f6ef037365df36f01340f255b5f74d9079addf59bad32f5b5e4a0533a8e5bbf675ebaa353488fe82a5a66918387935d5262cd48642c738e678c
   languageName: node
   linkType: hard
 
@@ -11876,7 +11971,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar-fs@npm:^3.0.8":
+"tar-fs@npm:*, tar-fs@npm:^3.0.8":
   version: 3.0.8
   resolution: "tar-fs@npm:3.0.8"
   dependencies:

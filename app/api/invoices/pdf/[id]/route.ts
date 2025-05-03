@@ -17,6 +17,30 @@ import { InvoicesTable } from '@/lib/models/invoices';
 import { ProductsTable } from '@/lib/models/products';
 import { SalesmenTable } from '@/lib/models/salesmen';
 
+// Helper function to get browser instance
+async function getBrowser(launchOptions: Parameters<typeof launch>[0]): Promise<Browser> {
+  // For Vercel deployment
+  if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+    try {
+      // Running on Vercel - use @sparticuz/chromium
+      const chromiumModule = await import('@sparticuz/chromium');
+      // Access the default export
+      const chromium = chromiumModule.default;
+
+      return launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        executablePath: await chromium.executablePath(),
+        headless: true,
+      });
+    } catch (error) {
+      console.error('Failed to load chromium:', error);
+      throw error;
+    }
+  }
+  // Running locally
+  return launch(launchOptions);
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // Use proper type for Puppeteer's Browser
   let browser: Browser | null = null;
@@ -340,7 +364,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     try {
-      browser = await launch(launchOptions);
+      // Get browser instance using the helper function
+      browser = await getBrowser(launchOptions);
 
       // Generate main document PDF without footer
       const mainPage = await browser.newPage();
@@ -1043,7 +1068,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     };
 
     try {
-      browser = await launch(launchOptions);
+      // Get browser instance using the helper function
+      browser = await getBrowser(launchOptions);
 
       // Generate main document PDF without footer
       const mainPage = await browser.newPage();
