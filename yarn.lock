@@ -4686,17 +4686,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chrome-aws-lambda@npm:^10.1.0":
-  version: 10.1.0
-  resolution: "chrome-aws-lambda@npm:10.1.0"
-  dependencies:
-    lambdafs: "npm:^2.0.3"
-  peerDependencies:
-    puppeteer-core: ^10.1.0
-  checksum: 10c0/968efb72640a99c0648cdf96f31260f07fcb3a6231ad8dec45bcd61f4e07e6f7f47cdbbc7fd91e34cd35632549eeec61e91845b47ee31ba9a0a1b4e2057b2b50
-  languageName: node
-  linkType: hard
-
 "chromium-bidi@npm:4.1.1":
   version: 4.1.1
   resolution: "chromium-bidi@npm:4.1.1"
@@ -8561,17 +8550,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lambdafs@npm:^2.0.3":
-  version: 2.1.1
-  resolution: "lambdafs@npm:2.1.1"
-  dependencies:
-    tar-fs: "npm:*"
-  bin:
-    lambdafs: bin/brotli.js
-  checksum: 10c0/eec9780fb2e34376c31a6c0c6d2ac2f8cc664e48f3531304bb5286018696c465403729bf1a1b42e9f1fef617959948048042af9f64205cfe75e703a06f07915a
-  languageName: node
-  linkType: hard
-
 "language-subtag-registry@npm:^0.3.20":
   version: 0.3.23
   resolution: "language-subtag-registry@npm:0.3.23"
@@ -10305,7 +10283,6 @@ __metadata:
     bcrypt: "npm:^5.1.1"
     bcryptjs: "npm:^3.0.2"
     cheerio: "npm:^1.0.0"
-    chrome-aws-lambda: "npm:^10.1.0"
     commit-and-tag-version: "npm:^12.5.1"
     cookies-next: "npm:^5.1.0"
     date-fns: "npm:2.30.0"
@@ -11953,7 +11930,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar-fs@npm:*, tar-fs@npm:^3.0.8":
+"tar-fs@npm:^3.0.8":
   version: 3.0.8
   resolution: "tar-fs@npm:3.0.8"
   dependencies:
