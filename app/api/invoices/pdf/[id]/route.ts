@@ -22,7 +22,7 @@ async function getBrowser(launchOptions: Parameters<typeof launch>[0]): Promise<
   // For Vercel deployment
   if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
     try {
-      // Running on Vercel - use @sparticuz/chromium
+      // Running on Vercel - try to use @sparticuz/chromium
       const chromiumModule = await import('@sparticuz/chromium');
       // Access the default export
       const chromium = chromiumModule.default;
@@ -44,10 +44,33 @@ async function getBrowser(launchOptions: Parameters<typeof launch>[0]): Promise<
         headless: true,
       });
     } catch (error) {
-      console.error('Failed to load chromium:', error);
-      throw new Error(
-        `Failed to initialize browser in Vercel environment: ${error instanceof Error ? error.message : String(error)}`
+      console.error(
+        'Failed to load @sparticuz/chromium, falling back to standard puppeteer:',
+        error
       );
+
+      // Fallback to standard puppeteer
+      try {
+        const puppeteer = await import('puppeteer');
+        console.log('Falling back to standard puppeteer');
+
+        // Default launch options for Vercel
+        return launch({
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--font-render-hinting=none',
+          ],
+          headless: true,
+        });
+      } catch (puppeteerError) {
+        console.error('Failed to use fallback puppeteer:', puppeteerError);
+        throw new Error(
+          `Failed to initialize browser in Vercel environment: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
     }
   }
   // Running locally

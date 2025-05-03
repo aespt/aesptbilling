@@ -7,7 +7,7 @@
   "packageManager": "yarn@4.7.0",
   "scripts": {
     "dev": "next dev",
-    "build": "yarn install-chromium && node scripts/verify-chromium.js && next build",
+    "build": "node scripts/verify-chromium.js && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -27,8 +27,7 @@
     "release:patch": "commit-and-tag-version --release-as patch",
     "release:minor": "commit-and-tag-version --release-as minor",
     "release:major": "commit-and-tag-version --release-as major",
-    "release": "commit-and-tag-version",
-    "install-chromium": "node node_modules/@sparticuz/chromium/install.js"
+    "release": "commit-and-tag-version"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -51,7 +50,6 @@
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "cheerio": "^1.0.0",
-    "chrome-aws-lambda": "^10.1.0",
     "cookies-next": "^5.1.0",
     "date-fns": "2.30.0",
     "dayjs": "^1.11.13",

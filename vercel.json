@@ -13,5 +13,10 @@
   "crons": [],
   "github": {
     "silent": true
+  },
+  "build": {
+    "env": {
+      "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+    }
   }
 }
