@@ -51,9 +51,6 @@ async function getBrowser(launchOptions: Parameters<typeof launch>[0]): Promise<
 
       // Fallback to standard puppeteer
       try {
-        const puppeteer = await import('puppeteer');
-        console.log('Falling back to standard puppeteer');
-
         // Default launch options for Vercel
         return launch({
           args: [
