@@ -50,10 +50,11 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     tempDiv.style.top = '0';
     tempDiv.style.left = '0';
     tempDiv.style.width = '210mm'; // A4 width
-    tempDiv.style.height = '100%';
+    tempDiv.style.height = '297mm'; // A4 height
     tempDiv.style.overflow = 'hidden';
     tempDiv.style.zIndex = '-1000'; // Hide it but still render
     tempDiv.style.backgroundColor = 'white';
+    tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
 
     // Determine if this is a delivery note
     const isDelivery = invoice.invoice_stage === 'DELIVERY';
@@ -236,7 +237,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       }
       
       <!-- Signature section -->
-      <div style="display: flex; justify-content: space-between; margin-top: 50px; padding: 0 20px;">
+      <div style="display: flex; justify-content: space-between; margin-top: 40px; padding: 0 20px;">
         <div>
           <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
             Customer Signature
@@ -246,6 +247,16 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
           <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
             For Arabian Auto Equipments and Parts Trading (FZC)
           </div>
+        </div>
+      </div>
+      
+      <!-- Footer Section (from invoice-footer.html) - Fixed at bottom -->
+      <div style="width: 100%; padding: 0; position: absolute; bottom: 0; left: 0;">
+        <div style="padding: 15px; margin: 10px 20px; background-color: #f5f5f5;">
+          <p style="font-size: 12px; color: #999; margin: 0;">
+            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
+            been the industry's standard dummy text ever since the 1500s.
+          </p>
         </div>
       </div>
     </div>
