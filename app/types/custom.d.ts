@@ -1,13 +1,13 @@
 declare module 'blob-stream' {
   interface BlobStream {
     pipe<T>(destination: T): T;
-    on(event: string, callback: Function): void;
+    on(event: string, callback: (chunk?: unknown) => void): void;
     toBlob(type?: string): Blob;
     writable: boolean;
-    write(chunk: any): boolean;
+    write(chunk: string | Buffer | Uint8Array): boolean;
     end(): void;
-    addListener(event: string, listener: Function): BlobStream;
-    removeListener(event: string, listener: Function): BlobStream;
+    addListener(event: string, listener: (chunk?: unknown) => void): BlobStream;
+    removeListener(event: string, listener: (chunk?: unknown) => void): BlobStream;
   }
 
   function blobStream(): BlobStream;

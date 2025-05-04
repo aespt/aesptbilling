@@ -1,6 +1,6 @@
+import { format } from 'date-fns';
 import { eq } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
-import { format } from 'date-fns';
 
 import { db } from '@/lib/drizzle';
 import { AddressTable } from '@/lib/models/address';

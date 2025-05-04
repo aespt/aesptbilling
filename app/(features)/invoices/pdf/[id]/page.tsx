@@ -12,6 +12,63 @@ interface Invoice {
   // Add other properties as needed
 }
 
+// Define PDF data interface for proper typing
+interface PdfData {
+  invoice: {
+    invoice_number?: string;
+    invoice_date?: string;
+    invoice_stage?: string;
+    ship_to?: string;
+    ship_from?: string;
+    tax_rate?: number;
+  };
+  customer: {
+    name?: string;
+    trn?: string;
+  };
+  salesPerson: {
+    name?: string;
+  };
+  primaryAddress: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
+    phone_no?: string;
+    transaction_no?: string;
+  };
+  primaryBankDetails: {
+    name?: string;
+    account_number?: string;
+    iban?: string;
+    swift_code?: string;
+  };
+  productsWithItems: Array<{
+    item: {
+      mrp?: number;
+      unit_price?: number;
+      quantity: number;
+      total_price?: number;
+    };
+    product: {
+      partNo?: string;
+      brand?: string;
+      name?: string;
+    };
+  }>;
+  formattedDate: string;
+  documentTitle: string;
+  totals: {
+    subtotal: string;
+    discount: string;
+    taxRate: number;
+    taxAmount: string;
+    total: string;
+    taxType: string;
+  };
+}
+
 // Client-only wrapper component to prevent hydration errors
 const ClientOnly = ({ children }: { children: React.ReactNode }) => {
   const [isMounted, setIsMounted] = useState(false);
@@ -38,28 +95,27 @@ const PrintButton = ({
 }) => {
   const handlePrintClick = async () => {
     if (!invoiceId || typeof window === 'undefined') {
-      console.error('Invoice ID is undefined or not in browser environment');
+      // Invoice ID is undefined or not in browser environment
       return;
     }
 
     try {
       if (pdfUrl) {
-        console.log('Printing PDF from existing URL:', pdfUrl);
+        // Printing PDF from existing URL
 
         // Open the PDF in a new window for printing
         const printWindow = window.open(pdfUrl, '_blank');
         if (printWindow) {
           printWindow.addEventListener('load', () => {
-            console.log('Print window loaded');
             printWindow.print();
           });
         } else {
-          console.warn('Failed to open print window - popup blocked?');
+          // Failed to open print window - popup blocked?
           // Try direct print
           window.print();
         }
       } else {
-        console.log('No PDF URL available, generating new PDF');
+        // No PDF URL available, generating new PDF
         // Get current query parameters
         const queryParams = window.location.search;
 
@@ -127,7 +183,9 @@ const InvoicePdfPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
-  const [pdfData, setPdfData] = useState<any>(null);
+  const [pdfData, setPdfData] = useState<PdfData | null>(null);
+
+  const pdfObjectRef = React.useRef<HTMLObjectElement>(null);
 
   useEffect(() => {
     const fetchInvoiceData = async () => {
@@ -173,7 +231,6 @@ const InvoicePdfPage = () => {
 
         setLoading(false);
       } catch (err) {
-        console.error('Error generating PDF:', err);
         setError(err instanceof Error ? err.message : 'Failed to generate PDF');
         setLoading(false);
       }
@@ -193,7 +250,9 @@ const InvoicePdfPage = () => {
   // When data is received, trigger PDF generation if needed
   useEffect(() => {
     const regeneratePdf = async () => {
-      if (!pdfData || pdfUrl) return;
+      if (!pdfData || pdfUrl) {
+        return;
+      }
 
       try {
         // Import dynamically to prevent SSR issues
@@ -201,7 +260,6 @@ const InvoicePdfPage = () => {
         const blobUrl = await generateInvoicePDF(pdfData);
         setPdfUrl(blobUrl);
       } catch (err) {
-        console.error('Error generating PDF:', err);
         setError(err instanceof Error ? err.message : 'Failed to generate PDF');
       }
     };
@@ -211,15 +269,26 @@ const InvoicePdfPage = () => {
     }
   }, [pdfData, pdfUrl, loading, error]);
 
-  const handleIframeLoad = () => {
-    console.log('PDF iframe loaded successfully', pdfUrl);
-    setLoading(false);
-  };
+  useEffect(() => {
+    // Add error handler to the PDF object element
+    const handlePdfError = () => {
+      setLoading(false);
+      setError('Failed to load the PDF.');
+    };
 
-  const handleIframeError = () => {
-    console.error('Failed to load PDF in iframe', pdfUrl);
+    if (pdfObjectRef.current) {
+      pdfObjectRef.current.addEventListener('error', handlePdfError);
+    }
+
+    return () => {
+      if (pdfObjectRef.current) {
+        pdfObjectRef.current.removeEventListener('error', handlePdfError);
+      }
+    };
+  }, [pdfUrl]); // Re-run when pdfUrl changes
+
+  const handleIframeLoad = () => {
     setLoading(false);
-    setError('Failed to load the PDF.');
   };
 
   return (
@@ -439,7 +508,7 @@ const InvoicePdfPage = () => {
                         setPdfUrl(blobUrl);
                       }
                     } catch (error) {
-                      console.error('Error downloading PDF:', error);
+                      // Error downloading PDF
                       alert(
                         `Error downloading PDF: ${error instanceof Error ? error.message : String(error)}`
                       );
@@ -531,6 +600,7 @@ const InvoicePdfPage = () => {
                 {pdfUrl ? (
                   <>
                     <object
+                      ref={pdfObjectRef}
                       id="pdf-iframe"
                       data={pdfUrl}
                       type="application/pdf"
@@ -543,7 +613,6 @@ const InvoicePdfPage = () => {
                         overflow: 'hidden',
                       }}
                       onLoad={handleIframeLoad}
-                      onError={handleIframeError}
                     >
                       <div className="flex h-full items-center justify-center">
                         <p>
