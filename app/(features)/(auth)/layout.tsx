@@ -1,8 +1,8 @@
 'use client';
 
+import { AuthGuard } from '@/app/components/AuthGuard';
 import Header from '@/app/shared/components/header';
 import Sidebar from '@/app/shared/components/sidebar';
-import { AuthGuard } from '@/app/components/AuthGuard';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
