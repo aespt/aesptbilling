@@ -27,7 +27,15 @@ const ClientOnly = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const PrintButton = ({ invoiceId }: { invoiceId: string | string[] | undefined }) => {
+const PrintButton = ({
+  invoiceId,
+  pdfUrl,
+  setPdfUrl,
+}: {
+  invoiceId: string | string[] | undefined;
+  pdfUrl?: string;
+  setPdfUrl: (url: string) => void;
+}) => {
   const handlePrintClick = async () => {
     if (!invoiceId || typeof window === 'undefined') {
       console.error('Invoice ID is undefined or not in browser environment');
@@ -35,22 +43,55 @@ const PrintButton = ({ invoiceId }: { invoiceId: string | string[] | undefined }
     }
 
     try {
-      // Get current query parameters
-      const queryParams = window.location.search;
+      if (pdfUrl) {
+        console.log('Printing PDF from existing URL:', pdfUrl);
 
-      const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`);
-      const pdfBlob = await response.blob();
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const printWindow = window.open(pdfUrl, '_blank');
+        // Open the PDF in a new window for printing
+        const printWindow = window.open(pdfUrl, '_blank');
+        if (printWindow) {
+          printWindow.addEventListener('load', () => {
+            console.log('Print window loaded');
+            printWindow.print();
+          });
+        } else {
+          console.warn('Failed to open print window - popup blocked?');
+          // Try direct print
+          window.print();
+        }
+      } else {
+        console.log('No PDF URL available, generating new PDF');
+        // Get current query parameters
+        const queryParams = window.location.search;
 
-      if (printWindow) {
-        printWindow.addEventListener('load', () => {
-          printWindow.print();
-        });
+        // Fetch invoice data
+        const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch invoice data: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.success || !data.data) {
+          throw new Error('Invalid data received from server');
+        }
+
+        // Generate PDF and get the blob URL
+        const { generateInvoicePDF } = await import('../../../../lib/pdfGenerator');
+        const blobUrl = await generateInvoicePDF(data.data);
+
+        // Update the PDF URL
+        setPdfUrl(blobUrl);
+
+        // Open the PDF in a new window for printing
+        const printWindow = window.open(blobUrl, '_blank');
+        if (printWindow) {
+          printWindow.addEventListener('load', () => {
+            printWindow.print();
+          });
+        }
       }
     } catch (error) {
       console.error('Error printing PDF:', error);
-      window.print();
+      window.print(); // Fallback to printing the current page
     }
   };
 
@@ -86,27 +127,32 @@ const InvoicePdfPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
+  const [pdfData, setPdfData] = useState<any>(null);
 
   useEffect(() => {
-    // Set PDF URL on client side
-    if (typeof window !== 'undefined') {
-      setPdfUrl(`/api/invoices/pdf/${invoiceId}${window.location.search}`);
-    }
-
-    // Check if the PDF is available and fetch invoice details
-    const checkPdfAvailability = async () => {
+    const fetchInvoiceData = async () => {
       try {
+        setLoading(true);
+
         // Get any existing query parameters if in browser environment
         const queryParams = typeof window !== 'undefined' ? window.location.search : '';
+        const url = `/api/invoices/pdf/${invoiceId}${queryParams}`;
 
-        // First check PDF availability
-        const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`, {
-          method: 'HEAD',
-        });
+        // Fetch the invoice data
+        const response = await fetch(url);
 
         if (!response.ok) {
-          throw new Error('Failed to load invoice PDF');
+          throw new Error(`Failed to fetch invoice data: ${response.status}`);
         }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+          throw new Error('Invalid data received from server');
+        }
+
+        // Store the PDF data
+        setPdfData(result.data);
 
         // Then fetch invoice details to get the stage
         const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
@@ -116,14 +162,24 @@ const InvoicePdfPage = () => {
 
         const invoiceData = await invoiceResponse.json();
         setInvoice(invoiceData.data);
+
+        // Generate PDF on load
+        if (typeof window !== 'undefined') {
+          // Import dynamically to prevent SSR issues
+          const { generateInvoicePDF } = await import('../../../../lib/pdfGenerator');
+          const blobUrl = await generateInvoicePDF(result.data);
+          setPdfUrl(blobUrl);
+        }
+
+        setLoading(false);
       } catch (err) {
-        console.error('Error checking PDF availability:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load invoice PDF');
+        console.error('Error generating PDF:', err);
+        setError(err instanceof Error ? err.message : 'Failed to generate PDF');
         setLoading(false);
       }
     };
 
-    checkPdfAvailability();
+    fetchInvoiceData();
 
     return () => {
       // Cleanup function
@@ -132,13 +188,36 @@ const InvoicePdfPage = () => {
         document.body.removeChild(buttonsContainer);
       }
     };
-  }, [invoiceId, error]);
+  }, [invoiceId]);
+
+  // When data is received, trigger PDF generation if needed
+  useEffect(() => {
+    const regeneratePdf = async () => {
+      if (!pdfData || pdfUrl) return;
+
+      try {
+        // Import dynamically to prevent SSR issues
+        const { generateInvoicePDF } = await import('../../../../lib/pdfGenerator');
+        const blobUrl = await generateInvoicePDF(pdfData);
+        setPdfUrl(blobUrl);
+      } catch (err) {
+        console.error('Error generating PDF:', err);
+        setError(err instanceof Error ? err.message : 'Failed to generate PDF');
+      }
+    };
+
+    if (pdfData && !loading && !error) {
+      regeneratePdf();
+    }
+  }, [pdfData, pdfUrl, loading, error]);
 
   const handleIframeLoad = () => {
+    console.log('PDF iframe loaded successfully', pdfUrl);
     setLoading(false);
   };
 
   const handleIframeError = () => {
+    console.error('Failed to load PDF in iframe', pdfUrl);
     setLoading(false);
     setError('Failed to load the PDF.');
   };
@@ -295,31 +374,76 @@ const InvoicePdfPage = () => {
             {/* Floating Action Panel - Only show when not loading */}
             {!loading && (
               <div className="fixed right-6 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3 transition-all duration-300 ease-in-out print:hidden">
-                <PrintButton invoiceId={invoiceId} />
+                <PrintButton invoiceId={invoiceId} pdfUrl={pdfUrl} setPdfUrl={setPdfUrl} />
 
                 <button
-                  onClick={() => {
-                    // Get current query parameters
-                    const queryParams = window.location.search;
-                    const pdfUrl = `/api/invoices/pdf/${invoiceId}${queryParams}`;
-                    const link = document.createElement('a');
-                    link.href = pdfUrl;
+                  onClick={async () => {
+                    try {
+                      if (pdfUrl) {
+                        // Import the download function
+                        const { downloadPdf } = await import('../../../../lib/pdfGenerator');
 
-                    // Set filename based on invoiceStage if available
-                    const invoiceStage = new URLSearchParams(window.location.search).get(
-                      'invoiceStage'
-                    );
-                    let filename = `invoice-${invoiceId}.pdf`;
-                    if (invoiceStage === 'DELIVERY') {
-                      filename = `delivery-note-${invoiceId}.pdf`;
-                    } else if (invoiceStage === 'QUOTATION') {
-                      filename = `quotation-${invoiceId}.pdf`;
-                    } else if (invoiceStage === 'PROFORMA') {
-                      filename = `proforma-invoice-${invoiceId}.pdf`;
+                        // Create filename based on invoice stage
+                        let filename = `invoice-${invoiceId}.pdf`;
+                        const invoiceStage = new URLSearchParams(window.location.search).get(
+                          'invoiceStage'
+                        );
+                        if (invoiceStage === 'DELIVERY') {
+                          filename = `delivery-note-${invoiceId}.pdf`;
+                        } else if (invoiceStage === 'QUOTATION') {
+                          filename = `quotation-${invoiceId}.pdf`;
+                        } else if (invoiceStage === 'PROFORMA') {
+                          filename = `proforma-invoice-${invoiceId}.pdf`;
+                        }
+
+                        // Download the PDF
+                        downloadPdf(pdfUrl, filename);
+                      } else {
+                        // If PDF URL is not available yet, generate it
+                        const queryParams = window.location.search;
+                        const response = await fetch(
+                          `/api/invoices/pdf/${invoiceId}${queryParams}`
+                        );
+                        if (!response.ok) {
+                          throw new Error(`Failed to fetch invoice data: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        if (!result.success || !result.data) {
+                          throw new Error('Invalid data received from server');
+                        }
+
+                        // Generate the PDF
+                        const { generateInvoicePDF, downloadPdf } = await import(
+                          '../../../../lib/pdfGenerator'
+                        );
+                        const blobUrl = await generateInvoicePDF(result.data);
+
+                        // Determine filename
+                        let filename = `invoice-${invoiceId}.pdf`;
+                        const invoiceStage = new URLSearchParams(window.location.search).get(
+                          'invoiceStage'
+                        );
+                        if (invoiceStage === 'DELIVERY') {
+                          filename = `delivery-note-${invoiceId}.pdf`;
+                        } else if (invoiceStage === 'QUOTATION') {
+                          filename = `quotation-${invoiceId}.pdf`;
+                        } else if (invoiceStage === 'PROFORMA') {
+                          filename = `proforma-invoice-${invoiceId}.pdf`;
+                        }
+
+                        // Download PDF
+                        downloadPdf(blobUrl, filename);
+
+                        // Update PDF URL for viewing
+                        setPdfUrl(blobUrl);
+                      }
+                    } catch (error) {
+                      console.error('Error downloading PDF:', error);
+                      alert(
+                        `Error downloading PDF: ${error instanceof Error ? error.message : String(error)}`
+                      );
                     }
-
-                    link.download = filename;
-                    link.click();
                   }}
                   className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl"
                 >
@@ -404,21 +528,60 @@ const InvoicePdfPage = () => {
             {/* PDF iframe - only render on client */}
             <div className="h-full overflow-hidden bg-white">
               <ClientOnly>
-                <iframe
-                  id="pdf-iframe"
-                  src={pdfUrl}
-                  className="size-full border-none"
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    height: '100%',
-                    border: '0',
-                    overflow: 'hidden',
-                  }}
-                  onLoad={handleIframeLoad}
-                  onError={handleIframeError}
-                  title="Invoice PDF"
-                />
+                {pdfUrl ? (
+                  <>
+                    <object
+                      id="pdf-iframe"
+                      data={pdfUrl}
+                      type="application/pdf"
+                      className="size-full border-none"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        height: '100%',
+                        border: '0',
+                        overflow: 'hidden',
+                      }}
+                      onLoad={handleIframeLoad}
+                      onError={handleIframeError}
+                    >
+                      <div className="flex h-full items-center justify-center">
+                        <p>
+                          Your browser cannot display the PDF.{' '}
+                          <a
+                            href={pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            Click here to download
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    </object>
+                    <div className="fixed bottom-4 left-4 rounded bg-white p-2 shadow">
+                      <p className="text-xs text-gray-500">PDF URL: {pdfUrl.substring(0, 30)}...</p>
+                      <button
+                        onClick={() => window.open(pdfUrl, '_blank')}
+                        className="mt-1 text-xs text-blue-500 hover:underline"
+                      >
+                        Open PDF in new tab
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="mb-4 max-w-md text-center">
+                      <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                        Generating PDF...
+                      </h3>
+                      <p className="text-gray-600">
+                        Please wait while we generate your invoice PDF.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </ClientOnly>
             </div>
           </ClientOnly>

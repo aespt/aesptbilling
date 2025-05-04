@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tax Invoice</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+
+      /* Hide footer by default - extremely important */
+      .page-footer {
+        display: none !important;
+      }
+
+      /* Only the footer in the last-page container should show */
+      body.last-page .page-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        margin-top: 20px;
+      }
+
+      .invoice-container {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        min-height: 1024px;
+        background-color: #ffffff;
+        border: none;
+        position: relative;
+      }
+
+      .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid #ccc;
+      }
+
+      .invoice-header-content {
+        background-color: #f5f5f5;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 20px;
+        align-items: center;
+      }
+
+      .invoice-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      .invoice-items-table th {
+        background-color: #f5f5f5;
+        text-align: left;
+        border: 1px solid #ccc;
+        padding: 8px;
+      }
+
+      .invoice-items-table td {
+        padding: 8px;
+        border: 1px solid #ddd;
+      }
+
+      .invoice-footer {
+        width: 100%;
+      }
+
+      .totals-container {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 20px;
+        margin-top: 10px;
+        gap: 10px;
+      }
+
+      .table-container {
+        page-break-inside: auto;
+      }
+
+      .invoice-items-table tr {
+        page-break-inside: avoid;
+      }
+
+      .invoice-items-table thead {
+        display: table-header-group;
+      }
+
+      .signature-section {
+        page-break-inside: avoid;
+      }
+
+      @media print {
+        /* Crucial rules for footer handling */
+        .page-footer {
+          display: none !important; /* Hidden by default */
+        }
+
+        /* Only display on the last page when body has last-page class */
+        body.last-page .page-footer {
+          display: block !important;
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+        }
+
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+          /* Prevent unwanted blank pages */
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .invoice-container {
+          border: none;
+          width: 100%;
+          height: auto;
+          margin: 0;
+          padding: 0;
+          /* Prevent container from causing page breaks */
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+
+        .invoice-footer {
+          position: relative;
+          margin-top: 20px;
+        }
+
+        .page-break {
+          page-break-before: always;
+          break-before: always;
+        }
+
+        .invoice-header,
+        .customer-details {
+          page-break-after: avoid;
+          break-after: avoid;
+        }
+
+        html[data-last-page='true'] .page-footer {
+          display: block !important;
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          margin-top: 2cm;
+        }
+
+        .table-header {
+          display: table-header-group;
+        }
+
+        /* Control pagination */
+        @page {
+          size: A4;
+          margin-top: 1cm;
+          margin-bottom: 1cm;
+        }
+
+        @page :first {
+          margin-top: 0cm;
+        }
+
+        /* Keep content within bounds to avoid extra pages */
+        html,
+        body {
+          height: 100%;
+          overflow: visible;
+          /* Ensure we don't have extra blank pages */
+          position: relative;
+        }
+
+        /* Make sure the content doesn't create a new page */
+        .invoice-container:after {
+          content: '';
+          display: block;
+          height: 0;
+          clear: both;
+        }
+
+        /* Create a spacer that doesn't force a new page */
+        .footer-spacer {
+          height: 0.5cm;
+          min-height: 0 !important;
+          max-height: 0.5cm !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          page-break-after: avoid;
+          break-after: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="invoice-container">
+      <!-- Header Section -->
+      <div class="invoice-header">
+        <div class="invoice-header-content">
+          <!-- <h2 style="margin: 0; color: #0078d4; align-self: center">LOGO</h2> -->
+          <img
+            src="/logo.png"
+            alt="Logo"
+            style="width: 150px; height: auto; max-height: 80px; object-fit: contain"
+          />
+
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              background-color: #ffffff;
+              width: 75%;
+              justify-content: space-between;
+              padding: 20px;
+            "
+          >
+            <div>
+              <h3 style="margin: 0; font-size: 16px">Arabian Auto Equipments and</h3>
+              <h3 style="margin: 0; font-size: 16px">Parts Trading (FZC)</h3>
+              <p style="margin: 5px 0 0; font-size: 12px; font-weight: bold">
+                العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
+              </p>
+            </div>
+            <div id="address" style="text-align: right; font-size: 12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice Title -->
+      <div id="invoice-title" style="padding: 20px; font-weight: bold; font-size: 18px">
+        Tax Invoice
+      </div>
+
+      <!-- Invoice Details -->
+      <div
+        class="customer-details"
+        style="
+          display: flex;
+          justify-content: space-between;
+          padding-left: 20px;
+          padding-right: 20px;
+        "
+      >
+        <div
+          style="
+            width: 50%;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-right: none;
+          "
+        >
+          <div style="border-right: 1px solid #ccc">
+            <p style="margin: 0; font-weight: bold">Invoice To:</p>
+            <p id="customer-address" style="margin: 5px 0">{{customerAddress}}</p>
+            <p id="tax-reg-no" style="margin: 5px 0; margin: 10px 0">
+              <span style="font-weight: bold">TAX Reg No:</span> <span>{{taxRegNo}}</span>
+            </p>
+            <p style="margin: 5px 0">
+              <span style="font-weight: bold">Ship to Country/Emirate:</span>
+              <span id="ship-to">{{shipTo}}</span>
+            </p>
+          </div>
+        </div>
+        <div
+          style="
+            width: 45%;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-left: none;
+          "
+        >
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+            <tr>
+              <td style="font-weight: bold">Invoice No:</td>
+              <td id="invoice-number">{{invoiceNumber}}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold">Invoice date:</td>
+              <td id="invoice-date">{{invoiceDate}}</td>
+            </tr>
+            <!-- <tr>
+              <td style="font-weight: bold">Order No:</td>
+              <td id="order-no">{{orderNo}}</td>
+            </tr> -->
+            <tr>
+              <td style="font-weight: bold">Salesman:</td>
+              <td id="salesperson">{{salesperson}}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold">Ship From:</td>
+              <td id="ship-from">{{shipFrom}}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Invoice Items Table -->
+      <div class="table-container" style="padding: 10px 20px; padding-bottom: 0">
+        <table class="invoice-items-table">
+          <thead class="table-header">
+            <tr>
+              <th>No.</th>
+              <th>Part No.</th>
+              <th>Brand</th>
+              <th>Description</th>
+              <th>QTY</th>
+              <th>Rate</th>
+              <th>Amount</th>
+              <th>VAT %</th>
+              <th>VAT</th>
+              <th>Total Amount</th>
+            </tr>
+          </thead>
+          <tbody id="invoice-items-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Spacer for footer -->
+    <div class="footer-spacer"></div>
+  </body>
+</html> 
