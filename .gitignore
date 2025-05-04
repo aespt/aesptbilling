@@ -12,6 +12,9 @@
 !.yarn/versions
 .pnp.*
 
+# Firebase Functions
+/functions/node_modules
+
 # testing
 /coverage
 

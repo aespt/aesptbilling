@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import * as puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
@@ -22,12 +22,26 @@ async function getBrowser(): Promise<puppeteer.Browser> {
   });
 }
 
+// Interface for the onCall data
+interface GeneratePdfData {
+  invoiceId: string;
+  invoiceStage?: string | null;
+  htmlTemplate: string;
+  invoice: any;
+  customer: any;
+  primaryAddress: any;
+  salesPerson: any[];
+  primaryBankDetails: any;
+  invoiceItems: any[];
+  productsMap: Record<string, any>;
+}
+
 export const generateInvoicePdf = functions
   .runWith({
     timeoutSeconds: 300, // 5 minutes timeout
     memory: '1GB', // More memory for PDF generation
   })
-  .https.onCall(async (data, context) => {
+  .https.onCall(async (data: GeneratePdfData, context) => {
     // For security: check authentication if needed
     // if (!context.auth) {
     //   throw new functions.https.HttpsError(
