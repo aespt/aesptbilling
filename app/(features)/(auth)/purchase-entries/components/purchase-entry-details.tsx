@@ -5,7 +5,7 @@ import { Autocomplete, Box, IconButton, Paper, TextField, Typography } from '@mu
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Sidepanel from '@/app/shared/components/sidepanel';
 import type { FormErrors } from '@/lib/types';

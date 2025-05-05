@@ -1,11 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
-import { FiBell, FiChevronDown, FiLogOut, FiSettings, FiUser } from 'react-icons/fi';
-
+import { FiChevronDown, FiLogOut, FiSettings } from 'react-icons/fi';
 import { useAuth } from '@/lib/hooks/useAuth';
-import Link from 'next/link';
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
