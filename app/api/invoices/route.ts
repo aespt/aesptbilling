@@ -350,6 +350,9 @@ export async function GET(request: NextRequest) {
         page,
         pageSize,
         totalPages: Math.ceil(Number(count) / pageSize),
+        currentPage: page,
+        hasNext: page < Math.ceil(Number(count) / pageSize),
+        hasPrev: page > 1,
       },
     });
   } catch (error) {
