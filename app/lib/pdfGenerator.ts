@@ -115,14 +115,13 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
   const htmlContent = `
   <div style="font-family: Arial, sans-serif; width: 100%; padding: 20px; color: #333; background-color: white;">
     <!-- Header Section -->
-    <div style="display: flex; justify-content: space-between; padding: 20px; background-color: #f5f5f5; margin-bottom: 20px; border-bottom: 1px solid #ccc;">
-      <div>
-        <img src="/logo.png" alt="Logo" style="width: 150px; max-height: 80px; object-fit: contain" />
+    <div style="display: flex;gap:20px; justify-content: start; padding: 20px; background-color: #f5f5f5; border-bottom: 1px solid #ccc;">
+      <div style="display:flex;justify-content:center;align-items:center;">
+        <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
       </div>
-      <div style="width: 75%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="width: 85%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h3 style="margin: 0; font-size: 16px">Arabian Auto Equipments and</h3>
-          <h3 style="margin: 0; font-size: 16px">Parts Trading (FZC)</h3>
+          <h3 style="margin: 0; font-size: 16px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
           <p style="margin: 5px 0 0; font-size: 12px; font-weight: bold">
             العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
           </p>
@@ -144,16 +143,15 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     </div>
 
     <!-- Invoice Title -->
-    <div style="padding: 10px 20px; font-weight: bold; font-size: 18px">
+    <div style="font-weight: bold; font-size: 18px;display:flex;justify-content:center;align-items:center;">
       ${isDelivery ? 'Delivery Note' : documentTitle || 'Tax Invoice'}
     </div>
 
     <!-- Customer Info Section -->
-    <div style="display: flex; justify-content: space-between; padding: 0 20px; margin-bottom: 20px; gap: 20px;">
+    <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px; gap: 20px;">
       <!-- Left side - Customer info -->
-      <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc; border-right: none;">
-        <p style="margin: 0; font-weight: bold">Invoice To:</p>
-        <p style="margin: 5px 0">${customer?.name || 'N/A'}</p>
+      <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+        <p style="margin: 0; font-weight: bold">Invoice To:<span style="margin: 5px 0">${customer?.name || 'N/A'}</span></p>
         <p style="margin: 10px 0">
           <span style="font-weight: bold">TAX Reg No:</span> ${customer?.trn || 'N/A'}
         </p>
@@ -164,7 +162,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       </div>
       
       <!-- Right side - Invoice details -->
-      <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc; border-left: none;">
+      <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
         <table style="width: 100%; border-collapse: collapse; font-size: 14px">
           <tr>
             <td style="font-weight: bold; padding: 3px 0;">Invoice No:</td>
@@ -187,7 +185,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     </div>
 
     <!-- Items Table -->
-    <div style="padding: 10px 20px;">
+    <div style="padding: 10px 0;">
       <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <thead>
           <tr style="background-color: #f5f5f5;">
@@ -249,19 +247,19 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         </tbody>
       </table>
     </div>
-    
+    <div style=" position: absolute; bottom: 50px; left: 0; width: 100%;">
     <!-- Totals Section - Only for non-delivery notes -->
     ${
       !isDelivery
         ? `
-    <div style="display: flex; justify-content: space-between; padding: 20px; margin-top: 30px; gap: 20px;">
-      <div style="width: 45%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+    <div style="display: flex; justify-content: space-between; padding: 10px 20px; margin-top: 30px; gap: 20px;">
+      <div style="width: 50%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
         <h4 style="margin-top: 0">Terms & Conditions</h4>
         <p style="font-size: 12px;">
           By using our services, you confirm that you accept these Terms and Conditions and that you agree to comply with them.
         </p>
       </div>
-      <div style="width: 45%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+      <div style="width: 50%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <tr>
             <td style="font-weight: bold; padding: 3px 0;">Subtotal:</td>
@@ -271,11 +269,11 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
             <td style="font-weight: bold; padding: 3px 0;">${totals.taxType}:</td>
             <td style="text-align: right">${totals.taxAmount} AED</td>
           </tr>
-          <tr>
+          <tr style="padding-bottom: 10px;">
             <td style="font-weight: bold; padding: 3px 0;">Discount:</td>
             <td style="text-align: right">${totals.discount} AED</td>
           </tr>
-          <tr style="border-top: 1px solid #ddd;">
+          <tr>
             <td style="font-weight: bold; padding-top: 8px;">Invoice Total:</td>
             <td style="text-align: right; font-weight: bold">${totals.total} AED</td>
           </tr>
@@ -287,7 +285,16 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     }
     
     <!-- Signature section -->
-    <div style="display: flex; justify-content: space-between; margin-top: 40px; padding: 0 20px;">
+    
+    <div style="width: 100%; padding: 0;margin-bottom:20px;">
+      <div style="padding: 15px; margin: 10px 20px; background-color: #f5f5f5;">
+        <p style="font-size: 12px; color: #999; margin: 0;">
+          Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
+          been the industry's standard dummy text ever since the 1500s.
+        </p>
+      </div>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 50px; padding: 0 20px;">
       <div>
         <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
           Customer Signature
@@ -299,15 +306,6 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         </div>
       </div>
     </div>
-    
-    <!-- Footer Section (from invoice-footer.html) - Fixed at bottom -->
-    <div style="width: 100%; padding: 0; position: absolute; bottom: 0; left: 0;">
-      <div style="padding: 15px; margin: 10px 20px; background-color: #f5f5f5;">
-        <p style="font-size: 12px; color: #999; margin: 0;">
-          Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
-          been the industry's standard dummy text ever since the 1500s.
-        </p>
-      </div>
     </div>
   </div>
   `;
