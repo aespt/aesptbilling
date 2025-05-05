@@ -1,4 +1,4 @@
-import { eq, and, gte, lt, like } from 'drizzle-orm';
+import { eq, and, gte, lt, like, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { Workbook } from 'exceljs';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // Build conditions array
-    const conditions: any[] = [];
+    const conditions: SQLWrapper[] = [];
 
     // Add filters from query parameters if provided
     const dateFrom = searchParams.get('dateFrom');

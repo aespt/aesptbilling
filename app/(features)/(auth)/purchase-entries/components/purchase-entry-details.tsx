@@ -45,14 +45,14 @@ interface PurchaseEntryDetailsProps {
 }
 
 // Utility function to generate purchase entry number
-const generatePurchaseEntryNumber = () => {
-  const lastNumber = parseInt(localStorage.getItem('lastPurchaseEntryNumber') || '1000');
-  const newNumber = lastNumber + 1;
-  localStorage.setItem('lastPurchaseEntryNumber', newNumber.toString());
-  return `PE-${new Date().getFullYear()}${(new Date().getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
-};
+// const generatePurchaseEntryNumber = () => {
+//   const lastNumber = parseInt(localStorage.getItem('lastPurchaseEntryNumber') || '1000');
+//   const newNumber = lastNumber + 1;
+//   localStorage.setItem('lastPurchaseEntryNumber', newNumber.toString());
+//   return `PE-${new Date().getFullYear()}${(new Date().getMonth() + 1)
+//     .toString()
+//     .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
+// };
 
 export default function PurchaseEntryDetails({
   formData,
@@ -64,7 +64,7 @@ export default function PurchaseEntryDetails({
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSupplierPanelOpen, setIsSupplierPanelOpen] = useState(false);
-  const initialized = useRef(false);
+  // const initialized = useRef(false);
 
   // Fetch suppliers on component mount
   useEffect(() => {

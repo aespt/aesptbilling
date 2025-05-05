@@ -484,7 +484,7 @@ export default function InvoicesListPage() {
                 disabled={exportingInvoices}
                 startIcon={
                   exportingInvoices && (
-                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
                   )
                 }
               />

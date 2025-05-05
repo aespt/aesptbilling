@@ -17,7 +17,6 @@ import {
   FiFile,
   FiClipboard,
   FiList,
-  FiPackage,
 } from 'react-icons/fi';
 
 const menuItems = [

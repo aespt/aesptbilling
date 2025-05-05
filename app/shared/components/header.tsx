@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { FiBell, FiChevronDown, FiLogOut, FiSettings, FiUser } from 'react-icons/fi';
 
 import { useAuth } from '@/lib/hooks/useAuth';
+import Link from 'next/link';
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -40,10 +41,10 @@ export default function Header() {
         {/* Right side - User info and notifications */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <button className="relative rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100">
+          {/* <button className="relative rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100">
             <FiBell size={20} />
             <span className="absolute right-1 top-1 size-2 rounded-full bg-red-500" />
-          </button>
+          </button> */}
 
           {/* User profile */}
           <div className="relative" ref={dropdownRef}>
@@ -76,20 +77,20 @@ export default function Header() {
                   transition={{ duration: 0.2 }}
                   className="absolute right-0 z-50 mt-2 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
                 >
-                  <a
+                  {/* <a
                     href="/profile"
                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     <FiUser className="mr-3 text-gray-500" />
                     Profile
-                  </a>
-                  <a
+                  </a> */}
+                  <Link
                     href="/settings"
                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     <FiSettings className="mr-3 text-gray-500" />
                     Settings
-                  </a>
+                  </Link>
                   <div className="my-1 border-t border-gray-200" />
                   <button
                     type="button"
