@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
-import { generateInvoicePDF } from '../lib/pdfGenerator';
+import { downloadPdf, generateInvoicePDF } from '../lib/pdfGenerator';
 
 interface InvoicePdfButtonPostProps {
   invoiceId: number;
@@ -47,7 +47,20 @@ export default function InvoicePdfButtonPost({
       }
 
       // Generate the PDF using the data
-      await generateInvoicePDF(data.data);
+      const blobUrl = await generateInvoicePDF(data.data);
+
+      // Create filename based on invoice stage
+      let filename = `invoice-${invoiceId}.pdf`;
+      if (invoiceStage === 'DELIVERY') {
+        filename = `delivery-note-${invoiceId}.pdf`;
+      } else if (invoiceStage === 'QUOTATION') {
+        filename = `quotation-${invoiceId}.pdf`;
+      } else if (invoiceStage === 'PROFORMA') {
+        filename = `proforma-invoice-${invoiceId}.pdf`;
+      }
+
+      // Download the PDF
+      downloadPdf(blobUrl, filename);
     } catch (error) {
       console.error('Error generating PDF:', error);
       // You can add a toast notification here
