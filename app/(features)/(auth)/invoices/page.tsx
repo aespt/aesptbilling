@@ -152,6 +152,7 @@ export default function InvoicesListPage() {
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
   const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [exportingInvoices, setExportingInvoices] = useState(false);
 
   const router = useRouter();
 
@@ -414,6 +415,8 @@ export default function InvoicesListPage() {
 
   const handleExportExcel = async () => {
     try {
+      setExportingInvoices(true);
+
       // Construct the same filter parameters as used in the current view
       const params = new URLSearchParams();
 
@@ -460,6 +463,8 @@ export default function InvoicesListPage() {
     } catch (error) {
       console.error('Error exporting invoices:', error);
       // You could add a toast notification here to inform the user
+    } finally {
+      setExportingInvoices(false);
     }
   };
 
@@ -473,7 +478,16 @@ export default function InvoicesListPage() {
           </Typography>
           <div className="flex items-center gap-2">
             {activeTab === 2 && ( // Only show Export button on Sales tab
-              <SecondaryButton onClick={handleExportExcel} label="Export" />
+              <SecondaryButton
+                onClick={handleExportExcel}
+                label={exportingInvoices ? 'Exporting...' : 'Export'}
+                disabled={exportingInvoices}
+                startIcon={
+                  exportingInvoices && (
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+                  )
+                }
+              />
             )}
             <IconButton
               onClick={() => setFilterPanelOpen(true)}

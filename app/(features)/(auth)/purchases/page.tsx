@@ -24,6 +24,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Pagination from '@/app/shared/components/pagination';
 import type { PaginationInfo } from '@/app/shared/components/pagination';
 import PrimaryButton from '@/app/shared/components/primary-button';
+import SecondaryButton from '@/app/shared/components/secondary-button';
 
 import PurchaseEntryFilters from '../purchase-entries/components/purchase-entry-filters';
 
@@ -190,6 +191,7 @@ export default function PurchasesListPage() {
   // Shared state
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  const [exportingEntries, setExportingEntries] = useState(false);
 
   // Define purchase type options
   const purchaseTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
@@ -499,6 +501,62 @@ export default function PurchasesListPage() {
     }));
   };
 
+  const handleExportEntries = async () => {
+    try {
+      setExportingEntries(true);
+
+      // Construct filter parameters as used in the current view
+      const params = new URLSearchParams();
+
+      // Add date filters if set
+      if (entriesFilters.dateFrom) {
+        params.append('dateFrom', entriesFilters.dateFrom.format('YYYY-MM-DD'));
+      }
+
+      if (entriesFilters.dateTo) {
+        params.append('dateTo', entriesFilters.dateTo.format('YYYY-MM-DD'));
+      }
+
+      // Add text filters if set
+      if (entriesFilters.purchaseEntryNumber.trim()) {
+        params.append('purchaseEntryNumber', entriesFilters.purchaseEntryNumber.trim());
+      }
+
+      // Add supplier filter if set
+      if (entriesFilters.supplier) {
+        params.append('supplier', entriesFilters.supplier.name);
+      }
+
+      // Add purchase type filter if set
+      if (entriesFilters.purchaseType) {
+        params.append('purchaseType', entriesFilters.purchaseType);
+      }
+
+      // Add export flag to skip pagination
+      params.append('export', 'true');
+
+      const response = await fetch(`/api/purchase-entries/export?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to export purchase entries');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `purchase_entries_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Error exporting purchase entries:', error);
+    } finally {
+      setExportingEntries(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -531,6 +589,18 @@ export default function PurchasesListPage() {
             >
               <FilterAltIcon />
             </IconButton>
+            {activeTab === 1 && (
+              <SecondaryButton
+                onClick={handleExportEntries}
+                label={exportingEntries ? 'Exporting...' : 'Export'}
+                disabled={exportingEntries}
+                startIcon={
+                  exportingEntries && (
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+                  )
+                }
+              />
+            )}
             <Link href={activeTab === 0 ? '/purchases/create' : '/purchase-entries/create'}>
               <PrimaryButton label={activeTab === 0 ? '+ New Purchase' : '+ New Purchase Entry'} />
             </Link>
