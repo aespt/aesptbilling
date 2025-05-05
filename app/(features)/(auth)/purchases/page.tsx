@@ -2,7 +2,6 @@
 
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import {
-  Typography,
   Paper,
   Table,
   TableBody,
