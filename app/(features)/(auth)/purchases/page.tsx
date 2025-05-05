@@ -615,13 +615,6 @@ export default function PurchasesListPage() {
             variant="fullWidth"
             textColor="primary"
             indicatorColor="primary"
-            sx={{
-              '& .MuiTab-root': {
-                fontWeight: 'bold',
-                fontSize: '1rem',
-                textTransform: 'none',
-              },
-            }}
           >
             <Tab label="Purchases" id="purchases-tab" aria-controls="purchases-panel" />
             <Tab
