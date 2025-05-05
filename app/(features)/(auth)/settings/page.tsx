@@ -539,7 +539,7 @@ export default function SettingsPage() {
                 <Typography variant="h6" className="mb-4 font-medium text-gray-800">
                   UAE
                 </Typography>
-                <div className="grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="mt-2 grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
                   <TextField
                     label="VAT %"
                     variant="outlined"
@@ -558,7 +558,7 @@ export default function SettingsPage() {
                   <Button
                     variant="contained"
                     type="submit"
-                    className="bg-blue-600 px-4 text-white hover:bg-blue-700"
+                    className="bg-gradient-to-r from-red-500 to-blue-500"
                     disabled={isVatLoading}
                   >
                     {isVatLoading ? (
@@ -578,7 +578,7 @@ export default function SettingsPage() {
                 <Typography variant="h6" className="mb-4 font-medium text-gray-800">
                   India
                 </Typography>
-                <div className="grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="mt-2 grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
                   <TextField
                     label="CGST %"
                     variant="outlined"
@@ -610,7 +610,7 @@ export default function SettingsPage() {
                   <Button
                     variant="contained"
                     type="submit"
-                    className="bg-blue-600 px-4 text-white hover:bg-blue-700"
+                    className="bg-gradient-to-r from-red-500 to-blue-500"
                     disabled={isGstLoading}
                   >
                     {isGstLoading ? (
