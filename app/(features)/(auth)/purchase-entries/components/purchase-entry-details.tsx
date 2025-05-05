@@ -71,13 +71,13 @@ export default function PurchaseEntryDetails({
     const fetchData = async () => {
       try {
         // Generate purchase entry number if not already set
-        if (!initialized.current && !formData.purchaseentry_number) {
-          setFormData({
-            ...formData,
-            purchaseentry_number: generatePurchaseEntryNumber(),
-          });
-          initialized.current = true;
-        }
+        // if (!initialized.current && !formData.purchaseentry_number) {
+        //   setFormData({
+        //     ...formData,
+        //     purchaseentry_number: generatePurchaseEntryNumber(),
+        //   });
+        //   initialized.current = true;
+        // }
 
         // Fetch suppliers
         try {

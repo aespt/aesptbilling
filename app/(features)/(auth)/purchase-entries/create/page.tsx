@@ -158,11 +158,6 @@ export default function CreatePurchaseEntryPage() {
         throw new Error(result.error || result.message || 'Failed to create purchase entry');
       }
 
-      // Open PDF view in a new tab if needed
-      if (result.data && result.data.id) {
-        window.open(`/api/purchase-entries/pdf?id=${result.data.id}`, '_blank');
-      }
-
       showSnackbar('Purchase entry created successfully', 'success');
 
       // Redirect back to purchase entries list
