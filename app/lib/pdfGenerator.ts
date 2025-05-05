@@ -396,7 +396,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
 
       // Calculate dimensions
       const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+      // const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       // Return just the minimum data needed for PDF creation
