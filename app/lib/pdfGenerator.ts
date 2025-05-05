@@ -26,9 +26,8 @@ interface Address {
 // Interface for bank details
 interface BankDetails {
   name?: string;
-  account_number?: string;
-  iban?: string;
-  swift_code?: string;
+  details?: string;
+  is_primary?: boolean;
 }
 
 // Interface for product
@@ -88,14 +87,32 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     customer,
     salesPerson,
     primaryAddress,
+    primaryBankDetails,
     productsWithItems,
     formattedDate,
     documentTitle,
     totals,
   } = invoiceData;
 
+  // Determine document title based on invoice stage
+  const getDocumentTitle = (stage?: string, defaultTitle?: string): string => {
+    switch (stage) {
+      case 'QUOTATION':
+        return 'Quotation';
+      case 'PROFORMA':
+        return 'Proforma Invoice';
+      case 'SALE':
+        return 'Tax Invoice';
+      case 'DELIVERY':
+        return 'Delivery Note';
+      default:
+        return defaultTitle || 'Tax Invoice';
+    }
+  };
+
   // Determine if this is a delivery note
   const isDelivery = invoice.invoice_stage === 'DELIVERY';
+  const documentDisplayTitle = getDocumentTitle(invoice.invoice_stage, documentTitle);
 
   // Split products into pages to handle pagination
   // Increase items per page for non-last pages to maximize space usage
@@ -196,7 +213,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
 
       <!-- Invoice Title -->
       <div style="font-weight: bold; font-size: 18px;display:flex;justify-content:center;align-items:center; margin-bottom: 15px;">
-        ${isDelivery ? 'Delivery Note' : documentTitle || 'Tax Invoice'} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
+        ${documentDisplayTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
       </div>
 
       <!-- Customer Info Section (only on first page) -->
@@ -239,7 +256,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
           : `
       <!-- Simple page indicator for non-first pages -->
       <div style="font-weight: bold; font-size: 18px;display:flex;justify-content:center;align-items:center; margin-bottom: 15px;">
-        ${isDelivery ? 'Delivery Note' : documentTitle || 'Tax Invoice'} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
+        ${documentDisplayTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
       </div>
       `
       }
@@ -321,10 +338,22 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         <!-- Totals Section - Only for non-delivery notes and last page -->
         <div style="display: flex; justify-content: space-between; padding: 10px 20px; margin-top: 30px; gap: 20px;">
           <div style="width: 50%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
-            <h4 style="margin-top: 0">Terms & Conditions</h4>
-            <p style="font-size: 12px;">
-              By using our services, you confirm that you accept these Terms and Conditions and that you agree to comply with them.
-            </p>
+            ${
+              invoice.invoice_stage === 'PROFORMA'
+                ? `
+                <h4 style="margin-top: 0">Bank Details</h4>
+                <p style="font-weight: bold; margin-bottom: 5px;">${primaryBankDetails?.name || 'N/A'}</p>
+                <div style="font-size: 14px; white-space: pre-line;">
+                  ${primaryBankDetails?.details || 'N/A'}
+                </div>
+                `
+                : `
+                <h4 style="margin-top: 0">Terms & Conditions</h4>
+                <p style="font-size: 12px;">
+                  By using our services, you confirm that you accept these Terms and Conditions and that you agree to comply with them.
+                </p>
+                `
+            }
           </div>
           <div style="width: 50%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
