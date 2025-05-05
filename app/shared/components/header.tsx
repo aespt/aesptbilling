@@ -1,9 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
+
 import { FiChevronDown, FiLogOut, FiSettings } from 'react-icons/fi';
+
 import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function Header() {
