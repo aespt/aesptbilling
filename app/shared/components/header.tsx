@@ -52,11 +52,13 @@ export default function Header() {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-3 rounded-md p-2 transition-colors hover:bg-gray-100"
             >
-              <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-blue-500 font-medium text-white">
+              <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-blue-500 font-medium capitalize text-white">
                 {user?.username ? user.username.charAt(0) : '?'}
               </div>
               <div className="hidden text-left md:block">
-                <p className="text-sm font-medium text-gray-700">{user?.username || 'Guest'}</p>
+                <p className="text-sm font-medium capitalize text-gray-700">
+                  {user?.username || 'Guest'}
+                </p>
                 <p className="text-xs text-gray-500">{user?.email || ''}</p>
               </div>
               <FiChevronDown

@@ -473,9 +473,7 @@ export default function InvoicesListPage() {
       <div className="px-4 pb-6 pt-16 md:ml-[280px] md:px-6">
         <style>{tableRowAnimation}</style>
         <Box className="mb-6 flex items-center justify-between">
-          <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
-            Sales History
-          </Typography>
+          <h1 className="text-2xl font-bold text-gray-800">Sales History</h1>
           <div className="flex items-center gap-2">
             {activeTab === 2 && ( // Only show Export button on Sales tab
               <SecondaryButton

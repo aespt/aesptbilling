@@ -575,9 +575,7 @@ export default function PurchasesListPage() {
       <div className="mx-auto max-w-screen-2xl">
         <style>{tableRowAnimation}</style>
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
-            Purchases & Entries
-          </Typography>
+          <h1 className="text-2xl font-bold text-gray-800">Purchases & Entries</h1>
           <div className="flex flex-col gap-3 sm:flex-row">
             <IconButton
               onClick={() =>
