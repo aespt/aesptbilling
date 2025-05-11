@@ -561,12 +561,12 @@ export default function PurchasesListPage() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  const handlePurchaseClick = (purchaseId: number) => {
-    window.location.href = `/purchases/${purchaseId}`;
-  };
-
   const handlePurchaseEntryClick = (purchaseEntryId: number) => {
     window.location.href = `/purchase-entries/${purchaseEntryId}`;
+  };
+
+  const handlePurchaseEntryDownload = (purchaseEntryId: number) => {
+    window.open(`/purchases/pdf/${purchaseEntryId}`, '_blank');
   };
 
   return (
@@ -656,7 +656,6 @@ export default function PurchasesListPage() {
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>Ship From</TableCell>
-                  <TableCell>Purchase Type</TableCell>
                   <TableCell>
                     <TableSortLabel
                       active={sort.field === 'total'}
@@ -666,6 +665,7 @@ export default function PurchasesListPage() {
                       Total
                     </TableSortLabel>
                   </TableCell>
+                  <TableCell>Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -686,7 +686,7 @@ export default function PurchasesListPage() {
                     <TableRow
                       key={purchase.id}
                       hover
-                      onClick={() => handlePurchaseClick(purchase.id)}
+                      // onClick={() => handlePurchaseClick(purchase.id)}
                       className="cursor-pointer transition-all hover:bg-gray-50"
                       style={{
                         animation: `fadeIn 0.3s ease-out forwards`,
@@ -697,8 +697,16 @@ export default function PurchasesListPage() {
                       <TableCell>{formatDate(purchase.purchase_date)}</TableCell>
                       <TableCell>{purchase.supplier.name}</TableCell>
                       <TableCell>{purchase.ship_from}</TableCell>
-                      <TableCell>{purchase.purchase_type}</TableCell>
+                      {/* <TableCell>{purchase.purchase_type}</TableCell> */}
                       <TableCell>${parseFloat(purchase.total).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => handlePurchaseEntryDownload(purchase.id)}
+                          className="border-none bg-transparent text-blue-500 outline-none"
+                        >
+                          Download PO
+                        </button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -752,7 +760,7 @@ export default function PurchasesListPage() {
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>Ship From</TableCell>
-                  <TableCell>Purchase Type</TableCell>
+                  {/* <TableCell>Purchase Type</TableCell> */}
                   <TableCell>
                     <TableSortLabel
                       active={entriesSort.field === 'total'}
@@ -793,7 +801,7 @@ export default function PurchasesListPage() {
                       <TableCell>{formatDate(entry.purchaseentry_date)}</TableCell>
                       <TableCell>{entry.supplier.name}</TableCell>
                       <TableCell>{entry.ship_from}</TableCell>
-                      <TableCell>{entry.purchase_type}</TableCell>
+                      {/* <TableCell>{entry.purchase_type}</TableCell> */}
                       <TableCell>${parseFloat(entry.total).toFixed(2)}</TableCell>
                     </TableRow>
                   ))

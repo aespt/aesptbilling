@@ -7,7 +7,6 @@ import { useState } from 'react';
 import PurchaseDetails from '@/app/(features)/(auth)/purchases/components/purchase-details';
 import PurchaseItems from '@/app/(features)/(auth)/purchases/components/purchase-items';
 import PurchaseSummary from '@/app/(features)/(auth)/purchases/components/purchase-summary';
-import PurchaseTaxDiscount from '@/app/(features)/(auth)/purchases/components/purchase-tax-discount';
 import FullSpinner from '@/app/shared/components/full-spinner';
 import PageHeader from '@/app/shared/components/page-header';
 import Snackbar from '@/app/shared/components/snackbar';
@@ -37,12 +36,12 @@ export default function CreatePurchasePage() {
     status: 'DRAFT',
     // Tax and discount fields
     tax_type: 'VAT',
-    vat_percentage: 5,
+    vat_percentage: 0,
     cgst_percentage: 0,
     sgst_percentage: 0,
     discount_type: 'PERCENTAGE',
     discount_value: 0,
-    tax_rate: 5, // Initialize with default tax rate
+    tax_rate: 0, // Initialize with default tax rate
     discount_rate: 0, // Initialize with default discount rate
   });
 
@@ -64,13 +63,6 @@ export default function CreatePurchasePage() {
     supplier_id: '',
     items: '',
   });
-
-  // Force re-render of components when tax or discount changes
-  const handleTaxDiscountChange = () => {
-    // Simply trigger a re-render of components
-    // The purchase-tax-discount component now handles updating all necessary values
-    setPurchaseItems([...purchaseItems]);
-  };
 
   // Validate form
   const validateForm = () => {
@@ -155,7 +147,7 @@ export default function CreatePurchasePage() {
         throw new Error(result.error || result.message || 'Failed to create purchase');
       }
 
-      // Open PDF view in a new tab if needed
+      // Open PDF view in a new tab
       if (result.data && result.data.id) {
         window.open(`/purchases/pdf/${result.data.id}`, '_blank');
       }
@@ -201,13 +193,13 @@ export default function CreatePurchasePage() {
               setErrors={setErrors}
             />
 
-            <PurchaseTaxDiscount
+            {/* <PurchaseTaxDiscount
               formData={formData}
               setFormData={setFormData}
               errors={errors}
               setErrors={setErrors}
               onTaxDiscountChange={handleTaxDiscountChange}
-            />
+            /> */}
 
             <PurchaseSummary
               purchaseItems={adaptPurchaseItemsForSummary(purchaseItems)}

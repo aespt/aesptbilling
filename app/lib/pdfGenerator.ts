@@ -80,6 +80,40 @@ interface InvoiceData {
   totals: InvoiceTotals;
 }
 
+// Add new interfaces for purchases
+// Interface for the supplier
+interface Supplier {
+  name?: string;
+  tax_registration_number?: string;
+  address?: string;
+  contact_number?: string;
+}
+
+// Interface for purchase
+interface Purchase {
+  purchase_number?: string;
+  purchase_date?: string;
+  ship_from?: string;
+}
+
+// Interface for purchase item
+interface PurchaseItem {
+  quantity: number;
+}
+
+// Interface for the purchase data needed for PDF generation
+interface PurchaseData {
+  purchase: Purchase;
+  supplier: Supplier;
+  primaryAddress: Address;
+  productsWithItems: Array<{
+    item: PurchaseItem;
+    product: Product;
+  }>;
+  formattedDate: string;
+  documentTitle: string;
+}
+
 // Main function to generate the PDF
 export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<string> {
   const {
@@ -484,4 +518,271 @@ export function downloadPdf(blobUrl: string, filename: string): void {
     // Error downloading PDF
     alert('Could not download PDF. Please try again.');
   }
+}
+
+// Function to generate Purchase Order PDF
+export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<string> {
+  const { purchase, supplier, primaryAddress, productsWithItems, formattedDate, documentTitle } =
+    purchaseData;
+
+  // Split products into pages to handle pagination
+  const ITEMS_PER_PAGE_FIRST = 15; // More items on first page for purchase orders
+  const ITEMS_PER_PAGE_OTHER = 20; // More items on subsequent pages
+
+  // Calculate page distribution
+  let pageDistribution: number[] = [];
+  let remainingItems = productsWithItems.length;
+
+  if (remainingItems <= ITEMS_PER_PAGE_FIRST) {
+    // Only one page needed
+    pageDistribution = [remainingItems];
+  } else {
+    // First page
+    pageDistribution.push(ITEMS_PER_PAGE_FIRST);
+    remainingItems -= ITEMS_PER_PAGE_FIRST;
+
+    // Additional pages
+    while (remainingItems > 0) {
+      const itemsForPage = Math.min(ITEMS_PER_PAGE_OTHER, remainingItems);
+      pageDistribution.push(itemsForPage);
+      remainingItems -= itemsForPage;
+    }
+  }
+
+  const totalPages = pageDistribution.length;
+  const pagePromises: Promise<{ imgData: string; imgWidth: number; imgHeight: number }>[] = [];
+
+  // Keep track of the start index for each page
+  let startIndex = 0;
+
+  // Generate each page
+  for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+    // Get items for this page
+    const itemsOnThisPage = pageDistribution[pageIndex];
+    const endIndex = startIndex + itemsOnThisPage;
+    const pageItems = productsWithItems.slice(startIndex, endIndex);
+    const isLastPage = pageIndex === totalPages - 1;
+
+    // Calculate page height - adjust based on content
+    const baseHeight = 297; // A4 height in mm
+    const headerHeight = pageIndex === 0 ? 180 : 50; // First page has bigger header
+    const rowHeight = 25; // Height per table row in mm
+    const footerHeight = isLastPage ? 100 : 0; // Footer only on last page
+
+    // Calculate actual content height (restrict to A4 height)
+    const contentHeight = Math.min(
+      baseHeight,
+      headerHeight + pageItems.length * rowHeight + footerHeight
+    );
+
+    // Create temporary container for our HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.top = '0';
+    tempDiv.style.left = '0';
+    tempDiv.style.width = '210mm'; // A4 width
+    tempDiv.style.height = isLastPage ? '297mm' : `${contentHeight}mm`; // A4 height or content height
+    tempDiv.style.overflow = 'hidden';
+    tempDiv.style.zIndex = '-1000'; // Hide it but still render
+    tempDiv.style.backgroundColor = 'white';
+    tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
+
+    // Generate the HTML content with exact template structure
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; width: 100%; padding: 20px; color: #333; background-color: white;">
+      ${
+        pageIndex === 0
+          ? `
+      <!-- Header Section - Only on first page -->
+      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; background-color: #f5f5f5;">
+        <div style="display:flex;justify-content:center;align-items:center;">
+          <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
+        </div>
+        <div style="width: 85%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0; font-size: 16px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
+            <p style="margin: 5px 0 0; font-size: 12px; font-weight: bold">
+              العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
+            </p>
+          </div>
+          <div style="text-align: right; font-size: 12px">
+            ${
+              primaryAddress
+                ? `
+              ${primaryAddress.street || ''}<br>
+              ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}<br>
+              ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}<br>
+              ${primaryAddress.phone_no ? `Tel: ${primaryAddress.phone_no}<br>` : ''}
+              ${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}
+            `
+                : ''
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Purchase Order Title -->
+      <div style="font-weight: bold; font-size: 18px;display:flex;justify-content:center;align-items:center; margin-bottom: 15px;">
+        ${documentTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
+      </div>
+
+      <!-- Supplier Info Section (only on first page) -->
+      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px; gap: 20px;">
+        <!-- Left side - Supplier info -->
+        <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+          <p style="margin: 0; font-weight: bold">Order To:<span style="margin: 5px 0">${supplier?.name || 'N/A'}</span></p>
+          <p style="margin: 10px 0">
+            <span style="font-weight: bold">TAX Reg No:</span> ${supplier?.tax_registration_number || 'N/A'}
+          </p>
+          <p style="margin: 5px 0">
+            <span style="font-weight: bold">Address:</span>
+            ${supplier?.address || 'N/A'}
+          </p>
+          <p style="margin: 5px 0">
+            <span style="font-weight: bold">Contact:</span>
+            ${supplier?.contact_number || 'N/A'}
+          </p>
+        </div>
+        
+        <!-- Right side - Purchase details -->
+        <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+            <tr>
+              <td style="font-weight: bold; padding: 3px 0;">PO No:</td>
+              <td>${purchase.purchase_number || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold; padding: 3px 0;">PO date:</td>
+              <td>${formattedDate || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold; padding: 3px 0;">Ship From:</td>
+              <td>${purchase.ship_from || 'N/A'}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      `
+          : `
+      <!-- Continued Page Header -->
+      <div style="font-weight: bold; font-size: 16px; padding: 10px 0;">
+        ${documentTitle} - Continued (Page ${pageIndex + 1} of ${totalPages})
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <div>PO No: ${purchase.purchase_number || 'N/A'}</div>
+        <div>Date: ${formattedDate || 'N/A'}</div>
+      </div>
+      `
+      }
+
+      <!-- Items Table -->
+      <div style="margin-bottom: 20px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; border: 1px solid #ccc;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 8px; text-align: left; border: 1px solid #ccc;">S.No</th>
+              <th style="padding: 8px; text-align: left; border: 1px solid #ccc;">Part No</th>
+              <th style="padding: 8px; text-align: left; border: 1px solid #ccc; width: 40%;">Description</th>
+              <th style="padding: 8px; text-align: center; border: 1px solid #ccc;">Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageItems
+              .map((item, index) => {
+                const itemNumber = startIndex + index + 1;
+                return `
+              <tr>
+                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;">${itemNumber}</td>
+                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;">${
+                  item.product?.partNo || 'N/A'
+                }</td>
+                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;">
+                  ${item.product?.name || 'N/A'}
+                  ${item.product?.brand ? `<br><small>Brand: ${item.product.brand}</small>` : ''}
+                </td>
+                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">
+                  ${item.item.quantity || 0}
+                </td>
+              </tr>
+            `;
+              })
+              .join('')}
+          </tbody>
+        </table>
+      </div>
+
+      ${
+        isLastPage
+          ? `
+      <!-- Footer Section - Only on last page -->
+      <div style="margin-top: 20px; padding-top: 20px; position: absolute; bottom: 20px; width: 100%;">
+        <!-- Signature Section -->
+        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+          <div style="width: 45%;">
+            <div style="border-top: 1px dotted #000; padding-top: 5px; text-align: center;">
+              Authorized Signature
+            </div>
+          </div>
+          <div style="width: 45%;">
+            <div style="border-top: 1px dotted #000; padding-top: 5px; text-align: center;">
+              Received By
+            </div>
+          </div>
+        </div>
+      </div>
+      `
+          : ''
+      }
+    </div>
+    `;
+
+    tempDiv.innerHTML = htmlContent;
+    document.body.appendChild(tempDiv);
+
+    // Capture the HTML as image using html2canvas
+    const pagePromise = html2canvas(tempDiv, {
+      scale: 2, // Higher scale for better quality
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      document.body.removeChild(tempDiv);
+      startIndex += itemsOnThisPage; // Update startIndex for next page
+      return { imgData, imgWidth, imgHeight };
+    });
+
+    pagePromises.push(pagePromise);
+  }
+
+  // Process all pages
+  const pagesData = await Promise.all(pagePromises);
+
+  // Create PDF
+  const pdf = new jsPDF('p', 'mm', 'a4');
+
+  // Add each page to the PDF
+  pagesData.forEach((pageData, index) => {
+    if (index > 0) {
+      pdf.addPage();
+    }
+
+    // Add image to PDF
+    pdf.addImage(
+      pageData.imgData,
+      'PNG',
+      0,
+      0,
+      pageData.imgWidth,
+      pageData.imgHeight,
+      undefined,
+      'FAST'
+    );
+  });
+
+  // Convert to blob URL
+  const blobUrl = URL.createObjectURL(pdf.output('blob'));
+  return blobUrl;
 }
