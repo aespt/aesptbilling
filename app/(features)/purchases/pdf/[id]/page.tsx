@@ -5,13 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import { downloadPdf, generatePurchasePDF } from '@/app/lib/pdfGenerator';
 
-// Define purchase interface with necessary properties
-interface Purchase {
-  id: number;
-  purchase_number: string;
-  purchase_date: string;
-  // Add other properties as needed
-}
+// // Define purchase interface with necessary properties
+// interface Purchase {
+//   id: number;
+//   purchase_number: string;
+//   purchase_date: string;
+//   // Add other properties as needed
+// }
 
 // Define PDF data interface for proper typing
 interface PdfData {
