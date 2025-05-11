@@ -7,7 +7,6 @@ import { useState } from 'react';
 import PurchaseDetails from '@/app/(features)/(auth)/purchases/components/purchase-details';
 import PurchaseItems from '@/app/(features)/(auth)/purchases/components/purchase-items';
 import PurchaseSummary from '@/app/(features)/(auth)/purchases/components/purchase-summary';
-import PurchaseTaxDiscount from '@/app/(features)/(auth)/purchases/components/purchase-tax-discount';
 import FullSpinner from '@/app/shared/components/full-spinner';
 import PageHeader from '@/app/shared/components/page-header';
 import Snackbar from '@/app/shared/components/snackbar';
@@ -64,13 +63,6 @@ export default function CreatePurchasePage() {
     supplier_id: '',
     items: '',
   });
-
-  // Force re-render of components when tax or discount changes
-  const handleTaxDiscountChange = () => {
-    // Simply trigger a re-render of components
-    // The purchase-tax-discount component now handles updating all necessary values
-    setPurchaseItems([...purchaseItems]);
-  };
 
   // Validate form
   const validateForm = () => {

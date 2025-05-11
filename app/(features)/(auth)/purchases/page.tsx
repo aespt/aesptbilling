@@ -561,10 +561,6 @@ export default function PurchasesListPage() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  const handlePurchaseClick = (purchaseId: number) => {
-    window.location.href = `/purchases/${purchaseId}`;
-  };
-
   const handlePurchaseEntryClick = (purchaseEntryId: number) => {
     window.location.href = `/purchase-entries/${purchaseEntryId}`;
   };
