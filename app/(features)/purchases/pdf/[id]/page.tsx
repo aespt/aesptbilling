@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { downloadPdf, generatePurchasePDF } from '@/app/lib/pdfGenerator';
 
 // Define purchase interface with necessary properties
@@ -158,11 +158,11 @@ const PurchasePdfPage = () => {
   const purchaseId = params.id;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [purchase, setPurchase] = useState<Purchase | null>(null);
+  // const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
   const [pdfData, setPdfData] = useState<PdfData | null>(null);
 
-  const pdfObjectRef = React.useRef<HTMLObjectElement>(null);
+  const pdfObjectRef = useRef<HTMLObjectElement>(null);
 
   useEffect(() => {
     const fetchPurchaseData = async () => {
