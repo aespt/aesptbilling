@@ -195,8 +195,8 @@ const PurchasePdfPage = () => {
           throw new Error('Failed to load purchase details');
         }
 
-        const purchaseData = await purchaseResponse.json();
-        setPurchase(purchaseData.data);
+        // const purchaseData = await purchaseResponse.json();
+        // setPurchase(purchaseData.data);
 
         // Generate PDF on load
         if (typeof window !== 'undefined') {
