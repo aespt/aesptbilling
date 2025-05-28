@@ -218,36 +218,25 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         pageIndex === 0
           ? `
       <!-- Header Section - Only on first page -->
-      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; background-color: #f5f5f5; border-bottom: 1px solid #ccc;">
+      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; background-color: #f5f5f5; border: 1px solid #ccc;">
         <div style="display:flex;justify-content:center;align-items:center;">
           <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
         </div>
-        <div style="width: 85%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="width: 100%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h3 style="margin: 0; font-size: 16px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
-            <p style="margin: 5px 0 0; font-size: 12px; font-weight: bold">
+            <h3 style="margin: 0;font-weight:bold; font-size: 22px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
+            <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold">
               العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
             </p>
           </div>
-          <div style="text-align: right; font-size: 12px">
-            ${
-              primaryAddress
-                ? `
-              ${primaryAddress.street || ''}<br>
-              ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}<br>
-              ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}<br>
-              ${primaryAddress.phone_no ? `Tel: ${primaryAddress.phone_no}<br>` : ''}
-              ${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}
-            `
-                : ''
-            }
-          </div>
+          
         </div>
       </div>
 
       <!-- Invoice Title -->
-      <div style="font-weight: bold; font-size: 18px;display:flex;justify-content:center;align-items:center; margin-bottom: 15px;">
-        ${documentDisplayTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
+      <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; margin-bottom: 15px;">
+       <p style="font-weight: bold; font-size: 18px; margin-bottom: 0;"> ${documentDisplayTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}</p>
+        <p style="font-size: 14px; margin-top: 0; margin-bottom: 0;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
       </div>
 
       <!-- Customer Info Section (only on first page) -->
@@ -302,7 +291,6 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
             <tr style="background-color: #f5f5f5;">
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">No.</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Part No.</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Brand</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Description</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">QTY</th>
               ${
@@ -313,6 +301,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">VAT %</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">VAT</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Total Amount</th>
+              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Remarks</th>
               `
                   : ''
               }
@@ -340,7 +329,6 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
               <tr style="background-color: ${bgColor};">
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${itemNumber}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.partNo || 'N/A'}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.brand || 'N/A'}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.name || 'N/A'}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${quantity.toString()}</td>
                 ${
@@ -351,6 +339,8 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${invoiceTaxRate.toString()}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${vatAmount.toFixed(2)}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${totalAmount.toFixed(2)}</td>
+                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.brand || 'N/A'}</td>
+
                 `
                     : ''
                 }
@@ -365,7 +355,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       ${
         isLastPage
           ? `
-      <div style="position: absolute; bottom: 10px; left: 0; width: 100%;">
+      <div style="position: absolute; bottom: 15px; left: 0; width: 100%;">
         ${
           !isDelivery
             ? `
@@ -384,8 +374,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
                 : `
                 <h4 style="margin-top: 0">Terms & Conditions</h4>
                 <p style="font-size: 12px;">
-                  By using our services, you confirm that you accept these Terms and Conditions and that you agree to comply with them.
-                </p>
+                 Claims for shortages or defects must be checked and confirmed at the time of receipt of goods.<br /> </p>
                 `
             }
           </div>
@@ -415,15 +404,8 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         }
         
         <!-- Signature section - only on last page -->
-        <div style="width: 100%; padding: 0;margin-bottom:20px;">
-          <div style="padding: 15px; margin: 10px 20px; background-color: #f5f5f5;">
-            <p style="font-size: 12px; color: #999; margin: 0;">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
-              been the industry's standard dummy text ever since the 1500s.
-            </p>
-          </div>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-top: 40px; padding: 0 20px;">
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 40px; padding: 10px 20px;">
           <div>
             <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
               Customer Signature
@@ -433,6 +415,27 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
             <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
               For Arabian Auto Equipments and Parts Trading (FZC)
             </div>
+          </div>
+        </div>
+        <div style="width: 100%; padding: 0; margin-top: 10px;">
+          <div style="font-size: 12px; color: #999; height:70px;display:flex;justify-content:space-between;align-items:center; line-height: 1; margin: 10px 20px; background-color: #f5f5f5;text-align:center;">
+              <div style="padding:10px 20px;">Arabian Auto Parts - Your Trusted Source for Every Turn.<br />&nbsp;</div>
+              
+              <div style="text-align: center;">
+                  <div style="text-align: end; font-size: 12px; padding:10px 20px;text-transform: capitalize;line-height: 1.5;">
+                    ${
+                      primaryAddress
+                        ? `
+                      ${primaryAddress.street || ''}, 
+                      ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}
+                      ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}<br>
+                      ${primaryAddress.phone_no ? `Tel: ${primaryAddress.phone_no}` : ''}
+                    `
+                        : ''
+                    }
+                  </div>
+                  <br />&nbsp;
+              </div>
           </div>
         </div>
       </div>
