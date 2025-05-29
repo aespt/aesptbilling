@@ -210,15 +210,19 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     tempDiv.style.zIndex = '-1000'; // Hide it but still render
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
+    tempDiv.style.padding = '10mm'; // Add padding for border space
+    tempDiv.style.boxSizing = 'border-box'; // Include padding in dimensions
 
     // Generate the HTML content with exact template structure
     const htmlContent = `
-    <div style="font-family: Arial, sans-serif; width: 100%; padding: 20px; color: #333; background-color: white;">
+    <div style="width: 100%; height: 100%; border: 2px solid #ccc; box-sizing: border-box;">
+    <div style="font-family: Arial, sans-serif; width: 100%;  color: #333; background-color: white;">
+    <div style="font-family: Arial, sans-serif; color: #333; background-color: white; border-bottom:none;">
       ${
         pageIndex === 0
           ? `
       <!-- Header Section - Only on first page -->
-      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; background-color: #f5f5f5; border: 1px solid #ccc;">
+      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; border-bottom: 1px solid #ccc;">
         <div style="display:flex;justify-content:center;align-items:center;">
           <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
         </div>
@@ -240,9 +244,9 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       </div>
 
       <!-- Customer Info Section (only on first page) -->
-      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px; gap: 20px;">
+      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px;">
         <!-- Left side - Customer info -->
-        <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+        <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; border-right: 1px solid #ccc;">
           <p style="margin: 0; font-weight: bold">Invoice To:<span style="margin: 5px 0">${customer?.name || 'N/A'}</span></p>
           <p style="margin: 10px 0">
             <span style="font-weight: bold">TAX Reg No:</span> ${customer?.trn || 'N/A'}
@@ -254,7 +258,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         </div>
         
         <!-- Right side - Invoice details -->
-        <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+        <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc;">
           <table style="width: 100%; border-collapse: collapse; font-size: 14px">
             <tr>
               <td style="font-weight: bold; padding: 3px 0;">Invoice No:</td>
@@ -288,8 +292,8 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       <div style="padding: ${pageIndex === 0 ? '10px' : '5px'} 0;">
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <thead>
-            <tr style="background-color: #f5f5f5;">
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">No.</th>
+            <tr style="">
+              <th style="border: 1px solid #ccc;border-left:none; padding: 8px; text-align: left;">No.</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Part No.</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Description</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">QTY</th>
@@ -301,7 +305,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">VAT %</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">VAT</th>
               <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Total Amount</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Remarks</th>
+              <th style="border: 1px solid #ccc;border-right:none; padding: 8px; text-align: left;">Remarks</th>
               `
                   : ''
               }
@@ -327,7 +331,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
 
                 return `
               <tr style="background-color: ${bgColor};">
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${itemNumber}</td>
+                <td style="border: 1px solid #ddd;border-left:none; padding: ${pageIndex === 0 ? '8px' : '6px'};">${itemNumber}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.partNo || 'N/A'}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.name || 'N/A'}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${quantity.toString()}</td>
@@ -339,7 +343,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${invoiceTaxRate.toString()}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${vatAmount.toFixed(2)}</td>
                 <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${totalAmount.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.brand || 'N/A'}</td>
+                <td style="border: 1px solid #ddd;border-right:none; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.brand || 'N/A'}</td>
 
                 `
                     : ''
@@ -355,13 +359,13 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       ${
         isLastPage
           ? `
-      <div style="position: absolute; bottom: 15px; left: 0; width: 100%;">
+      <div style="position: absolute; bottom: 30px; left: 20px;right:20px;">
         ${
           !isDelivery
             ? `
         <!-- Totals Section - Only for non-delivery notes and last page -->
-        <div style="display: flex; justify-content: space-between; padding: 10px 20px; margin-top: 30px; gap: 20px;">
-          <div style="width: 50%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+        <div style="display: flex; justify-content: space-between; padding: 10px 20px; margin-top: 30px;">
+          <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc;">
             ${
               invoice.invoice_stage === 'PROFORMA'
                 ? `
@@ -378,7 +382,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
                 `
             }
           </div>
-          <div style="width: 50%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+          <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc;border-left:1px solid #ccc;">
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
               <tr>
                 <td style="font-weight: bold; padding: 3px 0;">Subtotal:</td>
@@ -417,12 +421,11 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
             </div>
           </div>
         </div>
-        <div style="width: 100%; padding: 0; margin-top: 10px;">
-          <div style="font-size: 12px; color: #999; height:70px;display:flex;justify-content:space-between;align-items:center; line-height: 1; margin: 10px 20px; background-color: #f5f5f5;text-align:center;">
-              <div style="padding:10px 20px;">Arabian Auto Parts - Your Trusted Source for Every Turn.<br />&nbsp;</div>
+        
+          <div style="border-top: 1px solid #ccc;padding:0px 20px; padding-bottom:10px;font-size: 12px; color: #999; display:flex;justify-content:center;align-items:center; line-height: 1; margin: 10px 20px; text-align:center;">
               
               <div style="text-align: center;">
-                  <div style="text-align: end; font-size: 12px; padding:10px 20px;text-transform: capitalize;line-height: 1.5;">
+                  <div style="text-align: center; font-size: 12px; padding:0px 20px;text-transform: capitalize;line-height: 1.5;">
                     ${
                       primaryAddress
                         ? `
@@ -434,14 +437,15 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
                         : ''
                     }
                   </div>
-                  <br />&nbsp;
               </div>
-          </div>
+          
         </div>
       </div>
       `
           : ''
       }
+    </div>
+    </div>
     </div>
     `;
 
@@ -589,50 +593,42 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
     tempDiv.style.zIndex = '-1000'; // Hide it but still render
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
+    tempDiv.style.padding = '10mm'; // Add padding for border space
+    tempDiv.style.boxSizing = 'border-box'; // Include padding in dimensions
 
     // Generate the HTML content with exact template structure
     const htmlContent = `
-    <div style="font-family: Arial, sans-serif; width: 100%; padding: 20px; color: #333; background-color: white;">
+    <div style="width: 100%; height: 100%; border: 2px solid #ccc; box-sizing: border-box;">
+    <div style="font-family: Arial, sans-serif; color: #333; background-color: white; border-bottom:none;width:100%;">
       ${
         pageIndex === 0
           ? `
       <!-- Header Section - Only on first page -->
-      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; background-color: #f5f5f5;">
+      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; border-bottom: 1px solid #ccc;">
         <div style="display:flex;justify-content:center;align-items:center;">
           <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
         </div>
-        <div style="width: 85%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="width: 100%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h3 style="margin: 0; font-size: 16px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
-            <p style="margin: 5px 0 0; font-size: 12px; font-weight: bold">
+            <h3 style="margin: 0;font-weight:bold; font-size: 22px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
+            <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold">
               العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
             </p>
           </div>
-          <div style="text-align: right; font-size: 12px">
-            ${
-              primaryAddress
-                ? `
-              ${primaryAddress.street || ''}<br>
-              ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}<br>
-              ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}<br>
-              ${primaryAddress.phone_no ? `Tel: ${primaryAddress.phone_no}<br>` : ''}
-              ${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}
-            `
-                : ''
-            }
-          </div>
+          
         </div>
       </div>
 
       <!-- Purchase Order Title -->
-      <div style="font-weight: bold; font-size: 18px;display:flex;justify-content:center;align-items:center; margin-bottom: 15px;">
-        ${documentTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
+      <div style="display:flex;justify-content:center;flex-direction:column;align-items:center; margin-bottom: 15px;">
+        <p style="font-weight: bold; font-size: 18px; margin-bottom: 0;">${documentTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}</p>
+        <p style="font-size: 14px; margin-top: 0; margin-bottom: 0;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
       </div>
 
       <!-- Supplier Info Section (only on first page) -->
-      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px; gap: 20px;">
+      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px;">
         <!-- Left side - Supplier info -->
-        <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+        <div style="width: 50%; padding: 20px; border-top: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;">
           <p style="margin: 0; font-weight: bold">Order To:<span style="margin: 5px 0">${supplier?.name || 'N/A'}</span></p>
           <p style="margin: 10px 0">
             <span style="font-weight: bold">TAX Reg No:</span> ${supplier?.tax_registration_number || 'N/A'}
@@ -648,7 +644,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
         </div>
         
         <!-- Right side - Purchase details -->
-        <div style="width: 48%; background-color: #f5f5f5; padding: 20px; border: 1px solid #ccc;">
+        <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">
           <table style="width: 100%; border-collapse: collapse; font-size: 14px">
             <tr>
               <td style="font-weight: bold; padding: 3px 0;">PO No:</td>
@@ -680,13 +676,13 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
 
       <!-- Items Table -->
       <div style="margin-bottom: 20px; overflow: hidden;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px; border: 1px solid #ccc;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <thead>
-            <tr style="background-color: #f5f5f5;">
-              <th style="padding: 8px; text-align: left; border: 1px solid #ccc;">S.No</th>
+            <tr style="">
+              <th style="padding: 8px; text-align: left; border: 1px solid #ccc; border-left:none;">S.No</th>
               <th style="padding: 8px; text-align: left; border: 1px solid #ccc;">Part No</th>
               <th style="padding: 8px; text-align: left; border: 1px solid #ccc; width: 40%;">Description</th>
-              <th style="padding: 8px; text-align: center; border: 1px solid #ccc;">Qty</th>
+              <th style="padding: 8px; text-align: center; border: 1px solid #ccc;border-right:none;">Qty</th>
             </tr>
           </thead>
           <tbody>
@@ -695,7 +691,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
                 const itemNumber = startIndex + index + 1;
                 return `
               <tr>
-                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;">${itemNumber}</td>
+                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;border-left:none;">${itemNumber}</td>
                 <td style="padding: 8px; text-align: left; border: 1px solid #ccc;">${
                   item.product?.partNo || 'N/A'
                 }</td>
@@ -703,7 +699,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
                   ${item.product?.name || 'N/A'}
                   ${item.product?.brand ? `<br><small>Brand: ${item.product.brand}</small>` : ''}
                 </td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">
+                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;border-right:none;">
                   ${item.item.quantity || 0}
                 </td>
               </tr>
@@ -717,25 +713,43 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
       ${
         isLastPage
           ? `
-      <!-- Footer Section - Only on last page -->
-      <div style="margin-top: 20px; padding-top: 20px; position: absolute; bottom: 20px; width: 100%;">
-        <!-- Signature Section -->
-        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-          <div style="width: 45%;">
-            <div style="border-top: 1px dotted #000; padding-top: 5px; text-align: center;">
-              Authorized Signature
-            </div>
-          </div>
-          <div style="width: 45%;">
-            <div style="border-top: 1px dotted #000; padding-top: 5px; text-align: center;">
+      <div style="position: absolute; bottom: 40px; left: 20px;right:20px;">
+      <div style="display: flex; justify-content: space-between; margin-top: 40px; padding: 10px 20px;">
+          <div>
+            <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
               Received By
             </div>
           </div>
+          <div>
+            <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
+              Authorized Signatory
+            </div>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #ccc;padding:0px 20px; padding-bottom:10px;font-size: 12px; color: #999; display:flex;justify-content:center;align-items:center; line-height: 1; margin: 10px 20px; text-align:center;">
+              
+              <div style="text-align: center;">
+                  <div style="text-align: center; font-size: 12px; padding:0px 20px;text-transform: capitalize;line-height: 1.5;">
+                    ${
+                      primaryAddress
+                        ? `
+                      ${primaryAddress.street || ''}, 
+                      ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}
+                      ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}<br>
+                      ${primaryAddress.phone_no ? `Tel: ${primaryAddress.phone_no}` : ''}
+                    `
+                        : ''
+                    }
+                  </div>
+              </div>
+          
         </div>
       </div>
+      
       `
           : ''
       }
+    </div>
     </div>
     `;
 
@@ -749,15 +763,26 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
       useCORS: true,
       allowTaint: true,
     }).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Remove the temporary element after capturing
       document.body.removeChild(tempDiv);
-      startIndex += itemsOnThisPage; // Update startIndex for next page
-      return { imgData, imgWidth, imgHeight };
+
+      // Calculate dimensions
+      const imgWidth = 210; // A4 width in mm
+      // const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Return just the minimum data needed for PDF creation
+      return {
+        imgData: canvas.toDataURL('image/jpeg', 0.95),
+        imgWidth: imgWidth,
+        imgHeight: imgHeight,
+      };
     });
 
     pagePromises.push(pagePromise);
+
+    // Update startIndex for next page
+    startIndex = endIndex;
   }
 
   // Process all pages

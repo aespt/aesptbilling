@@ -25,13 +25,15 @@ interface SalesInvoiceDetailsProps {
 }
 
 // Utility function to generate invoice number
+
 const generateInvoiceNumber = () => {
-  const lastNumber = parseInt(localStorage.getItem('lastInvoiceNumber') || '1000');
-  const newNumber = lastNumber + 1;
-  localStorage.setItem('lastInvoiceNumber', newNumber.toString());
-  return `INV-${new Date().getFullYear()}${(new Date().getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
+  // Use timestamp from base year 2024 to make number smaller
+  const baseDate = new Date('2024-01-01').getTime();
+  const timestamp = Date.now() - baseDate;
+  const year = new Date().getFullYear();
+  const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+
+  return `INV-${year}${month}-${timestamp}`;
 };
 
 export default function SalesInvoiceDetails({
