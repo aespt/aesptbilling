@@ -411,6 +411,37 @@ function InvoiceForm() {
             : '',
     };
 
+    // Add validation for used product fields
+    if (formData.is_used) {
+      // Validate Selling Rate (New Subtotal) field
+      const sellingRateValue = formData.totalInput || formData.total;
+      if (!sellingRateValue || sellingRateValue === '' || sellingRateValue === 0) {
+        newErrors.total = 'Selling rate is required';
+      } else {
+        const numericValue =
+          typeof sellingRateValue === 'string'
+            ? parseFloat(sellingRateValue)
+            : Number(sellingRateValue);
+        if (isNaN(numericValue) || numericValue <= 0) {
+          newErrors.total = 'Selling rate must be greater than 0';
+        }
+      }
+
+      // Validate Actual Rate field
+      const actualRateValue = formData.subtotalInput || formData.actual_rate || formData.subtotal;
+      if (!actualRateValue || actualRateValue === '' || actualRateValue === 0) {
+        newErrors.subtotal = 'Actual rate is required';
+      } else {
+        const numericValue =
+          typeof actualRateValue === 'string'
+            ? parseFloat(actualRateValue)
+            : Number(actualRateValue);
+        if (isNaN(numericValue) || numericValue <= 0) {
+          newErrors.subtotal = 'Actual rate must be greater than 0';
+        }
+      }
+    }
+
     setErrors(newErrors);
     return !Object.values(newErrors).some(error => error);
   };
