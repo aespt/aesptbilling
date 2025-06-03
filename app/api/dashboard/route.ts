@@ -4,15 +4,17 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { CustomersTable } from '@/lib/models/customers';
 import { InvoicesTable } from '@/lib/models/invoices';
-import { ProductsTable } from '@/lib/models/products';
 import { SalesmenTable } from '@/lib/models/salesmen';
 import { SuppliersTable } from '@/lib/models/suppliers';
 
 export async function GET() {
   try {
     // Query counts from all tables in parallel for better performance
-    const [productsCount, salesmenCount, customersCount, suppliersCount] = await Promise.all([
-      db.select({ count: count() }).from(ProductsTable),
+    const [saleInvoicesCount, salesmenCount, customersCount, suppliersCount] = await Promise.all([
+      db
+        .select({ count: count() })
+        .from(InvoicesTable)
+        .where(sql`${InvoicesTable.invoice_stage} = 'SALE'`),
       db.select({ count: count() }).from(SalesmenTable),
       db.select({ count: count() }).from(CustomersTable),
       db.select({ count: count() }).from(SuppliersTable),
@@ -104,10 +106,10 @@ export async function GET() {
     // Format the metrics response
     const metrics = [
       {
-        id: 'products',
-        title: 'Products',
-        count: productsCount[0].count,
-        icon: 'inventory',
+        id: 'invoices',
+        title: 'Sale Invoices',
+        count: saleInvoicesCount[0].count,
+        icon: 'receipt',
       },
       {
         id: 'salesmen',

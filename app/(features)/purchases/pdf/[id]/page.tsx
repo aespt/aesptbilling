@@ -1,33 +1,30 @@
+/* eslint-disable import/order */
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { downloadPdf, generatePurchasePDF } from '@/app/lib/pdfGenerator';
 
-// Define invoice interface with necessary properties
-interface Invoice {
-  id: number;
-  invoice_number: string;
-  invoice_date: string;
-  invoice_stage: 'SALE' | 'PROFORMA' | 'QUOTATION';
-  // Add other properties as needed
-}
+// // Define purchase interface with necessary properties
+// interface Purchase {
+//   id: number;
+//   purchase_number: string;
+//   purchase_date: string;
+//   // Add other properties as needed
+// }
 
 // Define PDF data interface for proper typing
 interface PdfData {
-  invoice: {
-    invoice_number?: string;
-    invoice_date?: string;
-    invoice_stage?: string;
-    ship_to?: string;
+  purchase: {
+    purchase_number?: string;
+    purchase_date?: string;
     ship_from?: string;
-    tax_rate?: number;
   };
-  customer: {
+  supplier: {
     name?: string;
-    trn?: string;
-  };
-  salesPerson: {
-    name?: string;
+    tax_registration_number?: string;
+    address?: string;
+    contact_number?: string;
   };
   primaryAddress: {
     street?: string;
@@ -38,18 +35,9 @@ interface PdfData {
     phone_no?: string;
     transaction_no?: string;
   };
-  primaryBankDetails: {
-    name?: string;
-    account_number?: string;
-    iban?: string;
-    swift_code?: string;
-  };
   productsWithItems: Array<{
     item: {
-      mrp?: number;
-      unit_price?: number;
       quantity: number;
-      total_price?: number;
     };
     product: {
       partNo?: string;
@@ -59,14 +47,6 @@ interface PdfData {
   }>;
   formattedDate: string;
   documentTitle: string;
-  totals: {
-    subtotal: string;
-    discount: string;
-    taxRate: number;
-    taxAmount: string;
-    total: string;
-    taxType: string;
-  };
 }
 
 // Client-only wrapper component to prevent hydration errors
@@ -85,25 +65,23 @@ const ClientOnly = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PrintButton = ({
-  invoiceId,
+  purchaseId,
   pdfUrl,
   setPdfUrl,
 }: {
-  invoiceId: string | string[] | undefined;
+  purchaseId: string | string[] | undefined;
   pdfUrl?: string;
   setPdfUrl: (url: string) => void;
 }) => {
   const handlePrintClick = async () => {
-    if (!invoiceId || typeof window === 'undefined') {
-      // Invoice ID is undefined or not in browser environment
+    if (!purchaseId || typeof window === 'undefined') {
+      // Purchase ID is undefined or not in browser environment
       return;
     }
 
     try {
       if (pdfUrl) {
         // Printing PDF from existing URL
-
-        // Open the PDF in a new window for printing
         const printWindow = window.open(pdfUrl, '_blank');
         if (printWindow) {
           printWindow.addEventListener('load', () => {
@@ -119,10 +97,10 @@ const PrintButton = ({
         // Get current query parameters
         const queryParams = window.location.search;
 
-        // Fetch invoice data
-        const response = await fetch(`/api/invoices/pdf/${invoiceId}${queryParams}`);
+        // Fetch purchase data
+        const response = await fetch(`/api/purchases/pdf/${purchaseId}${queryParams}`);
         if (!response.ok) {
-          throw new Error(`Failed to fetch invoice data: ${response.status}`);
+          throw new Error(`Failed to fetch purchase data: ${response.status}`);
         }
 
         const data = await response.json();
@@ -131,8 +109,7 @@ const PrintButton = ({
         }
 
         // Generate PDF and get the blob URL
-        const { generateInvoicePDF } = await import('../../../../lib/pdfGenerator');
-        const blobUrl = await generateInvoicePDF(data.data);
+        const blobUrl = await generatePurchasePDF(data.data);
 
         // Update the PDF URL
         setPdfUrl(blobUrl);
@@ -170,37 +147,37 @@ const PrintButton = ({
           d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
         />
       </svg>
-      Print Invoice
+      Print Purchase Order
     </button>
   );
 };
 
-const InvoicePdfPage = () => {
+const PurchasePdfPage = () => {
   const params = useParams();
   const router = useRouter();
-  const invoiceId = params.id;
+  const purchaseId = params.id;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  // const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
   const [pdfData, setPdfData] = useState<PdfData | null>(null);
 
-  const pdfObjectRef = React.useRef<HTMLObjectElement>(null);
+  const pdfObjectRef = useRef<HTMLObjectElement>(null);
 
   useEffect(() => {
-    const fetchInvoiceData = async () => {
+    const fetchPurchaseData = async () => {
       try {
         setLoading(true);
 
         // Get any existing query parameters if in browser environment
         const queryParams = typeof window !== 'undefined' ? window.location.search : '';
-        const url = `/api/invoices/pdf/${invoiceId}${queryParams}`;
+        const url = `/api/purchases/pdf/${purchaseId}${queryParams}`;
 
-        // Fetch the invoice data
+        // Fetch the purchase data
         const response = await fetch(url);
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch invoice data: ${response.status}`);
+          throw new Error(`Failed to fetch purchase data: ${response.status}`);
         }
 
         const result = await response.json();
@@ -212,20 +189,19 @@ const InvoicePdfPage = () => {
         // Store the PDF data
         setPdfData(result.data);
 
-        // Then fetch invoice details to get the stage
-        const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
-        if (!invoiceResponse.ok) {
-          throw new Error('Failed to load invoice details');
+        // Then fetch purchase details
+        const purchaseResponse = await fetch(`/api/purchases/${purchaseId}`);
+        if (!purchaseResponse.ok) {
+          throw new Error('Failed to load purchase details');
         }
 
-        const invoiceData = await invoiceResponse.json();
-        setInvoice(invoiceData.data);
+        // const purchaseData = await purchaseResponse.json();
+        // setPurchase(purchaseData.data);
 
         // Generate PDF on load
         if (typeof window !== 'undefined') {
-          // Import dynamically to prevent SSR issues
-          const { generateInvoicePDF } = await import('../../../../lib/pdfGenerator');
-          const blobUrl = await generateInvoicePDF(result.data);
+          // Generate the PDF
+          const blobUrl = await generatePurchasePDF(result.data);
           setPdfUrl(blobUrl);
         }
 
@@ -236,7 +212,7 @@ const InvoicePdfPage = () => {
       }
     };
 
-    fetchInvoiceData();
+    fetchPurchaseData();
 
     return () => {
       // Cleanup function
@@ -245,7 +221,7 @@ const InvoicePdfPage = () => {
         document.body.removeChild(buttonsContainer);
       }
     };
-  }, [invoiceId]);
+  }, [purchaseId]);
 
   // When data is received, trigger PDF generation if needed
   useEffect(() => {
@@ -255,9 +231,8 @@ const InvoicePdfPage = () => {
       }
 
       try {
-        // Import dynamically to prevent SSR issues
-        const { generateInvoicePDF } = await import('../../../../lib/pdfGenerator');
-        const blobUrl = await generateInvoicePDF(pdfData);
+        // Generate the PDF
+        const blobUrl = await generatePurchasePDF(pdfData);
         setPdfUrl(blobUrl);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to generate PDF');
@@ -319,64 +294,6 @@ const InvoicePdfPage = () => {
                     <div className="mb-2 h-10 w-32 animate-pulse rounded bg-gray-300 blur-[2px]" />
                   </div>
                 </div>
-
-                {/* Invoice details */}
-                <div className="mb-8 flex justify-between">
-                  <div className="w-1/2 pr-4">
-                    <div className="mb-3 h-5 w-20 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="mb-2 h-4 w-48 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="mb-2 h-4 w-40 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="h-4 w-44 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                  </div>
-                  <div className="w-1/2 pl-4">
-                    <div className="mb-3 h-5 w-28 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="mb-2 h-4 w-36 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="mb-2 h-4 w-24 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="h-4 w-32 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                  </div>
-                </div>
-
-                {/* Table-like structure */}
-                <div className="my-8 rounded-md border border-gray-200 blur-[2px]">
-                  <div className="flex h-10 bg-gray-100">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="flex-1 p-2">
-                        <div className="h-4 animate-pulse rounded bg-gray-300" />
-                      </div>
-                    ))}
-                  </div>
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex h-12 border-t border-gray-200">
-                      {[...Array(4)].map((_, j) => (
-                        <div key={j} className="flex-1 p-2">
-                          <div className="h-4 animate-pulse rounded bg-gray-300" />
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Footer section - based on invoice-footer.html */}
-                <div className="mt-auto">
-                  {/* Footer text container */}
-                  <div className="mx-5 my-3 rounded bg-gray-100 p-4">
-                    <div className="mb-1 h-3 w-full animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="mb-1 h-3 w-11/12 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    <div className="h-3 w-full animate-pulse rounded bg-gray-300 blur-[2px]" />
-                  </div>
-
-                  {/* Signature section */}
-                  <div className="mx-5 my-8 flex justify-between">
-                    <div className="w-1/3">
-                      <div className="h-px w-full bg-gray-300" />
-                      <div className="mt-3 h-3 w-32 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    </div>
-                    <div className="w-1/3">
-                      <div className="h-px w-full bg-gray-300" />
-                      <div className="mt-3 h-3 w-64 animate-pulse rounded bg-gray-300 blur-[2px]" />
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -387,7 +304,6 @@ const InvoicePdfPage = () => {
 
             {/* Skeleton for the action buttons (right side) */}
             <div className="fixed right-6 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3">
-              <div className="h-10 w-36 animate-pulse rounded-lg bg-gray-300" />
               <div className="h-10 w-36 animate-pulse rounded-lg bg-gray-300" />
               <div className="h-10 w-36 animate-pulse rounded-lg bg-gray-300" />
             </div>
@@ -443,38 +359,23 @@ const InvoicePdfPage = () => {
             {/* Floating Action Panel - Only show when not loading */}
             {!loading && (
               <div className="fixed right-6 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3 transition-all duration-300 ease-in-out print:hidden">
-                <PrintButton invoiceId={invoiceId} pdfUrl={pdfUrl} setPdfUrl={setPdfUrl} />
+                <PrintButton purchaseId={purchaseId} pdfUrl={pdfUrl} setPdfUrl={setPdfUrl} />
 
                 <button
                   onClick={async () => {
                     try {
                       if (pdfUrl) {
-                        // Import the download function
-                        const { downloadPdf } = await import('../../../../lib/pdfGenerator');
-
-                        // Create filename based on invoice stage
-                        let filename = `invoice-${invoiceId}.pdf`;
-                        const invoiceStage = new URLSearchParams(window.location.search).get(
-                          'invoiceStage'
-                        );
-                        if (invoiceStage === 'DELIVERY') {
-                          filename = `delivery-note-${invoiceId}.pdf`;
-                        } else if (invoiceStage === 'QUOTATION') {
-                          filename = `quotation-${invoiceId}.pdf`;
-                        } else if (invoiceStage === 'PROFORMA') {
-                          filename = `proforma-invoice-${invoiceId}.pdf`;
-                        }
-
                         // Download the PDF
+                        const filename = `purchase-order-${purchaseId}.pdf`;
                         downloadPdf(pdfUrl, filename);
                       } else {
                         // If PDF URL is not available yet, generate it
                         const queryParams = window.location.search;
                         const response = await fetch(
-                          `/api/invoices/pdf/${invoiceId}${queryParams}`
+                          `/api/purchases/pdf/${purchaseId}${queryParams}`
                         );
                         if (!response.ok) {
-                          throw new Error(`Failed to fetch invoice data: ${response.status}`);
+                          throw new Error(`Failed to fetch purchase data: ${response.status}`);
                         }
 
                         const result = await response.json();
@@ -483,23 +384,10 @@ const InvoicePdfPage = () => {
                         }
 
                         // Generate the PDF
-                        const { generateInvoicePDF, downloadPdf } = await import(
-                          '../../../../lib/pdfGenerator'
-                        );
-                        const blobUrl = await generateInvoicePDF(result.data);
+                        const blobUrl = await generatePurchasePDF(result.data);
 
                         // Determine filename
-                        let filename = `invoice-${invoiceId}.pdf`;
-                        const invoiceStage = new URLSearchParams(window.location.search).get(
-                          'invoiceStage'
-                        );
-                        if (invoiceStage === 'DELIVERY') {
-                          filename = `delivery-note-${invoiceId}.pdf`;
-                        } else if (invoiceStage === 'QUOTATION') {
-                          filename = `quotation-${invoiceId}.pdf`;
-                        } else if (invoiceStage === 'PROFORMA') {
-                          filename = `proforma-invoice-${invoiceId}.pdf`;
-                        }
+                        const filename = `purchase-order-${purchaseId}.pdf`;
 
                         // Download PDF
                         downloadPdf(blobUrl, filename);
@@ -532,44 +420,6 @@ const InvoicePdfPage = () => {
                   </svg>
                   Download
                 </button>
-
-                {/* Delivery Note button - only visible when invoice_stage is SALE */}
-                {new URLSearchParams(window.location.search).get('invoiceStage') === 'SALE' &&
-                  invoice !== null && (
-                    <button
-                      onClick={() => {
-                        // Get any existing query parameters from the current URL
-                        const currentUrl = new URL(window.location.href);
-                        const queryParams = new URLSearchParams(currentUrl.search);
-
-                        // Set the invoiceStage parameter
-                        queryParams.set('invoiceStage', 'DELIVERY');
-
-                        // Open a delivery note version of the invoice with all query params
-                        window.open(
-                          `/invoices/pdf/${invoiceId}?${queryParams.toString()}`,
-                          '_blank'
-                        );
-                      }}
-                      className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="size-5 transition-transform duration-300 group-hover:scale-110"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                        />
-                      </svg>
-                      Delivery Note
-                    </button>
-                  )}
 
                 <button
                   onClick={() => window.close()}
@@ -629,15 +479,6 @@ const InvoicePdfPage = () => {
                         </p>
                       </div>
                     </object>
-                    <div className="fixed bottom-4 left-4 rounded bg-white p-2 shadow">
-                      <p className="text-xs text-gray-500">PDF URL: {pdfUrl.substring(0, 30)}...</p>
-                      <button
-                        onClick={() => window.open(pdfUrl, '_blank')}
-                        className="mt-1 text-xs text-blue-500 hover:underline"
-                      >
-                        Open PDF in new tab
-                      </button>
-                    </div>
                   </>
                 ) : (
                   <div className="flex h-full items-center justify-center">
@@ -646,7 +487,7 @@ const InvoicePdfPage = () => {
                         Generating PDF...
                       </h3>
                       <p className="text-gray-600">
-                        Please wait while we generate your invoice PDF.
+                        Please wait while we generate your purchase order PDF.
                       </p>
                     </div>
                   </div>
@@ -658,7 +499,7 @@ const InvoicePdfPage = () => {
           <noscript>
             <div className="flex h-full items-center justify-center">
               <p className="text-lg text-gray-700">
-                Please enable JavaScript to view the PDF invoice.
+                Please enable JavaScript to view the PDF purchase order.
               </p>
             </div>
           </noscript>
@@ -710,7 +551,7 @@ const InvoicePdfPage = () => {
           }
         }
 
-        /* Fix iframe scrolling for long invoices */
+        /* Fix iframe scrolling for long purchases */
         #pdf-iframe {
           width: 100%;
           height: 100vh;
@@ -721,4 +562,4 @@ const InvoicePdfPage = () => {
   );
 };
 
-export default InvoicePdfPage;
+export default PurchasePdfPage;

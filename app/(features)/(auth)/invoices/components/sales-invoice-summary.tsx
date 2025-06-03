@@ -144,23 +144,27 @@ export default function SalesInvoiceSummary({
                 </Typography>
                 <Typography variant="body1">{formatCurrency(effectiveSubtotal)}</Typography>
               </Box>
+              <Divider className="my-2" />
 
               {/* Discount Row - Only shown if discount exists */}
               {formData.discount_type &&
                 formData.discount_type !== 'NONE' &&
                 ((formData.discount_value !== '' && Number(formData.discount_value) > 0) ||
                   (formData.discount_percentage && formData.discount_percentage > 0)) && (
-                  <Box className="flex items-center justify-between py-2">
-                    <Typography variant="body2" className="text-gray-600">
-                      Discount
-                      {formData.discount_type === 'PERCENTAGE'
-                        ? ` (${formData.discount_percentage ?? formData.discount_value}%)`
-                        : ''}
-                    </Typography>
-                    <Typography variant="body1" className="text-red-600">
-                      -{formatCurrency(discountAmount)}
-                    </Typography>
-                  </Box>
+                  <>
+                    <Box className="flex items-center justify-between py-2">
+                      <Typography variant="body2" className="text-gray-600">
+                        Discount
+                        {formData.discount_type === 'PERCENTAGE'
+                          ? ` (${formData.discount_percentage ?? formData.discount_value}%)`
+                          : ''}
+                      </Typography>
+                      <Typography variant="body1" className="text-red-600">
+                        -{formatCurrency(discountAmount)}
+                      </Typography>
+                    </Box>
+                    <Divider className="my-2" />
+                  </>
                 )}
 
               {/* Tax Row - Only shown if tax exists */}

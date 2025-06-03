@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-4 inline-flex size-16 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-3">
+          {/* <div className="mb-4 inline-flex size-16 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-3">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -64,8 +64,8 @@ export default function ForgotPasswordPage() {
                 d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
               />
             </svg>
-          </div>
-          <h1 className="mb-2 text-3xl font-bold text-white">AESPT</h1>
+          </div> */}
+          <h1 className="mb-2 text-3xl font-bold text-white">AESPT Billing</h1>
           <p className="text-sm text-blue-200">Database Management System</p>
         </motion.div>
       </div>

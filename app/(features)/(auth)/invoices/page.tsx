@@ -22,7 +22,6 @@ import {
   TableRow,
   TableSortLabel,
   Tabs,
-  Typography,
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -152,6 +151,7 @@ export default function InvoicesListPage() {
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
   const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [exportingInvoices, setExportingInvoices] = useState(false);
 
   const router = useRouter();
 
@@ -414,6 +414,8 @@ export default function InvoicesListPage() {
 
   const handleExportExcel = async () => {
     try {
+      setExportingInvoices(true);
+
       // Construct the same filter parameters as used in the current view
       const params = new URLSearchParams();
 
@@ -460,6 +462,8 @@ export default function InvoicesListPage() {
     } catch (error) {
       console.error('Error exporting invoices:', error);
       // You could add a toast notification here to inform the user
+    } finally {
+      setExportingInvoices(false);
     }
   };
 
@@ -468,12 +472,19 @@ export default function InvoicesListPage() {
       <div className="px-4 pb-6 pt-16 md:ml-[280px] md:px-6">
         <style>{tableRowAnimation}</style>
         <Box className="mb-6 flex items-center justify-between">
-          <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
-            Sales History
-          </Typography>
+          <h1 className="text-2xl font-bold text-gray-800">Sales History</h1>
           <div className="flex items-center gap-2">
             {activeTab === 2 && ( // Only show Export button on Sales tab
-              <SecondaryButton onClick={handleExportExcel} label="Export" />
+              <SecondaryButton
+                onClick={handleExportExcel}
+                label={exportingInvoices ? 'Exporting...' : 'Export'}
+                disabled={exportingInvoices}
+                startIcon={
+                  exportingInvoices && (
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                  )
+                }
+              />
             )}
             <IconButton
               onClick={() => setFilterPanelOpen(true)}
@@ -504,126 +515,130 @@ export default function InvoicesListPage() {
             <div className="size-12 animate-spin rounded-full border-4 border-b-red-500 border-l-blue-300 border-r-red-300 border-t-blue-500" />
           </div>
         ) : (
-          <Paper
-            elevation={2}
-            className="overflow-hidden rounded-lg border border-gray-100 shadow-md"
-          >
-            <TableContainer>
-              <Table>
-                <TableHead className="bg-gray-100">
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      <TableSortLabel
-                        active={sort.field === 'invoice_date'}
-                        direction={sort.field === 'invoice_date' ? sort.direction : 'asc'}
-                        onClick={() => handleSortChange('invoice_date')}
-                      >
-                        Invoice Date
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <TableSortLabel
-                        active={sort.field === 'invoice_number'}
-                        direction={sort.field === 'invoice_number' ? sort.direction : 'asc'}
-                        onClick={() => handleSortChange('invoice_number')}
-                      >
-                        Invoice Number
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <TableSortLabel
-                        active={sort.field === 'salesperson_name'}
-                        direction={sort.field === 'salesperson_name' ? sort.direction : 'asc'}
-                        onClick={() => handleSortChange('salesperson_name')}
-                      >
-                        Sales Person
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell className="font-medium">Customer</TableCell>
-                    <TableCell className="font-medium">Ship From</TableCell>
-                    <TableCell className="font-medium">Ship To</TableCell>
-                    {activeTab >= 0 && (
-                      <TableCell className="font-medium">Parent Invoice</TableCell>
-                    )}
-                    {activeTab === 2 && <TableCell className="font-medium">MOP</TableCell>}
-                    {activeTab === 2 && <TableCell className="font-medium">Gross Amount</TableCell>}
-                    {activeTab === 2 && <TableCell className="font-medium">Discount</TableCell>}
-                    {activeTab === 2 && (
-                      <TableCell className="font-medium">Taxable Amount</TableCell>
-                    )}
-                    {activeTab === 2 && <TableCell className="font-medium">TAX</TableCell>}
-                    <TableCell align="right" className="font-medium">
-                      <TableSortLabel
-                        active={sort.field === 'total'}
-                        direction={sort.field === 'total' ? sort.direction : 'asc'}
-                        onClick={() => handleSortChange('total')}
-                      >
-                        Total
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="center" className="font-medium">
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredInvoices.length > 0 ? (
-                    filteredInvoices.map((invoice, index) => (
-                      <TableRow
-                        key={invoice.id}
-                        hover
-                        className="transition-all duration-150 hover:bg-gray-50"
-                        style={{
-                          animationDelay: `${index * 30}ms`,
-                          animation: 'fadeIn 0.5s ease-in-out forwards',
-                        }}
-                      >
-                        <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
-                        <TableCell
-                          className="cursor-pointer font-medium text-blue-600"
-                          onClick={() => handleInvoiceClick(invoice.id)}
-                        >
-                          {invoice.invoice_number}
-                        </TableCell>
-                        <TableCell>{invoice.salesman.name}</TableCell>
-                        <TableCell>{invoice.customer.name}</TableCell>
-                        <TableCell>{invoice.ship_from}</TableCell>
-                        <TableCell>{invoice.ship_to}</TableCell>
-                        {activeTab >= 0 && (
-                          <TableCell
-                            className="cursor-pointer font-medium text-blue-600"
-                            onClick={() => handleInvoiceClick(invoice.parent_invoice?.id)}
-                          >
-                            {invoice.parent_invoice?.invoice_number}
-                          </TableCell>
-                        )}
-                        {activeTab === 2 && (
-                          <TableCell>{invoice.payment?.payment_method}</TableCell>
-                        )}
-                        {activeTab === 2 && <TableCell>{invoice.sub_total}</TableCell>}
-                        {activeTab === 2 && <TableCell>{invoice.discount}</TableCell>}
-                        {activeTab === 2 && <TableCell>{invoice.taxable_amount}</TableCell>}
-                        {activeTab === 2 && <TableCell>{invoice.invoice_tax}</TableCell>}
-                        <TableCell align="right" className="font-bold">
-                          {parseFloat(invoice.total).toFixed(2)} AED
-                        </TableCell>
-                        <TableCell align="center">
-                          <IconButton size="small" onClick={e => handleActionClick(e, invoice)}>
-                            <MoreVertIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
+          <>
+            <Paper
+              elevation={2}
+              className="overflow-hidden rounded-lg border border-gray-100 shadow-md"
+            >
+              <TableContainer>
+                <Table>
+                  <TableHead className="bg-gray-100">
                     <TableRow>
-                      <TableCell colSpan={9} className="py-8 text-center text-gray-500">
-                        No invoices found. Please try adjusting your filters.
+                      <TableCell className="font-medium">
+                        <TableSortLabel
+                          active={sort.field === 'invoice_date'}
+                          direction={sort.field === 'invoice_date' ? sort.direction : 'asc'}
+                          onClick={() => handleSortChange('invoice_date')}
+                        >
+                          Invoice Date
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <TableSortLabel
+                          active={sort.field === 'invoice_number'}
+                          direction={sort.field === 'invoice_number' ? sort.direction : 'asc'}
+                          onClick={() => handleSortChange('invoice_number')}
+                        >
+                          Invoice Number
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <TableSortLabel
+                          active={sort.field === 'salesperson_name'}
+                          direction={sort.field === 'salesperson_name' ? sort.direction : 'asc'}
+                          onClick={() => handleSortChange('salesperson_name')}
+                        >
+                          Sales Person
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell className="font-medium">Customer</TableCell>
+                      <TableCell className="font-medium">Ship From</TableCell>
+                      <TableCell className="font-medium">Ship To</TableCell>
+                      {activeTab >= 0 && (
+                        <TableCell className="font-medium">Parent Invoice</TableCell>
+                      )}
+                      {activeTab === 2 && <TableCell className="font-medium">MOP</TableCell>}
+                      {activeTab === 2 && (
+                        <TableCell className="font-medium">Gross Amount</TableCell>
+                      )}
+                      {activeTab === 2 && <TableCell className="font-medium">Discount</TableCell>}
+                      {activeTab === 2 && (
+                        <TableCell className="font-medium">Taxable Amount</TableCell>
+                      )}
+                      {activeTab === 2 && <TableCell className="font-medium">TAX</TableCell>}
+                      <TableCell align="right" className="font-medium">
+                        <TableSortLabel
+                          active={sort.field === 'total'}
+                          direction={sort.field === 'total' ? sort.direction : 'asc'}
+                          onClick={() => handleSortChange('total')}
+                        >
+                          Total
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="center" className="font-medium">
+                        Actions
                       </TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {filteredInvoices.length > 0 ? (
+                      filteredInvoices.map((invoice, index) => (
+                        <TableRow
+                          key={invoice.id}
+                          hover
+                          className="transition-all duration-150 hover:bg-gray-50"
+                          style={{
+                            animationDelay: `${index * 30}ms`,
+                            animation: 'fadeIn 0.5s ease-in-out forwards',
+                          }}
+                        >
+                          <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
+                          <TableCell
+                            className="cursor-pointer font-medium text-blue-600"
+                            onClick={() => handleInvoiceClick(invoice.id)}
+                          >
+                            {invoice.invoice_number}
+                          </TableCell>
+                          <TableCell>{invoice.salesman.name}</TableCell>
+                          <TableCell>{invoice.customer.name}</TableCell>
+                          <TableCell>{invoice.ship_from}</TableCell>
+                          <TableCell>{invoice.ship_to}</TableCell>
+                          {activeTab >= 0 && (
+                            <TableCell
+                              className="cursor-pointer font-medium text-blue-600"
+                              onClick={() => handleInvoiceClick(invoice.parent_invoice?.id)}
+                            >
+                              {invoice.parent_invoice?.invoice_number}
+                            </TableCell>
+                          )}
+                          {activeTab === 2 && (
+                            <TableCell>{invoice.payment?.payment_method}</TableCell>
+                          )}
+                          {activeTab === 2 && <TableCell>{invoice.sub_total}</TableCell>}
+                          {activeTab === 2 && <TableCell>{invoice.discount}</TableCell>}
+                          {activeTab === 2 && <TableCell>{invoice.taxable_amount}</TableCell>}
+                          {activeTab === 2 && <TableCell>{invoice.invoice_tax}</TableCell>}
+                          <TableCell align="right" className="font-bold">
+                            {parseFloat(invoice.total).toFixed(2)} AED
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton size="small" onClick={e => handleActionClick(e, invoice)}>
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={9} className="py-8 text-center text-gray-500">
+                          No invoices found. Please try adjusting your filters.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
             <Pagination
               paginationInfo={pagination}
               onPageChange={handlePageChange}
@@ -631,7 +646,7 @@ export default function InvoicesListPage() {
               pageSizeOptions={[5, 10, 25, 50]}
               itemName="invoices"
             />
-          </Paper>
+          </>
         )}
 
         {/* Action Menu */}

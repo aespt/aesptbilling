@@ -5,7 +5,7 @@ import { Autocomplete, Box, IconButton, Paper, TextField, Typography } from '@mu
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Sidepanel from '@/app/shared/components/sidepanel';
 import type { FormErrors } from '@/lib/types';
@@ -45,14 +45,14 @@ interface PurchaseEntryDetailsProps {
 }
 
 // Utility function to generate purchase entry number
-const generatePurchaseEntryNumber = () => {
-  const lastNumber = parseInt(localStorage.getItem('lastPurchaseEntryNumber') || '1000');
-  const newNumber = lastNumber + 1;
-  localStorage.setItem('lastPurchaseEntryNumber', newNumber.toString());
-  return `PE-${new Date().getFullYear()}${(new Date().getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
-};
+// const generatePurchaseEntryNumber = () => {
+//   const lastNumber = parseInt(localStorage.getItem('lastPurchaseEntryNumber') || '1000');
+//   const newNumber = lastNumber + 1;
+//   localStorage.setItem('lastPurchaseEntryNumber', newNumber.toString());
+//   return `PE-${new Date().getFullYear()}${(new Date().getMonth() + 1)
+//     .toString()
+//     .padStart(2, '0')}-${newNumber.toString().padStart(6, '0')}`;
+// };
 
 export default function PurchaseEntryDetails({
   formData,
@@ -64,20 +64,20 @@ export default function PurchaseEntryDetails({
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSupplierPanelOpen, setIsSupplierPanelOpen] = useState(false);
-  const initialized = useRef(false);
+  // const initialized = useRef(false);
 
   // Fetch suppliers on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Generate purchase entry number if not already set
-        if (!initialized.current && !formData.purchaseentry_number) {
-          setFormData({
-            ...formData,
-            purchaseentry_number: generatePurchaseEntryNumber(),
-          });
-          initialized.current = true;
-        }
+        // if (!initialized.current && !formData.purchaseentry_number) {
+        //   setFormData({
+        //     ...formData,
+        //     purchaseentry_number: generatePurchaseEntryNumber(),
+        //   });
+        //   initialized.current = true;
+        // }
 
         // Fetch suppliers
         try {

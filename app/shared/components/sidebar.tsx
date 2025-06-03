@@ -15,6 +15,8 @@ import {
   FiMenu,
   FiX,
   FiFile,
+  FiClipboard,
+  FiList,
 } from 'react-icons/fi';
 
 const menuItems = [
@@ -26,8 +28,8 @@ const menuItems = [
   { name: 'Sales', path: '/invoices/create', icon: FiShoppingCart },
   { name: 'Sales History', path: '/invoices', icon: FiFile },
   { name: 'Purchases', path: '/purchases/create', icon: FiShoppingBag },
-  { name: 'Purchase Entry', path: '/purchase-entries/create', icon: FiFile },
-  { name: 'Purchases History', path: '/purchases', icon: FiFile },
+  { name: 'Purchase Entry', path: '/purchase-entries/create', icon: FiClipboard },
+  { name: 'Purchases History', path: '/purchases', icon: FiList },
   { name: 'Settings', path: '/settings', icon: FiSettings },
 ];
 

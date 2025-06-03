@@ -148,6 +148,591 @@ export async function seed() {
       })
       .onConflictDoNothing()
       .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Fatima Al-Mazroui',
+        email: 'fatima.m@example.com',
+        phone: '+971506789012',
+        trn: '1234567895',
+        address: 'Business Bay, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Ravi Singh',
+        email: 'ravi.s@example.com',
+        phone: '+971507890123',
+        trn: '1234567896',
+        address: 'Al Nahda, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Jasmine Wong',
+        email: 'jasmine.w@example.com',
+        phone: '+971508901234',
+        trn: '1234567897',
+        address: 'Mirdif, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Ibrahim Al-Qasimi',
+        email: 'ibrahim.q@example.com',
+        phone: '+971509012345',
+        trn: '1234567898',
+        address: 'Al Khan, Sharjah, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Sophia Rodriguez',
+        email: 'sophia.r@example.com',
+        phone: '+971510123456',
+        trn: '1234567899',
+        address: 'JBR, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Omar Abdulla',
+        email: 'omar.a@example.com',
+        phone: '+971511234567',
+        trn: '1234567900',
+        address: 'Al Reem Island, Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Aisha Al-Balushi',
+        email: 'aisha.b@example.com',
+        phone: '+971512345678',
+        trn: '1234567901',
+        address: 'Al Majaz, Sharjah, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'David Chen',
+        email: 'david.c@example.com',
+        phone: '+971513456789',
+        trn: '1234567902',
+        address: 'Al Qusais, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Layla Hassan',
+        email: 'layla.h@example.com',
+        phone: '+971514567890',
+        trn: '1234567903',
+        address: 'Al Mamzar, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Rajesh Kumar',
+        email: 'rajesh.k@example.com',
+        phone: '+971515678901',
+        trn: '1234567904',
+        address: 'Bur Dubai, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Noor Al-Suwaidi',
+        email: 'noor.s@example.com',
+        phone: '+971516789012',
+        trn: '1234567905',
+        address: 'Khalidiya, Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Michael Brown',
+        email: 'michael.b@example.com',
+        phone: '+971517890123',
+        trn: '1234567906',
+        address: 'Palm Jumeirah, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Fatma Al-Hashimi',
+        email: 'fatma.h@example.com',
+        phone: '+971518901234',
+        trn: '1234567907',
+        address: 'Al Warqa, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Sanjay Sharma',
+        email: 'sanjay.s@example.com',
+        phone: '+971519012345',
+        trn: '1234567908',
+        address: 'International City, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Mariam Al-Zaabi',
+        email: 'mariam.z@example.com',
+        phone: '+971520123456',
+        trn: '1234567909',
+        address: 'Al Bateen, Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Ahmad Al-Najjar',
+        email: 'ahmad.n@example.com',
+        phone: '+971521234567',
+        trn: '1234567910',
+        address: 'Deira, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Sunita Patel',
+        email: 'sunita.p@example.com',
+        phone: '+971522345678',
+        trn: '1234567911',
+        address: 'Al Barsha, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Khalid Al-Falasi',
+        email: 'khalid.f@example.com',
+        phone: '+971523456789',
+        trn: '1234567912',
+        address: 'Oud Metha, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Lakshmi Nair',
+        email: 'lakshmi.n@example.com',
+        phone: '+971524567890',
+        trn: '1234567913',
+        address: 'Discovery Gardens, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Sultan Al-Dhaheri',
+        email: 'sultan.d@example.com',
+        phone: '+971525678901',
+        trn: '1234567914',
+        address: 'Al Muroor, Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Emma Wilson',
+        email: 'emma.w@example.com',
+        phone: '+971526789012',
+        trn: '1234567915',
+        address: 'The Greens, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Hassan Al-Mansouri',
+        email: 'hassan.m@example.com',
+        phone: '+971527890123',
+        trn: '1234567916',
+        address: 'Al Karama, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Anita Desai',
+        email: 'anita.d@example.com',
+        phone: '+971528901234',
+        trn: '1234567917',
+        address: 'Al Garhoud, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Saeed Al-Shamsi',
+        email: 'saeed.s@example.com',
+        phone: '+971529012345',
+        trn: '1234567918',
+        address: 'Al Safa, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Jennifer Lewis',
+        email: 'jennifer.l@example.com',
+        phone: '+971530123456',
+        trn: '1234567919',
+        address: 'Marina Square, Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Yousef Al-Naqbi',
+        email: 'yousef.n@example.com',
+        phone: '+971531234567',
+        trn: '1234567920',
+        address: 'Al Nahyan, Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Meera Shah',
+        email: 'meera.s@example.com',
+        phone: '+971532345678',
+        trn: '1234567921',
+        address: 'Jumeirah Village Circle, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Hamad Al-Nuaimi',
+        email: 'hamad.n@example.com',
+        phone: '+971533456789',
+        trn: '1234567922',
+        address: 'Al Muteena, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Deepa Krishnan',
+        email: 'deepa.k@example.com',
+        phone: '+971534567890',
+        trn: '1234567923',
+        address: 'Rashidiya, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Abdullah Al-Mulla',
+        email: 'abdullah.m@example.com',
+        phone: '+971535678901',
+        trn: '1234567924',
+        address: 'Jumeirah Beach Residence, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Grace Zhang',
+        email: 'grace.z@example.com',
+        phone: '+971536789012',
+        trn: '1234567925',
+        address: 'DIFC, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Tariq Al-Qassimi',
+        email: 'tariq.q@example.com',
+        phone: '+971537890123',
+        trn: '1234567926',
+        address: 'Al Qasba, Sharjah, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Nina Thompson',
+        email: 'nina.t@example.com',
+        phone: '+971538901234',
+        trn: '1234567927',
+        address: 'Arabian Ranches, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Faisal Al-Khouri',
+        email: 'faisal.k@example.com',
+        phone: '+971539012345',
+        trn: '1234567928',
+        address: 'Al Mina, Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Arjun Menon',
+        email: 'arjun.m@example.com',
+        phone: '+971540123456',
+        trn: '1234567929',
+        address: 'Tecom, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Hessa Al-Marri',
+        email: 'hessa.m@example.com',
+        phone: '+971541234567',
+        trn: '1234567930',
+        address: 'Al Jafiliya, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Thomas Garcia',
+        email: 'thomas.g@example.com',
+        phone: '+971542345678',
+        trn: '1234567931',
+        address: 'Downtown Abu Dhabi, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Zainab Al-Bloushi',
+        email: 'zainab.b@example.com',
+        phone: '+971543456789',
+        trn: '1234567932',
+        address: 'Al Satwa, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Vijay Reddy',
+        email: 'vijay.r@example.com',
+        phone: '+971544567890',
+        trn: '1234567933',
+        address: 'Dubai Marina, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Mona Al-Kindi',
+        email: 'mona.k@example.com',
+        phone: '+971545678901',
+        trn: '1234567934',
+        address: 'Al Rigga, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Robert Miller',
+        email: 'robert.m@example.com',
+        phone: '+971546789012',
+        trn: '1234567935',
+        address: 'Jumeirah Lakes Towers, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Amina Al-Ahmed',
+        email: 'amina.a@example.com',
+        phone: '+971547890123',
+        trn: '1234567936',
+        address: 'Al Twar, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Rahul Malhotra',
+        email: 'rahul.m@example.com',
+        phone: '+971548901234',
+        trn: '1234567937',
+        address: 'Muhaisnah, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Shaima Al-Ameri',
+        email: 'shaima.a@example.com',
+        phone: '+971549012345',
+        trn: '1234567938',
+        address: 'Al Quoz, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
+    db
+      .insert(CustomersTable)
+      .values({
+        name: 'Daniel Wilson',
+        email: 'daniel.w@example.com',
+        phone: '+971550123456',
+        trn: '1234567939',
+        address: 'Motor City, Dubai, UAE',
+        created_by: 'system',
+        updated_by: 'system',
+      })
+      .onConflictDoNothing()
+      .returning(),
   ]);
 
   // Seed GST master

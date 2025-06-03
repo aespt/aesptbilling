@@ -228,9 +228,6 @@ export default function Dashboard() {
               <h2 className="flex items-center text-lg font-semibold text-gray-800">
                 <FiShoppingCart className="mr-2 text-blue-500" /> Monthly Sales
               </h2>
-              <span className="flex items-center text-sm font-medium text-green-500">
-                <FiArrowUp size={14} className="mr-1" /> 12.5%
-              </span>
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
@@ -264,9 +261,6 @@ export default function Dashboard() {
               <h2 className="flex items-center text-lg font-semibold text-gray-800">
                 <FiDollarSign className="mr-2 text-green-500" /> Profit Margin
               </h2>
-              <span className="flex items-center text-sm font-medium text-green-500">
-                <FiArrowUp size={14} className="mr-1" /> 8.7%
-              </span>
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">

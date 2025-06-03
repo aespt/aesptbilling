@@ -2,7 +2,6 @@
 
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import {
-  Typography,
   Paper,
   Table,
   TableBody,
@@ -24,6 +23,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Pagination from '@/app/shared/components/pagination';
 import type { PaginationInfo } from '@/app/shared/components/pagination';
 import PrimaryButton from '@/app/shared/components/primary-button';
+import SecondaryButton from '@/app/shared/components/secondary-button';
 
 import PurchaseEntryFilters from '../purchase-entries/components/purchase-entry-filters';
 
@@ -190,6 +190,7 @@ export default function PurchasesListPage() {
   // Shared state
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  const [exportingEntries, setExportingEntries] = useState(false);
 
   // Define purchase type options
   const purchaseTypeOptions = ['TAX', 'DELIVERY', 'PROFORMA', 'QUOTATION'];
@@ -499,17 +500,73 @@ export default function PurchasesListPage() {
     }));
   };
 
+  const handleExportEntries = async () => {
+    try {
+      setExportingEntries(true);
+
+      // Construct filter parameters as used in the current view
+      const params = new URLSearchParams();
+
+      // Add date filters if set
+      if (entriesFilters.dateFrom) {
+        params.append('dateFrom', entriesFilters.dateFrom.format('YYYY-MM-DD'));
+      }
+
+      if (entriesFilters.dateTo) {
+        params.append('dateTo', entriesFilters.dateTo.format('YYYY-MM-DD'));
+      }
+
+      // Add text filters if set
+      if (entriesFilters.purchaseEntryNumber.trim()) {
+        params.append('purchaseEntryNumber', entriesFilters.purchaseEntryNumber.trim());
+      }
+
+      // Add supplier filter if set
+      if (entriesFilters.supplier) {
+        params.append('supplier', entriesFilters.supplier.name);
+      }
+
+      // Add purchase type filter if set
+      if (entriesFilters.purchaseType) {
+        params.append('purchaseType', entriesFilters.purchaseType);
+      }
+
+      // Add export flag to skip pagination
+      params.append('export', 'true');
+
+      const response = await fetch(`/api/purchase-entries/export?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to export purchase entries');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `purchase_entries_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Error exporting purchase entries:', error);
+    } finally {
+      setExportingEntries(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  const handlePurchaseClick = (purchaseId: number) => {
-    window.location.href = `/purchases/${purchaseId}`;
-  };
-
   const handlePurchaseEntryClick = (purchaseEntryId: number) => {
     window.location.href = `/purchase-entries/${purchaseEntryId}`;
+  };
+
+  const handlePurchaseEntryDownload = (purchaseEntryId: number) => {
+    window.open(`/purchases/pdf/${purchaseEntryId}`, '_blank');
   };
 
   return (
@@ -517,9 +574,7 @@ export default function PurchasesListPage() {
       <div className="mx-auto max-w-screen-2xl">
         <style>{tableRowAnimation}</style>
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <Typography variant="h4" component="h1" className="text-2xl font-bold text-gray-800">
-            Purchases & Entries
-          </Typography>
+          <h1 className="text-2xl font-bold text-gray-800">Purchases & Entries</h1>
           <div className="flex flex-col gap-3 sm:flex-row">
             <IconButton
               onClick={() =>
@@ -531,6 +586,18 @@ export default function PurchasesListPage() {
             >
               <FilterAltIcon />
             </IconButton>
+            {activeTab === 1 && (
+              <SecondaryButton
+                onClick={handleExportEntries}
+                label={exportingEntries ? 'Exporting...' : 'Export'}
+                disabled={exportingEntries}
+                startIcon={
+                  exportingEntries && (
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                  )
+                }
+              />
+            )}
             <Link href={activeTab === 0 ? '/purchases/create' : '/purchase-entries/create'}>
               <PrimaryButton label={activeTab === 0 ? '+ New Purchase' : '+ New Purchase Entry'} />
             </Link>
@@ -545,13 +612,6 @@ export default function PurchasesListPage() {
             variant="fullWidth"
             textColor="primary"
             indicatorColor="primary"
-            sx={{
-              '& .MuiTab-root': {
-                fontWeight: 'bold',
-                fontSize: '1rem',
-                textTransform: 'none',
-              },
-            }}
           >
             <Tab label="Purchases" id="purchases-tab" aria-controls="purchases-panel" />
             <Tab
@@ -596,7 +656,6 @@ export default function PurchasesListPage() {
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>Ship From</TableCell>
-                  <TableCell>Purchase Type</TableCell>
                   <TableCell>
                     <TableSortLabel
                       active={sort.field === 'total'}
@@ -606,6 +665,7 @@ export default function PurchasesListPage() {
                       Total
                     </TableSortLabel>
                   </TableCell>
+                  <TableCell>Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -626,7 +686,7 @@ export default function PurchasesListPage() {
                     <TableRow
                       key={purchase.id}
                       hover
-                      onClick={() => handlePurchaseClick(purchase.id)}
+                      // onClick={() => handlePurchaseClick(purchase.id)}
                       className="cursor-pointer transition-all hover:bg-gray-50"
                       style={{
                         animation: `fadeIn 0.3s ease-out forwards`,
@@ -637,8 +697,16 @@ export default function PurchasesListPage() {
                       <TableCell>{formatDate(purchase.purchase_date)}</TableCell>
                       <TableCell>{purchase.supplier.name}</TableCell>
                       <TableCell>{purchase.ship_from}</TableCell>
-                      <TableCell>{purchase.purchase_type}</TableCell>
+                      {/* <TableCell>{purchase.purchase_type}</TableCell> */}
                       <TableCell>${parseFloat(purchase.total).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => handlePurchaseEntryDownload(purchase.id)}
+                          className="border-none bg-transparent text-blue-500 outline-none"
+                        >
+                          Download PO
+                        </button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -692,7 +760,7 @@ export default function PurchasesListPage() {
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>Ship From</TableCell>
-                  <TableCell>Purchase Type</TableCell>
+                  {/* <TableCell>Purchase Type</TableCell> */}
                   <TableCell>
                     <TableSortLabel
                       active={entriesSort.field === 'total'}
@@ -733,7 +801,7 @@ export default function PurchasesListPage() {
                       <TableCell>{formatDate(entry.purchaseentry_date)}</TableCell>
                       <TableCell>{entry.supplier.name}</TableCell>
                       <TableCell>{entry.ship_from}</TableCell>
-                      <TableCell>{entry.purchase_type}</TableCell>
+                      {/* <TableCell>{entry.purchase_type}</TableCell> */}
                       <TableCell>${parseFloat(entry.total).toFixed(2)}</TableCell>
                     </TableRow>
                   ))
