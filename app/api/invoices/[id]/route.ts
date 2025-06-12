@@ -263,9 +263,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             product_id:
               typeof item.product_id === 'string' ? parseInt(item.product_id) : item.product_id,
             quantity: item.qty || item.quantity || 1,
-            unit_price: body.is_used ? '0' : (item.price || 0).toString(),
-            total_price: body.is_used ? '0' : (item.total || 0).toString(),
-            mrp: body.is_used ? '0' : (item.mrp || 0).toString(),
+            unit_price: (item.price || 0).toString(),
+            total_price: (item.total || 0).toString(),
+            mrp: (item.mrp || 0).toString(),
             created_by: userId,
             updated_by: userId,
             created_at: new Date(),

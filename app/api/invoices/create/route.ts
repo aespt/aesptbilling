@@ -104,9 +104,9 @@ export async function POST(request: NextRequest) {
           invoice_id: invoiceId,
           product_id: item.product_id,
           quantity: item.qty,
-          unit_price: String(invoiceData.is_used ? 0 : item.price || 0),
-          total_price: String(invoiceData.is_used ? 0 : item.total || 0),
-          mrp: String(invoiceData.is_used ? 0 : item.mrp || 0),
+          unit_price: String(item.price || 0),
+          total_price: String(item.total || 0),
+          mrp: String(item.mrp || 0),
           created_by: userId,
           updated_by: userId,
         }));

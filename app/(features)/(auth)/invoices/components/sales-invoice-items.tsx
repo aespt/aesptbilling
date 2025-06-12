@@ -6,6 +6,8 @@ import {
   Autocomplete,
   Box,
   Button,
+  Checkbox,
+  FormControlLabel,
   IconButton,
   InputAdornment,
   Paper,
@@ -18,13 +20,15 @@ import AddProduct from '@/app/(features)/(auth)/products/components/add-product'
 import Sidepanel from '@/app/shared/components/sidepanel';
 import type { FormErrors } from '@/lib/types';
 import type { Product } from '@/lib/types/index';
-import type { InvoiceItem } from '@/lib/types/invoice';
+import type { InvoiceItem, InvoiceFormData } from '@/lib/types/invoice';
 
 interface SalesInvoiceItemsProps {
   invoiceItems: InvoiceItem[];
   setInvoiceItems: (items: InvoiceItem[]) => void;
   errors: FormErrors;
   setErrors: (errors: FormErrors) => void;
+  formData: InvoiceFormData;
+  setFormData: (formData: InvoiceFormData | ((prev: InvoiceFormData) => InvoiceFormData)) => void;
 }
 
 export default function SalesInvoiceItems({
@@ -32,6 +36,8 @@ export default function SalesInvoiceItems({
   setInvoiceItems,
   errors,
   setErrors,
+  formData,
+  setFormData,
 }: SalesInvoiceItemsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
@@ -234,9 +240,27 @@ export default function SalesInvoiceItems({
     <>
       <Paper elevation={0} className="mb-6 overflow-hidden border border-gray-200 shadow-lg">
         <Box className="border-b border-gray-200 bg-blue-50 px-6 py-4">
-          <Typography variant="subtitle1" className="font-medium text-gray-700">
-            Invoice Items
-          </Typography>
+          <Box className="flex items-center justify-between">
+            <Typography variant="subtitle1" className="font-medium text-gray-700">
+              Invoice Items
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.is_used}
+                  onChange={e =>
+                    setFormData({
+                      ...formData,
+                      is_used: e.target.checked,
+                    })
+                  }
+                  size="small"
+                />
+              }
+              label="Used Product"
+              className="text-gray-700"
+            />
+          </Box>
         </Box>
 
         {errors.items && (

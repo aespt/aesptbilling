@@ -24,19 +24,16 @@ export default function SalesInvoiceSummary({
   // Calculate subtotal (sum of all item totals)
   const subtotal = invoiceItems.reduce((sum, item) => sum + (item.total || 0), 0);
 
-  // For used products, use the selling rate as the new subtotal
-  const effectiveSubtotal = formData.is_used ? Number(formData.total) || 0 : subtotal;
-
   // Calculate discount
   const discountAmount = calculateDiscount(
-    effectiveSubtotal,
+    subtotal,
     formData.discount_type,
     formData.discount_value,
     formData.discount_percentage
   );
 
   // Calculate tax on subtotal after discount
-  const taxableAmount = effectiveSubtotal - discountAmount;
+  const taxableAmount = subtotal - discountAmount;
   const taxAmount = calculateTax(
     taxableAmount,
     formData.tax_type,
@@ -52,13 +49,13 @@ export default function SalesInvoiceSummary({
   useEffect(() => {
     if (onCalculationsChange) {
       onCalculationsChange({
-        subtotal: effectiveSubtotal,
+        subtotal: subtotal,
         discount: discountAmount,
         tax: taxAmount,
         total: total,
       });
     }
-  }, [effectiveSubtotal, discountAmount, taxAmount, total, onCalculationsChange]);
+  }, [subtotal, discountAmount, taxAmount, total, onCalculationsChange]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -140,9 +137,9 @@ export default function SalesInvoiceSummary({
               {/* Subtotal Row */}
               <Box className="flex items-center justify-between py-2">
                 <Typography variant="body2" className="text-gray-600">
-                  {formData.is_used ? 'Selling Rate' : 'Subtotal'}
+                  Subtotal
                 </Typography>
-                <Typography variant="body1">{formatCurrency(effectiveSubtotal)}</Typography>
+                <Typography variant="body1">{formatCurrency(subtotal)}</Typography>
               </Box>
               <Divider className="my-2" />
 
