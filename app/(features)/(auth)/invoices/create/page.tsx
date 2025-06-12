@@ -3,9 +3,7 @@
 
 import {
   Button,
-  Checkbox,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
@@ -30,7 +28,6 @@ import SalesInvoiceDetails from '../components/sales-invoice-details';
 import SalesInvoiceItems from '../components/sales-invoice-items';
 import SalesInvoiceSummary from '../components/sales-invoice-summary';
 import SalesTaxDiscount from '../components/sales-tax-discount';
-import UsedProductInvoiceDetails from '../components/used-product-invoice-details';
 
 // Main component that contains all the invoice form logic
 function InvoiceForm() {
@@ -411,34 +408,14 @@ function InvoiceForm() {
             : '',
     };
 
-    // Add validation for used product fields
-    if (formData.is_used) {
-      // Validate Selling Rate (New Subtotal) field
-      const sellingRateValue = formData.totalInput || formData.total;
-      if (!sellingRateValue || sellingRateValue === '' || sellingRateValue === 0) {
-        newErrors.total = 'Selling rate is required';
-      } else {
-        const numericValue =
-          typeof sellingRateValue === 'string'
-            ? parseFloat(sellingRateValue)
-            : Number(sellingRateValue);
-        if (isNaN(numericValue) || numericValue <= 0) {
-          newErrors.total = 'Selling rate must be greater than 0';
-        }
-      }
-    }
-
     setErrors(newErrors);
     return !Object.values(newErrors).some(error => error);
   };
 
   const calculateProfit = (items: InvoiceItem[]) => {
-    // If it's a used product, calculate profit differently
+    // If it's a used product, profit is always zero
     if (formData.is_used) {
-      const sellingPrice = Number(formData.total) || 0;
-      const actualPrice = Number(formData.actual_rate) || 0;
-      const actualPriceAfterDiscount = actualPrice - invoiceCalculations.discount;
-      return sellingPrice - actualPriceAfterDiscount;
+      return 0;
     }
 
     // For non-used products, keep the existing calculation
@@ -630,26 +607,7 @@ function InvoiceForm() {
           />
 
           {/* Invoice Search and Stage Selection */}
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="w-full">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.is_used}
-                    onChange={e =>
-                      setFormData({
-                        ...formData,
-                        is_used: e.target.checked,
-                      })
-                    }
-                    size="small"
-                    disabled={isEditMode}
-                  />
-                }
-                label="Used Products Invoice"
-                className="mt-2"
-              />
-            </div>
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="w-full">
               <InvoiceSearch
                 searchTerm={searchTerm}
@@ -704,17 +662,9 @@ function InvoiceForm() {
               setInvoiceItems={setInvoiceItems}
               errors={errors}
               setErrors={setErrors}
+              formData={formData}
+              setFormData={setFormData}
             />
-
-            {formData.is_used && (
-              <UsedProductInvoiceDetails
-                invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}
-                formData={formData}
-                setFormData={setFormData}
-                errors={errors}
-                setErrors={setErrors}
-              />
-            )}
 
             <SalesInvoiceSummary
               invoiceItems={adaptInvoiceItemsForSummary(invoiceItems)}

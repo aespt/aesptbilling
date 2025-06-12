@@ -14,7 +14,9 @@ export async function GET() {
       db
         .select({ count: count() })
         .from(InvoicesTable)
-        .where(sql`${InvoicesTable.invoice_stage} = 'SALE'`),
+        .where(
+          sql`${InvoicesTable.invoice_stage} = 'SALE' AND (${InvoicesTable.is_used} IS NULL OR ${InvoicesTable.is_used} != false)`
+        ),
       db.select({ count: count() }).from(SalesmenTable),
       db.select({ count: count() }).from(CustomersTable),
       db.select({ count: count() }).from(SuppliersTable),
@@ -58,6 +60,7 @@ export async function GET() {
           total: sql<number>`COALESCE(sum(${InvoicesTable.total}), 0)`,
         })
         .from(InvoicesTable)
+        .where(sql`${InvoicesTable.is_used} IS NULL OR ${InvoicesTable.is_used} != false`)
         .groupBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`)
         .orderBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`);
 
@@ -82,6 +85,7 @@ export async function GET() {
           margin: sql<number>`COALESCE(sum(COALESCE(${InvoicesTable.profit}, 0)), 0)`,
         })
         .from(InvoicesTable)
+        .where(sql`${InvoicesTable.is_used} IS NULL OR ${InvoicesTable.is_used} != false`)
         .groupBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`)
         .orderBy(sql`to_char(${InvoicesTable.invoice_date}, 'Mon')`);
 
