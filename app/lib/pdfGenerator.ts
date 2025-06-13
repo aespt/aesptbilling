@@ -148,27 +148,40 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
   const isDelivery = invoice.invoice_stage === 'DELIVERY';
   const documentDisplayTitle = getDocumentTitle(invoice.invoice_stage, documentTitle);
 
-  // Split products into pages to handle pagination
-  // Improve pagination to better utilize available space
-  const ITEMS_PER_PAGE_FIRST = 12; // Increased from 10 to better utilize space
-  const ITEMS_PER_PAGE_OTHER = 18; // Increased from 15 to better utilize space
+  // Split products into pages to handle pagination with intelligent footer placement
+  // Dynamic pagination based on available space and footer requirements
+  const ITEMS_PER_PAGE_FIRST_WITH_FOOTER = 12; // First page with footer (adjusted)
+  const ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER = 18; // First page without footer (adjusted)
+  const ITEMS_PER_PAGE_OTHER = 22; // Subsequent pages (more space available)
 
-  // Calculate page distribution
-  let pageDistribution: number[] = [];
+  // Calculate intelligent page distribution
+  let pageDistribution: Array<{ itemCount: number; hasFooter: boolean }> = [];
   let remainingItems = productsWithItems.length;
 
-  if (remainingItems <= ITEMS_PER_PAGE_FIRST) {
-    // Only one page needed
-    pageDistribution = [remainingItems];
+  if (remainingItems <= ITEMS_PER_PAGE_FIRST_WITH_FOOTER) {
+    // All items fit on first page with footer
+    pageDistribution = [{ itemCount: remainingItems, hasFooter: true }];
+  } else if (remainingItems <= ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER) {
+    // Items fit on first page without footer, footer goes to second page
+    pageDistribution = [
+      { itemCount: remainingItems, hasFooter: false },
+      { itemCount: 0, hasFooter: true }, // Footer-only page
+    ];
   } else {
-    // First page
-    pageDistribution.push(ITEMS_PER_PAGE_FIRST);
-    remainingItems -= ITEMS_PER_PAGE_FIRST;
+    // Multiple pages needed
+    // First page: use maximum items without footer
+    pageDistribution.push({ itemCount: ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER, hasFooter: false });
+    remainingItems -= ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER;
 
-    // Additional pages
+    // Fill subsequent pages
     while (remainingItems > 0) {
       const itemsForPage = Math.min(ITEMS_PER_PAGE_OTHER, remainingItems);
-      pageDistribution.push(itemsForPage);
+      const isLastBatch = remainingItems <= ITEMS_PER_PAGE_OTHER;
+
+      pageDistribution.push({
+        itemCount: itemsForPage,
+        hasFooter: isLastBatch, // Footer only on the very last page
+      });
       remainingItems -= itemsForPage;
     }
   }
@@ -182,10 +195,11 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
   // Generate each page
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
     // Get items for this page
-    const itemsOnThisPage = pageDistribution[pageIndex];
+    const itemsOnThisPage = pageDistribution[pageIndex].itemCount;
+    const hasFooterOnThisPage = pageDistribution[pageIndex].hasFooter;
     const endIndex = startIndex + itemsOnThisPage;
     const pageItems = productsWithItems.slice(startIndex, endIndex);
-    const isLastPage = pageIndex === totalPages - 1;
+    const isLastPage = hasFooterOnThisPage; // Footer determines if it's the "last" page for styling
 
     // Create temporary container for our HTML
     const tempDiv = document.createElement('div');
@@ -198,7 +212,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     tempDiv.style.zIndex = '-1000'; // Hide it but still render
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
-    tempDiv.style.padding = '15mm'; // Add consistent padding on all sides
+    tempDiv.style.padding = '10mm'; // Add consistent padding on all sides
     tempDiv.style.boxSizing = 'border-box'; // Include padding in dimensions
 
     // Generate the HTML content with exact template structure
@@ -209,26 +223,34 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         pageIndex === 0
           ? `
       <!-- Header Section - Only on first page -->
-      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; border-bottom: 1px solid #ccc;">
-        <div style="display:flex;justify-content:center;align-items:center;">
-          <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
-        </div>
-        <div style="width: 100%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h3 style="margin: 0;font-weight:bold; font-size: 17px; text-transform: uppercase;">Arabian Auto Equipments and Parts Trading (FZC)</h3>
-            <p style=" font-size: 20px; font-weight: bold; direction: rtl; text-align: right;">
-              العربية لتجارة معدات وقطع غيار السيارات &#x28;ش.م.ح&#x29;
-            </p>
+      <div>
+        <div style="display: flex;gap:20px; justify-content: start; padding-left: 20px; padding-right: 20px;">
+          <div style="display:flex;justify-content:center;align-items:center;">
+            <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
           </div>
-          
+          <div style="width: 100%; background-color: #ffffff; padding-left: 20px; padding-right: 20px; padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="margin: 0;font-weight:bold; font-size: 18px; text-transform: uppercase;">Arabian Auto Equipments and Parts Trading (FZC)</h3>
+              <p style=" font-size: 20px; font-weight: bold; direction: rtl; text-align: right;">
+                العربية لتجارة معدات وقطع غيار السيارات &#x28;ش.م.ح&#x29;
+              </p>
+            </div>
+            
+          </div>
         </div>
+          <!-- Invoice Title -->
+          <div style=" padding-left:10px; padding-right:10px;padding-top:15px;margin-bottom:0;">
+            <p style="font-weight: bold; font-size: 12px; margin-bottom: 0; text-transform: uppercase;text-align:center;"> ${documentDisplayTitle} </p>
+            <p style="font-size: 12px; margin-top: 0; margin-bottom: 0; text-transform: uppercase;text-align:center;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
+          </div>
       </div>
 
-      <!-- Invoice Title -->
+      <!-- Invoice Title 
       <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; margin-bottom: 15px;">
        <p style="font-weight: bold; font-size: 12px; margin-bottom: 0; text-transform: uppercase;"> ${documentDisplayTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}</p>
         <p style="font-size: 12px; margin-top: 0; margin-bottom: 0; text-transform: uppercase;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
       </div>
+      -->
 
       <!-- Customer Info Section (only on first page) -->
       <div style="display: flex; justify-content: space-between;margin-top:20px;">
@@ -283,7 +305,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       }
 
       <!-- Items Table - Unified structure with footer as part of table -->
-      <div style="margin-bottom: ${!isLastPage ? '15mm' : '0'}; ${isLastPage ? `height: calc(100vh - ${pageIndex === 0 ? '300px' : '-50px'}); display: flex; flex-direction: column;` : ''}">
+      <div style="margin-bottom: ${!isLastPage ? '15mm' : '0'}; ${isLastPage ? `height: calc(100vh - ${pageIndex === 0 ? '0px' : '-300px'}); display: flex; flex-direction: column;` : ''}">
         <table style="margin-top:5px;width: 100%; border-collapse: collapse; font-size: 12px; ${isLastPage ? 'height: 100%; display: table;' : 'border-bottom: 1px solid #ccc;'}">
           <thead>
             <tr style="">
@@ -324,19 +346,19 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
 
                 return `
               <tr>
-                <td style="border-left: none; border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${itemNumber}</td>
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${product?.partNo || 'N/A'}</td>
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${product?.name || 'N/A'}</td>
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${quantity.toString()}</td>
+                <td style="font-size:10px;border-left: none; border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${itemNumber}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${product?.partNo || 'N/A'}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${product?.name || 'N/A'}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${quantity.toString()}</td>
                 ${
                   !isDelivery
                     ? `
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${unitPrice.toFixed(2)}</td>
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${amount.toFixed(2)}</td>
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${invoiceTaxRate.toString()}</td>
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${vatAmount.toFixed(2)}</td>
-                <td style="border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${totalAmount.toFixed(2)}</td>
-                <td style="border-right: none; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${product?.brand || 'N/A'}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${unitPrice.toFixed(2)}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${amount.toFixed(2)}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${invoiceTaxRate.toString()}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${vatAmount.toFixed(2)}</td>
+                <td style="font-size:10px;border-right: 1px solid #ccc; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top;">${totalAmount.toFixed(2)}</td>
+                <td style="font-size:10px;border-right: none; padding: ${pageIndex === 0 ? '8px' : '6px'}; vertical-align: top; text-transform: uppercase;">${product?.brand || 'N/A'}</td>
                 `
                     : ''
                 }
@@ -418,35 +440,31 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
             }
             
             <!-- Signature row with fixed height -->
-            <tr style="height: 50px;">
-              <td colspan="${!isDelivery ? '10' : '4'}" style="border-left: none; border-right: none; border-top: 1px solid #ccc; padding-top: 15px; height: 70px;">
+            <tr">
+              <td colspan="${!isDelivery ? '10' : '4'}" style="border-left: none; border-right: none; border-top: 1px solid #ccc; padding-top: 15px;">
               <div style="width:100%;display:flex;flex-direction:column;justify-content:end">
-                <div style="display: flex; justify-content: space-between; padding: 20px; gap:15px">
-                  <div>
-                    <div style="border-top: 1px dotted #999; width: 180px; text-align: center; padding-top: 5px; font-size: 12px; color: #666; text-transform: uppercase;">
+                <div style="display: flex; justify-content: space-between; padding: 15px; gap:25px">
+                  <div style="width:25%;">
+                    <div style="border-top: 1px dotted #999;  text-align: center; padding-top: 5px; font-size: 9px; color: #666; text-transform: uppercase;">
                       Customer Signature
                     </div>
                   </div>
-                  
+                      
                   <div>
-                    <div style="border-top: 1px dotted #999; width: 180px; text-align: center; padding-top: 5px; font-size: 12px; color: #666; text-transform: uppercase;">
+                      <p style="font-size: 9px; color: #666; border:1px solid #ccc;padding-left:5px; padding-right:5px; padding-bottom:10px;width:100%;text-align:center">
+                      لا تتحمل الشركة أي مسؤولية عن الأموال المدفوعة مقابل هذه الفاتورة ما لم يتم إثبات ذلك من خلال إيصال رسمي من الشركة.<br/>
+
+                        <span style="text-transform: uppercase;">Company accepts no responsibility  for money paid against this invoice unless evidenced by an official receipt of the company.</span>
+                      </p>
+                  </div>
+                      
+                  <div style="width:25%;">
+                    <div style="border-top: 1px dotted #999; text-align: center; padding-top: 5px; font-size: 9px; color: #666; text-transform: uppercase;">
                       For Arabian Auto Equipments and Parts Trading (FZC)
                     </div>
                   </div>
                 </div>
-                 ${
-                   !isDelivery
-                     ? `
-                <div style="width:100%;padding:0 20px;">
-                    <p style="font-size: 10px; color: #666; border:1px solid #ccc; padding-bottom:10px;width:100%;text-align:center">
-                    لا تتحمل الشركة أي مسؤولية عن الأموال المدفوعة مقابل هذه الفاتورة ما لم يتم إثبات ذلك من خلال إيصال رسمي من الشركة.<br/>
-
-                      <span style="text-transform: uppercase;">Company accepts no responsibility  for money paid against this invoice unless evidenced by an official receipt of the company.</span>
-                    </p>
-                  </div>
-                </div>`
-                     : ''
-                 }
+                </div>
               </td>
             </tr>
             
@@ -561,26 +579,40 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
   const { purchase, supplier, primaryAddress, productsWithItems, formattedDate, documentTitle } =
     purchaseData;
 
-  // Split products into pages to handle pagination
-  const ITEMS_PER_PAGE_FIRST = 15; // More items on first page for purchase orders
-  const ITEMS_PER_PAGE_OTHER = 20; // More items on subsequent pages
+  // Split products into pages to handle pagination with intelligent footer placement
+  // Dynamic pagination based on available space and footer requirements
+  const ITEMS_PER_PAGE_FIRST_WITH_FOOTER = 10; // First page with footer (purchase has smaller header)
+  const ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER = 13; // First page without footer
+  const ITEMS_PER_PAGE_OTHER = 25; // Subsequent pages (more space available)
 
-  // Calculate page distribution
-  let pageDistribution: number[] = [];
+  // Calculate intelligent page distribution
+  let pageDistribution: Array<{ itemCount: number; hasFooter: boolean }> = [];
   let remainingItems = productsWithItems.length;
 
-  if (remainingItems <= ITEMS_PER_PAGE_FIRST) {
-    // Only one page needed
-    pageDistribution = [remainingItems];
+  if (remainingItems <= ITEMS_PER_PAGE_FIRST_WITH_FOOTER) {
+    // All items fit on first page with footer
+    pageDistribution = [{ itemCount: remainingItems, hasFooter: true }];
+  } else if (remainingItems <= ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER) {
+    // Items fit on first page without footer, footer goes to second page
+    pageDistribution = [
+      { itemCount: remainingItems, hasFooter: false },
+      { itemCount: 0, hasFooter: true }, // Footer-only page
+    ];
   } else {
-    // First page
-    pageDistribution.push(ITEMS_PER_PAGE_FIRST);
-    remainingItems -= ITEMS_PER_PAGE_FIRST;
+    // Multiple pages needed
+    // First page: use maximum items without footer
+    pageDistribution.push({ itemCount: ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER, hasFooter: false });
+    remainingItems -= ITEMS_PER_PAGE_FIRST_WITHOUT_FOOTER;
 
-    // Additional pages
+    // Fill subsequent pages
     while (remainingItems > 0) {
       const itemsForPage = Math.min(ITEMS_PER_PAGE_OTHER, remainingItems);
-      pageDistribution.push(itemsForPage);
+      const isLastBatch = remainingItems <= ITEMS_PER_PAGE_OTHER;
+
+      pageDistribution.push({
+        itemCount: itemsForPage,
+        hasFooter: isLastBatch, // Footer only on the very last page
+      });
       remainingItems -= itemsForPage;
     }
   }
@@ -594,10 +626,11 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
   // Generate each page
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
     // Get items for this page
-    const itemsOnThisPage = pageDistribution[pageIndex];
+    const itemsOnThisPage = pageDistribution[pageIndex].itemCount;
+    const hasFooterOnThisPage = pageDistribution[pageIndex].hasFooter;
     const endIndex = startIndex + itemsOnThisPage;
     const pageItems = productsWithItems.slice(startIndex, endIndex);
-    const isLastPage = pageIndex === totalPages - 1;
+    const isLastPage = hasFooterOnThisPage; // Footer determines if it's the "last" page for styling
 
     // Calculate page height - adjust based on content
     const baseHeight = 297; // A4 height in mm
@@ -622,7 +655,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
     tempDiv.style.zIndex = '-1000'; // Hide it but still render
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
-    tempDiv.style.padding = '10mm'; // Add padding for border space
+    tempDiv.style.padding = '5mm'; // Add padding for border space
     tempDiv.style.boxSizing = 'border-box'; // Include padding in dimensions
 
     // Generate the HTML content with exact template structure
@@ -633,29 +666,36 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
         pageIndex === 0
           ? `
       <!-- Header Section - Only on first page -->
-      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; border-bottom: 1px solid #ccc;">
-        <div style="display:flex;justify-content:center;align-items:center;">
-          <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
-        </div>
-        <div style="width: 100%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h3 style="margin: 0;font-weight:bold; font-size: 22px; text-transform: uppercase;">Arabian Auto Equipments and Parts Trading (FZC)</h3>
-            <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; direction: rtl; text-align: right;">
-              العربية لتجارة معدات وقطع غيار السيارات &#x28;ش.م.ح&#x29;
-            </p>
+      <div>
+        <div style="display: flex;gap:20px; justify-content: start; padding-left: 20px; padding-right: 20px;">
+          <div style="display:flex;justify-content:center;align-items:center;">
+            <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
           </div>
-          
+          <div style="width: 100%; background-color: #ffffff; padding-left: 20px; padding-right: 20px; padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="margin: 0;font-weight:bold; font-size: 18px; text-transform: uppercase;">Arabian Auto Equipments and Parts Trading (FZC)</h3>
+              <p style=" font-size: 20px; font-weight: bold; direction: rtl; text-align: right;">
+                العربية لتجارة معدات وقطع غيار السيارات &#x28;ش.م.ح&#x29;
+              </p>
+            </div>
+            
+          </div>
         </div>
+          <!-- Invoice Title -->
+          <div style=" padding-left:10px; padding-right:10px;padding-top:15px;margin-bottom:0;">
+            <p style="font-weight: bold; font-size: 12px; margin-bottom: 0; text-transform: uppercase;text-align:center;"> purchase order </p>
+            <p style="font-size: 12px; margin-top: 0; margin-bottom: 0; text-transform: uppercase;text-align:center;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
+          </div>
       </div>
 
-      <!-- Purchase Order Title -->
+      <!-- Purchase Order Title
       <div style="display:flex;justify-content:center;flex-direction:column;align-items:center; margin-bottom: 15px;">
         <p style="font-weight: bold; font-size: 12px; margin-bottom: 0; text-transform: uppercase;">${documentTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}</p>
         <p style="font-size: 12px; margin-top: 0; margin-bottom: 0; text-transform: uppercase;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
-      </div>
+      </div> -->
 
       <!-- Supplier Info Section (only on first page) -->
-      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between;margin-top:20px;">
         <!-- Left side - Supplier info -->
         <div style="width: 50%; padding: 20px; border-top: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;">
           <p style="margin: 0; font-weight: bold; font-size: 12px; text-transform: uppercase;">Order To:<span style="margin: 5px 0; text-transform: uppercase;">${supplier?.name || 'N/A'}</span></p>
@@ -704,7 +744,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
       }
 
       <!-- Items Table -->
-      <div style="margin-bottom: ${!isLastPage ? '15mm' : '0'}; ${isLastPage ? `height: calc(100vh - ${pageIndex === 0 ? '220px' : '150px'}); display: flex; flex-direction: column;` : ''}">
+      <div style="margin-bottom: ${!isLastPage ? '15mm' : '0'}; ${isLastPage ? `height: calc(100vh - ${pageIndex === 0 ? '-80px' : '-325px'}); display: flex; flex-direction: column;` : ''}">
         <table style="width: 100%; border-collapse: collapse; font-size: 12px; ${isLastPage ? 'height: 100%; display: table;' : 'border-bottom: 1px solid #ccc;'}">
           <thead>
             <tr style="">
@@ -750,7 +790,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
             <!-- Signature row with fixed height -->
             <tr style="height: 50px;">
               <td colspan="4" style="border-left: none; border-right: none; border-top: 1px solid #ccc; padding: 15px; height: 50px;">
-                <div style="display: flex; justify-content: space-between;">
+                <div style="display: flex; justify-content: space-between;padding-top:30px;">
                   <div>
                     <div style="border-top: 1px dotted #999; width: 180px; text-align: center; padding-top: 5px; font-size: 12px; color: #666; text-transform: uppercase;">
                       Received By
@@ -767,7 +807,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
             
             <!-- Address footer row with fixed height -->
             <tr style="height: 30px;">
-              <td colspan="4" style="border-left: none; border-right: none; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; padding: 0 15px; font-size: 12px; color: #666; text-align: center; height: 30px;">
+              <td colspan="4" style="border-left: none; border-right: none; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; padding: 20px; font-size: 12px; color: #666; text-align: center; height: 30px;">
                 <div style="text-align: center; line-height: 1.4;">
                   ${
                     primaryAddress
