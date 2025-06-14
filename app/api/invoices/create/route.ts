@@ -1,3 +1,4 @@
+import { desc } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
@@ -52,11 +53,28 @@ export async function POST(request: NextRequest) {
 
     // Start transaction
     return await db.transaction(async tx => {
+      // Generate next invoice number (zero-padded, incremental)
+      // Get the highest existing invoice_number (as integer)
+      const lastInvoice = await tx
+        .select({ invoice_number: InvoicesTable.invoice_number })
+        .from(InvoicesTable)
+        .orderBy(desc(InvoicesTable.id))
+        .limit(1);
+
+      let nextInvoiceNumber = '0001';
+      if (lastInvoice && lastInvoice.length > 0) {
+        // Extract numeric part, handle possible non-numeric values
+        const lastNum = parseInt(lastInvoice[0].invoice_number, 10);
+        if (!isNaN(lastNum)) {
+          nextInvoiceNumber = String(lastNum + 1).padStart(4, '0');
+        }
+      }
+
       // Create invoice record
       const newInvoice = await tx
         .insert(InvoicesTable)
         .values({
-          invoice_number: invoiceData.invoice_number,
+          invoice_number: nextInvoiceNumber,
           invoice_date: new Date(invoiceData.date),
           customer_id: invoiceData.customer_id,
           salesman_id: invoiceData.salesman_id || null,

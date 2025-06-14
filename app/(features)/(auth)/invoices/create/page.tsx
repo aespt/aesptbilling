@@ -397,7 +397,7 @@ function InvoiceForm() {
   // Form validation
   const validateForm = () => {
     const newErrors: FormErrors = {
-      invoice_number: !formData.invoice_number ? 'Invoice number is required' : '',
+      invoice_number: isEditMode && !formData.invoice_number ? 'Invoice number is required' : '',
       customer_id: !formData.customer_id ? 'Customer is required' : '',
       salesman_id: !formData.salesman_id ? 'Salesman is required' : '',
       items:

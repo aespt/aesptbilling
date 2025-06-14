@@ -24,18 +24,6 @@ interface SalesInvoiceDetailsProps {
   salesmen?: Salesman[];
 }
 
-// Utility function to generate invoice number
-
-const generateInvoiceNumber = () => {
-  // Use timestamp from base year 2024 to make number smaller
-  const baseDate = new Date('2024-01-01').getTime();
-  const timestamp = Date.now() - baseDate;
-  const year = new Date().getFullYear();
-  const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-
-  return `INV-${year}${month}-${timestamp}`;
-};
-
 export default function SalesInvoiceDetails({
   formData,
   setFormData,
@@ -57,7 +45,7 @@ export default function SalesInvoiceDetails({
     if (!initialized.current && !formData.invoice_number) {
       setFormData({
         ...formData,
-        invoice_number: generateInvoiceNumber(),
+        invoice_number: '',
       });
       initialized.current = true;
     }
@@ -174,15 +162,13 @@ export default function SalesInvoiceDetails({
                         variant="outlined"
                         margin="none"
                         placeholder="Invoice Number"
-                        error={!!errors.invoice_number}
-                        helperText={errors.invoice_number}
                         size="small"
                         InputProps={{
                           readOnly: true,
                         }}
+                        disabled
                       />
                     </div>
-
                     <div>
                       <Typography variant="caption" className="mb-1 block text-gray-500">
                         Sales Representative
