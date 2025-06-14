@@ -373,9 +373,15 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         <tbody>
         <tr style="height: 40px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
           <td colspan="30" style="vertical-align: top; padding: 20px; border-right: 1px solid #ccc;border-top: 1px solid #ccc;">
-            <div style="font-size: 12px;text-transform: uppercase;"><span style="font-weight: bold;">Terms & Conditions</span><br/>
-            Claims for shortages or defects must be checked and confirmed at the time of receipt of goods.<br/><br/>
-            Goods once sold will not be returned unless prior written approval and must be in unused, resalable condition.<br/></div>
+          ${
+            documentTitle === 'Proforma Invoice'
+              ? `<p style="font-size: 12px;text-transform: uppercase;margin-bottom:0">Bank Details</p>
+<p style="font-size: 12px;text-transform: uppercase;margin-bottom:0">${invoiceData.primaryBankDetails?.name || 'N/A'}</p>
+<p style="font-size: 12px; white-space: pre-line;margin-top:0">${invoiceData.primaryBankDetails?.details || ''}</p>`
+              : `<div style="font-size: 12px;text-transform: uppercase;"><span style="font-weight: bold;">Terms & Conditions</span><br/>
+Claims for shortages or defects must be checked and confirmed at the time of receipt of goods.<br/><br/>
+Goods once sold will not be returned unless prior written approval and must be in unused, resalable condition.<br/></div>`
+          }
           </td>
           <td colspan="20" style="vertical-align: top; padding: 20px; border-top: 1px solid #ccc;">
             <div style="font-size: 12px;">
