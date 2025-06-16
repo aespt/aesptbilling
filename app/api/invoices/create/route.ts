@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Start transaction
     return await db.transaction(async tx => {
-      // Generate next invoice number (zero-padded, incremental)
+      // Generate next invoice number starting from 180, incremental without padding
       // Get the highest existing invoice_number (as integer)
       const lastInvoice = await tx
         .select({ invoice_number: InvoicesTable.invoice_number })
@@ -61,12 +61,14 @@ export async function POST(request: NextRequest) {
         .orderBy(desc(InvoicesTable.id))
         .limit(1);
 
-      let nextInvoiceNumber = '0001';
+      let nextInvoiceNumber = process.env.NEXT_PUBLIC_INVOICE_NUMBER_START || '180';
       if (lastInvoice && lastInvoice.length > 0) {
         // Extract numeric part, handle possible non-numeric values
         const lastNum = parseInt(lastInvoice[0].invoice_number, 10);
         if (!isNaN(lastNum)) {
-          nextInvoiceNumber = String(lastNum + 1).padStart(4, '0');
+          // Ensure the next number is at least 180
+          const nextNum = Math.max(lastNum + 1, 180);
+          nextInvoiceNumber = String(nextNum);
         }
       }
 
