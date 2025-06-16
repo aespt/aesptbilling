@@ -35,6 +35,7 @@ interface Product {
   partNo?: string;
   brand?: string;
   name?: string;
+  description?: string;
 }
 
 // Interface for invoice item
@@ -239,8 +240,8 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
               <img src="/logo.png" alt="Logo" style="width: 80px; max-height: 60px; object-fit: contain;" />
               <div>
-                ARABIAN AUTO EQUIPMENTS AND PARTS TRADING (FZC)<br/>
-                <span style="font-size: 16px; font-weight: normal; direction: rtl;">العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)</span>
+                <span style="font-size: 20px; font-weight: bold;">ARABIAN AUTO EQUIPMENTS AND PARTS TRADING (FZC)</span><br/>
+                <span style="font-size: 16px; font-weight: normal; direction: rtl;">العربية لتجارة معدات وقطع غيار السيارات ش.م.ح</span>
               </div>
             </div>
           </td>
@@ -256,7 +257,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         <tr style="height: 45px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
           <td colspan="25" style="vertical-align: top; padding: 20px; text-align: left;border-right: 1px solid #ccc;">
             <div style=" text-transform: uppercase;">Customer Details:</div>
-            <div style="font-weight: bold;padding-left:10px;height:50px;">${customer?.name || ''}</div>
+            <div style="font-weight: bold;height:50px;">${customer?.name || ''}</div>
             <div style="font-size: 12px;">TAX REG NO: <span style="font-weight: bold;padding-left:5px">${customer?.trn || ''}</span></div>
             <div style="font-size: 12px; height:30px;text-transform:uppercase">ADDRESS: <span style="font-weight: bold;padding-left:5px">${invoice.ship_to || ''}</span></div>
           </td>
@@ -328,7 +329,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
               <tr style="height: ${ITEM_ROW_HEIGHT_PX}px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; ${borderBottomStyle}">
                 <td colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${itemNumber}</td>
                 <td colspan="6" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${product?.partNo || ''}</td>
-                <td colspan="13" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${product?.name || ''}</td>
+                <td colspan="13" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${product?.description || '-'}</td>
                 <td colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${quantity}</td>
                 <td colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${unitPrice.toFixed(2)}</td>
                 <td colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${amount.toFixed(2)}</td>
@@ -372,7 +373,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
         <!-- FOOTER ROWS -->
         <tbody>
         <tr style="height: 40px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
-          <td colspan="30" style="vertical-align: top; padding: 20px; border-right: 1px solid #ccc;border-top: 1px solid #ccc;">
+          <td colspan="30" style="vertical-align: top; padding: 20px; padding-top: 10px; border-right: 1px solid #ccc;border-top: 1px solid #ccc;">
           ${
             documentTitle === 'Proforma Invoice'
               ? `<p style="font-size: 12px;text-transform: uppercase;margin-bottom:0">Bank Details</p>
@@ -385,10 +386,10 @@ Warranty coverage, if applicable, is limited to manufacturing defects and exclud
           </td>
           <td colspan="20" style="vertical-align: top; padding: 20px; border-top: 1px solid #ccc;">
             <div style="font-size: 12px;">
-              <div style="display: flex; justify-content: space-between;margin-bottom:5px"><span>Subtotal:</span><span>${totals.subtotal} AED</span></div>
-              <div style="display: flex; justify-content: space-between;margin-bottom:5px"><span>${totals.taxType}:</span><span>${totals.taxAmount} AED</span></div>
-              <div style="display: flex; justify-content: space-between;margin-bottom:5px"><span>Discount:</span><span>${totals.discount} AED</span></div>
-              <div style="display: flex; justify-content: space-between;margin-bottom:5px font-weight: bold;"><span>Invoice Total:</span><span>${totals.total} AED</span></div>
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase;"><span>Subtotal:</span><span>${totals.subtotal} AED</span></div>
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase;"><span>${totals.taxType}:</span><span>${totals.taxAmount} AED</span></div>
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase;"><span>Discount:</span><span>${totals.discount} AED</span></div>
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase; font-weight: bold;"><span>Invoice Total:</span><span>${totals.total} AED</span></div>
             </div>
           </td>
         </tr>
@@ -581,13 +582,13 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
         </tr>
         <!-- Customer and Invoice Details Row -->
         <tr style="height: 45px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
-          <td colspan="25" style="vertical-align: top; padding: 20px; text-align: left;border-right: 1px solid #ccc;">
+          <td colspan="25" style="vertical-align: top; padding: 20px; padding-top:10px; text-align: left;border-right: 1px solid #ccc;">
             <div style=" text-transform: uppercase;">Customer Details:</div>
-            <div style="font-weight: bold;padding-left:10px;height:50px;text-transform:uppercase">${supplier?.name || ''}</div>
+            <div style="font-weight: bold;height:50px;text-transform:uppercase">${supplier?.name || ''}</div>
             <div style="font-size: 12px;">TAX REG NO: <span style="font-weight: bold;padding-left:5px">${supplier?.tax_registration_number || ''}</span></div>
             <div style="font-size: 12px; height:30px;">ADDRESS: <span style="font-weight: bold;padding-left:5px">${primaryAddress.transaction_no || ''}</span></div>
           </td>
-          <td colspan="25" style="vertical-align: top; padding: 20px; text-align: left;">
+          <td colspan="25" style="vertical-align: top; padding: 20px; padding-top:10px; text-align: left;">
             <div style="text-transform:uppercase;margin-bottom:5px">Purchase Order No: <span style="font-weight:bold;padding-left:5px">${purchase.purchase_number || ''}</span></div>
             <div style="text-transform:uppercase;margin-bottom:5px">Purchase Date: <span style="font-weight:bold;padding-left:5px">${formatDate(formattedDate) || ''}</span></div>
             <div style="text-transform:uppercase;margin-bottom:5px">Ship From: <span style="font-weight:bold;padding-left:5px">${purchase.ship_from || ''}</span></div>
@@ -633,7 +634,7 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
               <tr style="height: ${ITEM_ROW_HEIGHT_PX}px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; ${borderBottomStyle}">
                 <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${itemNumber}</td>
                 <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${productItem.product?.partNo || ''}</td>
-                <td colspan="20" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${productItem.product?.name || ''}</td>
+                <td colspan="20" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${productItem.product?.description || ''}</td>
                 <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${productItem.item.quantity}</td>
               </tr>
             `;

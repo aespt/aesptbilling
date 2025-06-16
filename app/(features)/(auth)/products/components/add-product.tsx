@@ -14,7 +14,7 @@ const productFormSchema = z.object({
     .string()
     .min(1, 'Part number is required')
     .refine(val => val.trim().length > 0, { message: 'Part number cannot be empty' }),
-  partName: z.string().min(2, 'Product name must be at least 2 characters'),
+  partName: z.string(),
   description: z.string().optional(),
   price: z.preprocess(
     val => (val === '' ? 0 : Number(val)),
@@ -108,7 +108,7 @@ export default function AddProduct({
       // Convert form data to match the API expectations
       const productData = {
         part_no: data.partNo,
-        name: data.partName,
+        name: data.partName || '   ',
         description: data.description || '',
         price: data.price,
         mrp: data.mrp,
