@@ -35,6 +35,7 @@ interface Product {
   partNo?: string;
   brand?: string;
   name?: string;
+  description?: string;
 }
 
 // Interface for invoice item
@@ -114,6 +115,31 @@ interface PurchaseData {
   documentTitle: string;
 }
 
+const formatDate = (date: string) => {
+  try {
+    // Parse the date string (e.g., "May 5, 2024")
+    const parsedDate = new Date(date);
+
+    // Check if the date is valid
+    if (isNaN(parsedDate.getTime())) {
+      return date; // Return original string if parsing fails
+    }
+
+    // Format to DD/MM/YYYY
+    const day = parsedDate.getDate().toString().padStart(2, '0');
+    const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0'); // getMonth() is 0-indexed
+    const year = parsedDate.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  } catch (error) {
+    // Return original string if any error occurs
+    if (error) {
+      //
+    }
+    return date;
+  }
+};
+
 // Main function to generate the PDF
 export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<string> {
   const {
@@ -121,339 +147,293 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
     customer,
     salesPerson,
     primaryAddress,
-    primaryBankDetails,
     productsWithItems,
     formattedDate,
     documentTitle,
     totals,
   } = invoiceData;
 
-  // Determine document title based on invoice stage
-  const getDocumentTitle = (stage?: string, defaultTitle?: string): string => {
-    switch (stage) {
-      case 'QUOTATION':
-        return 'Quotation';
-      case 'PROFORMA':
-        return 'Proforma Invoice';
-      case 'SALE':
-        return 'Tax Invoice';
-      case 'DELIVERY':
-        return 'Delivery Note';
-      default:
-        return defaultTitle || 'Tax Invoice';
-    }
-  };
+  // --- TABLE LAYOUT CONSTANTS ---
+  // const PAGE_HEIGHT_PX = 1122; // A4 at 96dpi
+  // const MARGIN_PX = 38; // 10mm top/bottom margin in px
+  // Header/footer row heights (px) - Updated to match actual HTML
+  // const HEADER_ROW_HEIGHTS = [80, 30, 45, 32]; // logo/title, doc title, info, headings
+  // const FOOTER_ROW_HEIGHTS = [40, 32, 28]; // terms/totals, signature/disclaimer, address
+  // const HEADER_HEIGHT_PX = HEADER_ROW_HEIGHTS.reduce((a, b) => a + b, 0);
+  // const FOOTER_HEIGHT_PX = FOOTER_ROW_HEIGHTS.reduce((a, b) => a + b, 0);
+  // const FOOTER_HEIGHT_PX = 162;
+  const ITEM_ROW_HEIGHT_PX = 32; // each item row (enough for 2 lines)
+  // Add safety margin to prevent footer cutoff
+  // const SAFETY_MARGIN_PX = 20;
+  // const FIXED_HEIGHTS_PX = HEADER_HEIGHT_PX + FOOTER_HEIGHT_PX + 2 * MARGIN_PX + SAFETY_MARGIN_PX;
+  // const AVAILABLE_BODY_HEIGHT = PAGE_HEIGHT_PX - FIXED_HEIGHTS_PX;
+  // const MAX_ITEM_ROWS_PER_PAGE = Math.floor(AVAILABLE_BODY_HEIGHT / ITEM_ROW_HEIGHT_PX);
+  const MAX_ITEM_ROWS_PER_PAGE = 12;
 
-  // Determine if this is a delivery note
-  const isDelivery = invoice.invoice_stage === 'DELIVERY';
-  const documentDisplayTitle = getDocumentTitle(invoice.invoice_stage, documentTitle);
+  // Calculate pagination properly for multi-page invoices
+  const totalItems = productsWithItems.length;
+  let pages: Array<{ items: typeof productsWithItems; isFirstPage: boolean; isLastPage: boolean }> =
+    [];
 
-  // Split products into pages to handle pagination
-  // Increase items per page for non-last pages to maximize space usage
-  const ITEMS_PER_PAGE_FIRST = 10; // Fewer items on first page due to header
-  const ITEMS_PER_PAGE_OTHER = 15; // More items on subsequent pages
-
-  // Calculate page distribution
-  let pageDistribution: number[] = [];
-  let remainingItems = productsWithItems.length;
-
-  if (remainingItems <= ITEMS_PER_PAGE_FIRST) {
-    // Only one page needed
-    pageDistribution = [remainingItems];
+  if (totalItems <= MAX_ITEM_ROWS_PER_PAGE) {
+    // Single page - show header, items, and footer (≤12 items)
+    pages = [{ items: productsWithItems, isFirstPage: true, isLastPage: true }];
   } else {
-    // First page
-    pageDistribution.push(ITEMS_PER_PAGE_FIRST);
-    remainingItems -= ITEMS_PER_PAGE_FIRST;
+    // Multi-page logic (>12 items)
+    // First page: Show up to 18 items without footer
+    const FIRST_PAGE_MAX_ITEMS = 18;
+    const firstPageItems = Math.min(FIRST_PAGE_MAX_ITEMS, totalItems);
 
-    // Additional pages
-    while (remainingItems > 0) {
-      const itemsForPage = Math.min(ITEMS_PER_PAGE_OTHER, remainingItems);
-      pageDistribution.push(itemsForPage);
-      remainingItems -= itemsForPage;
-    }
+    pages.push({
+      items: productsWithItems.slice(0, firstPageItems),
+      isFirstPage: true,
+      isLastPage: false, // First page never has footer in multi-page
+    });
+
+    // Second page: Always create second page for footer (even if no remaining items)
+    const remainingItems =
+      totalItems > FIRST_PAGE_MAX_ITEMS ? productsWithItems.slice(FIRST_PAGE_MAX_ITEMS) : [];
+
+    pages.push({
+      items: remainingItems,
+      isFirstPage: false,
+      isLastPage: true,
+    });
   }
 
-  const totalPages = pageDistribution.length;
+  const totalPages = pages.length;
   const pagePromises: Promise<{ imgData: string; imgWidth: number; imgHeight: number }>[] = [];
 
-  // Keep track of the start index for each page
-  let startIndex = 0;
-
-  // Generate each page
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-    // Get items for this page
-    const itemsOnThisPage = pageDistribution[pageIndex];
-    const endIndex = startIndex + itemsOnThisPage;
-    const pageItems = productsWithItems.slice(startIndex, endIndex);
-    const isLastPage = pageIndex === totalPages - 1;
+    const pageData = pages[pageIndex];
+    const pageItems = pageData.items;
+    const isFirstPage = pageData.isFirstPage;
+    const isLastPage = pageData.isLastPage;
 
-    // Calculate page height - adjust based on content
-    const baseHeight = 297; // A4 height in mm
-    const headerHeight = pageIndex === 0 ? 180 : 50; // First page has bigger header
-    const rowHeight = 25; // Height per table row in mm
-    const footerHeight = isLastPage ? 150 : 0; // Footer only on last page
+    // Calculate filler rows based on page type
+    let maxRowsForThisPage: number;
+    if (isFirstPage && isLastPage) {
+      // Single page - 12 rows total (≤12 items)
+      maxRowsForThisPage = MAX_ITEM_ROWS_PER_PAGE; // 12
+    } else if (isFirstPage) {
+      // First page of multi-page - 19 rows total (>12 items)
+      maxRowsForThisPage = 18;
+    } else {
+      // Second page - 21 rows total for footer alignment
+      maxRowsForThisPage = 21;
+    }
 
-    // Calculate actual content height (restrict to A4 height)
-    const contentHeight = Math.min(
-      baseHeight,
-      headerHeight + pageItems.length * rowHeight + footerHeight
-    );
+    const fillerRowCount = Math.max(0, maxRowsForThisPage - pageItems.length);
 
-    // Create temporary container for our HTML
+    // --- TABLE HTML ---
+    const htmlContent = `
+    <div style="width: 210mm; height: 297mm; box-sizing: border-box; padding: 10mm; background: #fff;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed;">
+        ${
+          isFirstPage
+            ? `
+        <!-- HEADER ROWS -->
+        <tbody>
+        <!-- Logo and Company Name Row -->
+        <tr style="height: 80px; border-top: 1.5px solid #ccc; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc;">
+          <td colspan="50" style="text-align: center; font-weight: bold; font-size: 18px; padding: 20px; vertical-align: middle;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+              <img src="/logo.png" alt="Logo" style="width: 80px; max-height: 60px; object-fit: contain;" />
+              <div>
+                <span style="font-size: 20px; font-weight: bold;">ARABIAN AUTO EQUIPMENTS AND PARTS TRADING (FZC)</span><br/>
+                <span style="font-size: 16px; font-weight: normal; direction: rtl;">العربية لتجارة معدات وقطع غيار السيارات ش.م.ح</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <!-- Title and TRN Row -->
+        <tr style="height: 30px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <td colspan="50" style="text-align: center; padding: 8px; vertical-align: middle;">
+            <span style="font-weight: bold; font-size: 13px; text-transform: uppercase;">${documentTitle}</span><br/>
+            <span style="font-size: 12px;">TRN NO: ${primaryAddress.transaction_no || ''}</span>
+          </td>
+        </tr>
+        <!-- Customer and Invoice Details Row -->
+        <tr style="height: 45px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <td colspan="25" style="vertical-align: top; padding: 20px; text-align: left;border-right: 1px solid #ccc;">
+            <div style=" text-transform: uppercase;">Customer Details:</div>
+            <div style="font-weight: bold;height:50px;">${customer?.name || ''}</div>
+            <div style="font-size: 12px;">TAX REG NO: <span style="font-weight: bold;padding-left:5px">${customer?.trn || ''}</span></div>
+            <div style="font-size: 12px; height:30px;text-transform:uppercase">ADDRESS: <span style="font-weight: bold;padding-left:5px">${invoice.ship_to || ''}</span></div>
+          </td>
+          <td colspan="25" style="vertical-align: top; padding: 20px; text-align: left;">
+            <div style="text-transform:uppercase;margin-bottom:5px">Invoice No: <span style="font-weight:bold;padding-left:5px">${invoice.invoice_number || ''}</span></div>
+            <div style="text-transform:uppercase;margin-bottom:5px">Invoice Date: <span style="font-weight:bold;padding-left:5px">${formatDate(formattedDate) || ''}</span></div>
+            <div style="text-transform:uppercase;margin-bottom:5px">Salesman: <span style="font-weight:bold;padding-left:5px">${salesPerson?.name || ''}</span></div>
+            <div style="text-transform:uppercase;margin-bottom:5px">Ship From: <span style="font-weight:bold;padding-left:5px">${invoice.ship_from || ''}</span></div>
+          </td>
+        </tr>
+        <!-- TABLE HEADINGS -->
+        <tr style="height: 32px; background: #fff; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <th colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">NO.</th>
+          <th colspan="6" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">PART NO.</th>
+          <th colspan="13" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">DESCRIPTION</th>
+          <th colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">QTY</th>
+          <th colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">RATE</th>
+          <th colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">AMOUNT</th>
+          <th colspan="3" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">VAT %</th>
+          <th colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">VAT</th>
+          <th colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">TOTAL AMOUNT</th>
+          <th colspan="6" style="padding: 8px; text-align: center;">REMARKS</th>
+        </tr>
+        </tbody>
+        `
+            : `
+        <!-- CONTINUATION PAGE HEADER -->
+        <tbody>
+        <tr style="height: 32px; background: #fff; border: 1.5px solid #ccc;">
+          <th colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">NO.</th>
+          <th colspan="6" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">PART NO.</th>
+          <th colspan="13" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">DESCRIPTION</th>
+          <th colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">QTY</th>
+          <th colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">RATE</th>
+          <th colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">AMOUNT</th>
+          <th colspan="3" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">VAT %</th>
+          <th colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">VAT</th>
+          <th colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">TOTAL AMOUNT</th>
+          <th colspan="6" style="padding: 8px; text-align: center;">REMARKS</th>
+        </tr>
+        </tbody>
+        `
+        }
+        <!-- ITEM ROWS -->
+        <tbody>
+        ${pageItems
+          .map((productItem, idx) => {
+            const { item, product } = productItem;
+            const invoiceTaxRate = invoice.tax_rate ? parseFloat(invoice.tax_rate.toString()) : 0;
+            const unitPrice = item.mrp
+              ? parseFloat(item.mrp.toString())
+              : parseFloat(item.unit_price?.toString() || '0');
+            const quantity = parseFloat(item.quantity.toString());
+            const amount = unitPrice * quantity;
+            const vatAmount = ((unitPrice * invoiceTaxRate) / 100) * quantity;
+            const totalAmount = parseFloat(item.total_price?.toString() || '0');
+            // Calculate correct item number across pages
+            let itemNumber = idx + 1;
+            for (let i = 0; i < pageIndex; i++) {
+              itemNumber += pages[i].items.length;
+            }
+            // Add border bottom to last item on first page when items > 18
+            const isLastItemOnFirstPageWithOverflow =
+              isFirstPage && !isLastPage && idx === pageItems.length - 1 && pageItems.length === 18;
+            const borderBottomStyle = isLastItemOnFirstPageWithOverflow
+              ? 'border-bottom: 1.5px solid #ccc;'
+              : '';
+            return `
+              <tr style="height: ${ITEM_ROW_HEIGHT_PX}px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; ${borderBottomStyle}">
+                <td colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${itemNumber}</td>
+                <td colspan="6" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${product?.partNo || ''}</td>
+                <td colspan="13" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${product?.description || '-'}</td>
+                <td colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${quantity}</td>
+                <td colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${unitPrice.toFixed(2)}</td>
+                <td colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${amount.toFixed(2)}</td>
+                <td colspan="3" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${invoiceTaxRate}</td>
+                <td colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${vatAmount.toFixed(2)}</td>
+                <td colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${totalAmount.toFixed(2)}</td>
+                <td colspan="6" style="padding: 8px; text-align: center;">${product?.brand || ''}</td>
+              </tr>
+            `;
+          })
+          .join('')}
+        <!-- FILLER ROWS -->
+        ${Array.from({ length: fillerRowCount })
+          .map((_, idx) => {
+            // Add border bottom only to the very last filler row on first page in multi-page PDF
+            const isLastFillerOnFirstPage =
+              isFirstPage && !isLastPage && idx === fillerRowCount - 1 && fillerRowCount > 0;
+            const borderBottomStyle = isLastFillerOnFirstPage
+              ? 'border-bottom: 1.5px solid #ccc;'
+              : '';
+            return `
+          <tr style="height: ${ITEM_ROW_HEIGHT_PX}px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; ${borderBottomStyle}">
+            <td colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="6" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="13" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="2" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="3" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="4" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="5" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="6" style="padding: 8px; text-align: center;">&nbsp;</td>
+          </tr>
+        `;
+          })
+          .join('')}
+        </tbody>
+        ${
+          isLastPage
+            ? `
+        <!-- FOOTER ROWS -->
+        <tbody>
+        <tr style="height: 40px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <td colspan="30" style="vertical-align: top; padding: 20px; padding-top: 10px; border-right: 1px solid #ccc;border-top: 1px solid #ccc;">
+          ${
+            documentTitle === 'Proforma Invoice'
+              ? `<p style="font-size: 12px;text-transform: uppercase;margin-bottom:0">Bank Details</p>
+<p style="font-size: 12px;text-transform: uppercase;margin-bottom:0">${invoiceData.primaryBankDetails?.name || 'N/A'}</p>
+<p style="font-size: 12px; white-space: pre-line;margin-top:0">${invoiceData.primaryBankDetails?.details || ''}</p>`
+              : `<div style="font-size: 12px;text-transform: uppercase;"><span style="font-weight: bold;">Terms & Conditions</span><br/>
+Claims for shortages or defects must be checked and confirmed at the time of receipt of goods.<br/><br/>
+Warranty coverage, if applicable, is limited to manufacturing defects and excludes damages caused by incorrect installation, misuse, or normal wear and tear.<br/></div>`
+          }
+          </td>
+          <td colspan="20" style="vertical-align: top; padding: 20px; border-top: 1px solid #ccc;">
+            <div style="font-size: 12px;">
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase;"><span>Subtotal:</span><span>${totals.subtotal} AED</span></div>
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase;"><span>${totals.taxType}:</span><span>${totals.taxAmount} AED</span></div>
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase;"><span>Discount:</span><span>${totals.discount} AED</span></div>
+              <div style="display: flex; justify-content: space-between;margin-bottom:5px;text-transform:uppercase; font-weight: bold;"><span>Invoice Total:</span><span>${totals.total} AED</span></div>
+            </div>
+          </td>
+        </tr>
+        <tr style="height: 32px; border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;">
+          <td colspan="15" style="text-align: center; font-size: 11px; vertical-align: bottom; border-right: 1px solid #ccc;">
+            <div style="border-top: 1px dotted #999; width: 90%; margin: 0 auto; padding-top: 5px; padding-bottom: 25px; font-size: 11px; color: #666; text-transform: uppercase;">Customer Signature</div>
+          </td>
+          <td colspan="20" style="text-align: center; font-size: 10px; vertical-align: bottom; border-right: 1px solid #ccc;">
+            <div style=" padding: 10px; font-size: 10px; color: #666;">
+              لا تتحمل الشركة أي مسؤولية عن الأموال المدفوعة مقابل هذه الفاتورة ما لم يتم إثبات ذلك من خلال إيصال رسمي من الشركة.<br/>
+              <span style="text-transform: uppercase;">Company accepts no responsibility for money paid against this invoice unless evidenced by an official receipt of the company.</span>
+            </div>
+          </td>
+          <td colspan="15" style="text-align: center; font-size: 11px; vertical-align: bottom;">
+            <div style="border-top: 1px dotted #999; width: 90%; margin: 0 auto; padding-top: 5px; padding-bottom: 10px; font-size: 11px; color: #666; text-transform: uppercase;">For Arabian Auto Equipments and Parts Trading (FZC)</div>
+          </td>
+        </tr>
+        <tr style="height: 28px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <td colspan="50" style="text-align: center; font-size: 10px; padding: 8px;">
+            ${primaryAddress.street || ''}, ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''} ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''} ${primaryAddress.phone_no ? 'Tel: ' + primaryAddress.phone_no : ''}
+          </td>
+        </tr>
+        </tbody>
+        `
+            : ''
+        }
+      </table>
+    </div>
+    `;
+
+    // --- RENDER TO CANVAS ---
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'fixed';
     tempDiv.style.top = '0';
     tempDiv.style.left = '0';
-    tempDiv.style.width = '210mm'; // A4 width
-    tempDiv.style.height = isLastPage ? '297mm' : `${contentHeight}mm`; // A4 height or content height
+    tempDiv.style.width = '210mm';
+    tempDiv.style.height = '297mm';
     tempDiv.style.overflow = 'hidden';
-    tempDiv.style.zIndex = '-1000'; // Hide it but still render
+    tempDiv.style.zIndex = '-1000';
     tempDiv.style.backgroundColor = 'white';
-    tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
-    tempDiv.style.padding = '10mm'; // Add padding for border space
-    tempDiv.style.boxSizing = 'border-box'; // Include padding in dimensions
-
-    // Generate the HTML content with exact template structure
-    const htmlContent = `
-    <div style="width: 100%; height: 100%; border: 2px solid #ccc; box-sizing: border-box;">
-    <div style="font-family: Arial, sans-serif; width: 100%;  color: #333; background-color: white;">
-    <div style="font-family: Arial, sans-serif; color: #333; background-color: white; border-bottom:none;">
-      ${
-        pageIndex === 0
-          ? `
-      <!-- Header Section - Only on first page -->
-      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; border-bottom: 1px solid #ccc;">
-        <div style="display:flex;justify-content:center;align-items:center;">
-          <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
-        </div>
-        <div style="width: 100%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h3 style="margin: 0;font-weight:bold; font-size: 22px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
-            <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold">
-              العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
-            </p>
-          </div>
-          
-        </div>
-      </div>
-
-      <!-- Invoice Title -->
-      <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; margin-bottom: 15px;">
-       <p style="font-weight: bold; font-size: 18px; margin-bottom: 0;"> ${documentDisplayTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}</p>
-        <p style="font-size: 14px; margin-top: 0; margin-bottom: 0;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
-      </div>
-
-      <!-- Customer Info Section (only on first page) -->
-      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px;">
-        <!-- Left side - Customer info -->
-        <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; border-right: 1px solid #ccc;">
-          <p style="margin: 0; font-weight: bold">Invoice To:<span style="margin: 5px 0">${customer?.name || 'N/A'}</span></p>
-          <p style="margin: 10px 0">
-            <span style="font-weight: bold">TAX Reg No:</span> ${customer?.trn || 'N/A'}
-          </p>
-          <p style="margin: 5px 0">
-            <span style="font-weight: bold">Ship to Country/Emirate:</span>
-            ${invoice.ship_to || 'N/A'}
-          </p>
-        </div>
-        
-        <!-- Right side - Invoice details -->
-        <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px">
-            <tr>
-              <td style="font-weight: bold; padding: 3px 0;">Invoice No:</td>
-              <td>${invoice.invoice_number || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: bold; padding: 3px 0;">Invoice date:</td>
-              <td>${formattedDate || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: bold; padding: 3px 0;">Salesman:</td>
-              <td>${salesPerson?.name || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: bold; padding: 3px 0;">Ship From:</td>
-              <td>${invoice.ship_from || 'N/A'}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-      `
-          : `
-      <!-- Simple page indicator for non-first pages -->
-      <div style="font-weight: bold; font-size: 18px;display:flex;justify-content:center;align-items:center; margin-bottom: 15px;">
-        ${documentDisplayTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}
-      </div>
-      `
-      }
-
-      <!-- Items Table - Compact margin on non-first pages -->
-      <div style="padding: ${pageIndex === 0 ? '10px' : '5px'} 0;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <thead>
-            <tr style="">
-              <th style="border: 1px solid #ccc;border-left:none; padding: 8px; text-align: left;">No.</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Part No.</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Description</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">QTY</th>
-              ${
-                !isDelivery
-                  ? `
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Rate</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Amount</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">VAT %</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">VAT</th>
-              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Total Amount</th>
-              <th style="border: 1px solid #ccc;border-right:none; padding: 8px; text-align: left;">Remarks</th>
-              `
-                  : ''
-              }
-            </tr>
-          </thead>
-          <tbody>
-            ${pageItems
-              .map((productItem, idx) => {
-                const { item, product } = productItem;
-                const invoiceTaxRate = invoice.tax_rate
-                  ? parseFloat(invoice.tax_rate.toString())
-                  : 0;
-                const unitPrice = item.mrp
-                  ? parseFloat(item.mrp.toString())
-                  : parseFloat(item.unit_price?.toString() || '0');
-                const quantity = parseFloat(item.quantity.toString());
-                const amount = unitPrice * quantity;
-                const vatAmount = ((unitPrice * invoiceTaxRate) / 100) * quantity;
-                const totalAmount = parseFloat(item.total_price?.toString() || '0');
-
-                const bgColor = (startIndex + idx) % 2 === 1 ? '#f9f9f9' : '#ffffff';
-                const itemNumber = startIndex + idx + 1;
-
-                return `
-              <tr style="background-color: ${bgColor};">
-                <td style="border: 1px solid #ddd;border-left:none; padding: ${pageIndex === 0 ? '8px' : '6px'};">${itemNumber}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.partNo || 'N/A'}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.name || 'N/A'}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${quantity.toString()}</td>
-                ${
-                  !isDelivery
-                    ? `
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${unitPrice.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${amount.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${invoiceTaxRate.toString()}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${vatAmount.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: ${pageIndex === 0 ? '8px' : '6px'};">${totalAmount.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd;border-right:none; padding: ${pageIndex === 0 ? '8px' : '6px'};">${product?.brand || 'N/A'}</td>
-
-                `
-                    : ''
-                }
-              </tr>
-              `;
-              })
-              .join('')}
-          </tbody>
-        </table>
-      </div>
-      
-      ${
-        isLastPage
-          ? `
-      <div style="position: absolute; bottom: 30px; left: 20px;right:20px;">
-        ${
-          !isDelivery
-            ? `
-        <!-- Totals Section - Only for non-delivery notes and last page -->
-        <div style="display: flex; justify-content: space-between; padding: 10px 20px; margin-top: 30px;">
-          <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc;">
-            ${
-              invoice.invoice_stage === 'PROFORMA'
-                ? `
-                <h4 style="margin-top: 0">Bank Details</h4>
-                <p style="font-weight: bold; margin-bottom: 5px;">${primaryBankDetails?.name || 'N/A'}</p>
-                <div style="font-size: 14px; white-space: pre-line;">
-                  ${primaryBankDetails?.details || 'N/A'}
-                </div>
-                `
-                : `
-                <h4 style="margin-top: 0">Terms & Conditions</h4>
-                <p style="font-size: 12px;">
-                 Claims for shortages or defects must be checked and confirmed at the time of receipt of goods.<br /> </p>
-                `
-            }
-          </div>
-          <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc;border-left:1px solid #ccc;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <tr>
-                <td style="font-weight: bold; padding: 3px 0;">Subtotal:</td>
-                <td style="text-align: right">${totals.subtotal} AED</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold; padding: 3px 0;">${totals.taxType}:</td>
-                <td style="text-align: right">${totals.taxAmount} AED</td>
-              </tr>
-              <tr style="padding-bottom: 10px;">
-                <td style="font-weight: bold; padding: 3px 0;">Discount:</td>
-                <td style="text-align: right">${totals.discount} AED</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold; padding-top: 8px;">Invoice Total:</td>
-                <td style="text-align: right; font-weight: bold">${totals.total} AED</td>
-              </tr>
-            </table>
-          </div>
-        </div>
-        `
-            : ''
-        }
-        
-        <!-- Signature section - only on last page -->
-        
-        <div style="display: flex; justify-content: space-between; margin-top: 40px; padding: 10px 20px;">
-          <div>
-            <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
-              Customer Signature
-            </div>
-          </div>
-          <div>
-            <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
-              For Arabian Auto Equipments and Parts Trading (FZC)
-            </div>
-          </div>
-        </div>
-        
-          <div style="border-top: 1px solid #ccc;padding:0px 20px; padding-bottom:10px;font-size: 12px; color: #999; display:flex;justify-content:center;align-items:center; line-height: 1; margin: 10px 20px; text-align:center;">
-              
-              <div style="text-align: center;">
-                  <div style="text-align: center; font-size: 12px; padding:0px 20px;text-transform: capitalize;line-height: 1.5;">
-                    ${
-                      primaryAddress
-                        ? `
-                      ${primaryAddress.street || ''}, 
-                      ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}
-                      ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}<br>
-                      ${primaryAddress.phone_no ? `Tel: ${primaryAddress.phone_no}` : ''}
-                    `
-                        : ''
-                    }
-                  </div>
-              </div>
-          
-        </div>
-      </div>
-      `
-          : ''
-      }
-    </div>
-    </div>
-    </div>
-    `;
-
-    // Add the content to the temporary div
+    tempDiv.style.boxSizing = 'border-box';
     tempDiv.innerHTML = htmlContent;
     document.body.appendChild(tempDiv);
 
-    // Capture this page with html2canvas
     const pagePromise = html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
@@ -461,50 +441,31 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<stri
       allowTaint: true,
       backgroundColor: '#ffffff',
     }).then(canvas => {
-      // Remove the temporary element after capturing
       document.body.removeChild(tempDiv);
-
-      // Calculate dimensions
-      const imgWidth = 210; // A4 width in mm
-      // const pageHeight = 297; // A4 height in mm
+      const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      // Return just the minimum data needed for PDF creation
       return {
         imgData: canvas.toDataURL('image/jpeg', 0.95),
         imgWidth: imgWidth,
         imgHeight: imgHeight,
       };
     });
-
     pagePromises.push(pagePromise);
-
-    // Update startIndex for next page
-    startIndex = endIndex;
   }
 
-  // Wait for all pages to be rendered
+  // Wait for all pages
   const pageResults = await Promise.all(pagePromises);
-
   try {
-    // Create PDF with all pages
     const pdf = new jsPDF('p', 'mm', 'a4');
-
     for (let i = 0; i < pageResults.length; i++) {
-      // Add a new page for all pages except the first one
       if (i > 0) {
         pdf.addPage();
       }
-
-      // Add image to PDF - pass dimensions correctly
       const { imgData, imgWidth, imgHeight } = pageResults[i];
       pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
     }
-
-    // Generate blob URL for the final PDF
     const pdfBlob = pdf.output('blob');
     const blobUrl = URL.createObjectURL(pdfBlob);
-
     return blobUrl;
   } catch (error) {
     console.error('Error generating PDF:', error);
@@ -532,227 +493,210 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
   const { purchase, supplier, primaryAddress, productsWithItems, formattedDate, documentTitle } =
     purchaseData;
 
-  // Split products into pages to handle pagination
-  const ITEMS_PER_PAGE_FIRST = 15; // More items on first page for purchase orders
-  const ITEMS_PER_PAGE_OTHER = 20; // More items on subsequent pages
+  // --- PURCHASE TABLE LAYOUT CONSTANTS ---
+  const ITEM_ROW_HEIGHT_PX = 32; // each item row height
+  const MAX_ITEM_ROWS_PER_PAGE = 12; // max items for single page
 
-  // Calculate page distribution
-  let pageDistribution: number[] = [];
-  let remainingItems = productsWithItems.length;
+  // Calculate pagination properly for multi-page purchase orders
+  const totalItems = productsWithItems.length;
+  let pages: Array<{ items: typeof productsWithItems; isFirstPage: boolean; isLastPage: boolean }> =
+    [];
 
-  if (remainingItems <= ITEMS_PER_PAGE_FIRST) {
-    // Only one page needed
-    pageDistribution = [remainingItems];
+  if (totalItems <= MAX_ITEM_ROWS_PER_PAGE) {
+    // Single page - show header, items, and footer (≤12 items)
+    pages = [{ items: productsWithItems, isFirstPage: true, isLastPage: true }];
   } else {
-    // First page
-    pageDistribution.push(ITEMS_PER_PAGE_FIRST);
-    remainingItems -= ITEMS_PER_PAGE_FIRST;
+    // Multi-page logic (>12 items)
+    // First page: Show up to 18 items without footer
+    const FIRST_PAGE_MAX_ITEMS = 18;
+    const firstPageItems = Math.min(FIRST_PAGE_MAX_ITEMS, totalItems);
 
-    // Additional pages
-    while (remainingItems > 0) {
-      const itemsForPage = Math.min(ITEMS_PER_PAGE_OTHER, remainingItems);
-      pageDistribution.push(itemsForPage);
-      remainingItems -= itemsForPage;
-    }
+    pages.push({
+      items: productsWithItems.slice(0, firstPageItems),
+      isFirstPage: true,
+      isLastPage: false, // First page never has footer in multi-page
+    });
+
+    // Second page: Always create second page for footer (even if no remaining items)
+    const remainingItems =
+      totalItems > FIRST_PAGE_MAX_ITEMS ? productsWithItems.slice(FIRST_PAGE_MAX_ITEMS) : [];
+
+    pages.push({
+      items: remainingItems,
+      isFirstPage: false,
+      isLastPage: true,
+    });
   }
 
-  const totalPages = pageDistribution.length;
+  const totalPages = pages.length;
   const pagePromises: Promise<{ imgData: string; imgWidth: number; imgHeight: number }>[] = [];
 
-  // Keep track of the start index for each page
-  let startIndex = 0;
-
-  // Generate each page
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-    // Get items for this page
-    const itemsOnThisPage = pageDistribution[pageIndex];
-    const endIndex = startIndex + itemsOnThisPage;
-    const pageItems = productsWithItems.slice(startIndex, endIndex);
-    const isLastPage = pageIndex === totalPages - 1;
+    const pageData = pages[pageIndex];
+    const pageItems = pageData.items;
+    const isFirstPage = pageData.isFirstPage;
+    const isLastPage = pageData.isLastPage;
 
-    // Calculate page height - adjust based on content
-    const baseHeight = 297; // A4 height in mm
-    const headerHeight = pageIndex === 0 ? 180 : 50; // First page has bigger header
-    const rowHeight = 25; // Height per table row in mm
-    const footerHeight = isLastPage ? 100 : 0; // Footer only on last page
+    // Calculate filler rows based on page type
+    let maxRowsForThisPage: number;
+    if (isFirstPage && isLastPage) {
+      // Single page - increase rows to push footer to bottom
+      maxRowsForThisPage = 17; // Increased from 12 to push footer down
+    } else if (isFirstPage) {
+      // First page of multi-page - 18 rows total (>12 items)
+      maxRowsForThisPage = 18;
+    } else {
+      // Second page - increase rows to push footer to bottom
+      maxRowsForThisPage = 25; // Increased from 21 to push footer down
+    }
 
-    // Calculate actual content height (restrict to A4 height)
-    const contentHeight = Math.min(
-      baseHeight,
-      headerHeight + pageItems.length * rowHeight + footerHeight
-    );
+    const fillerRowCount = Math.max(0, maxRowsForThisPage - pageItems.length);
 
-    // Create temporary container for our HTML
+    // --- TABLE HTML ---
+    const htmlContent = `
+    <div style="width: 210mm; height: 297mm; box-sizing: border-box; padding: 10mm; background: #fff;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed;">
+        ${
+          isFirstPage
+            ? `
+        <!-- HEADER ROWS -->
+        <tbody>
+        <!-- Logo and Company Name Row -->
+        <tr style="height: 80px; border-top: 1.5px solid #ccc; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc;">
+          <td colspan="50" style="text-align: center; font-weight: bold; font-size: 18px; padding: 20px; vertical-align: middle;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+              <img src="/logo.png" alt="Logo" style="width: 80px; max-height: 60px; object-fit: contain;" />
+              <div>
+                ARABIAN AUTO EQUIPMENTS AND PARTS TRADING (FZC)<br/>
+                <span style="font-size: 16px; font-weight: normal; direction: rtl;">العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <!-- Title and TRN Row -->
+        <tr style="height: 30px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <td colspan="50" style="text-align: center; padding: 8px; vertical-align: middle;">
+            <span style="font-weight: bold; font-size: 13px; text-transform: uppercase;">${documentTitle}</span><br/>
+            <span style="font-size: 12px;">TRN NO: ${primaryAddress.transaction_no || ''}</span>
+          </td>
+        </tr>
+        <!-- Customer and Invoice Details Row -->
+        <tr style="height: 45px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <td colspan="25" style="vertical-align: top; padding: 20px; padding-top:10px; text-align: left;border-right: 1px solid #ccc;">
+            <div style=" text-transform: uppercase;">Customer Details:</div>
+            <div style="font-weight: bold;height:50px;text-transform:uppercase">${supplier?.name || ''}</div>
+            <div style="font-size: 12px;">TAX REG NO: <span style="font-weight: bold;padding-left:5px">${supplier?.tax_registration_number || ''}</span></div>
+            <div style="font-size: 12px; height:30px;">ADDRESS: <span style="font-weight: bold;padding-left:5px">${primaryAddress.transaction_no || ''}</span></div>
+          </td>
+          <td colspan="25" style="vertical-align: top; padding: 20px; padding-top:10px; text-align: left;">
+            <div style="text-transform:uppercase;margin-bottom:5px">Purchase Order No: <span style="font-weight:bold;padding-left:5px">${purchase.purchase_number || ''}</span></div>
+            <div style="text-transform:uppercase;margin-bottom:5px">Purchase Date: <span style="font-weight:bold;padding-left:5px">${formatDate(formattedDate) || ''}</span></div>
+            <div style="text-transform:uppercase;margin-bottom:5px">Ship From: <span style="font-weight:bold;padding-left:5px">${purchase.ship_from || ''}</span></div>
+          </td>
+        </tr>
+        <!-- TABLE HEADINGS -->
+        <tr style="height: 32px; background: #fff; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <th colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">NO.</th>
+          <th colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">PART NO.</th>
+          <th colspan="20" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">DESCRIPTION</th>
+          <th colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">QTY</th>
+        </tr>
+        </tbody>
+        `
+            : `
+        <!-- CONTINUATION PAGE HEADER -->
+        <tbody>
+        <tr style="height: 32px; background: #fff; border: 1.5px solid #ccc;">
+          <th colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">NO.</th>
+          <th colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">PART NO.</th>
+          <th colspan="20" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">DESCRIPTION</th>
+          <th colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px 2px; text-align: center;">QTY</th>
+        </tr>
+        </tbody>
+        `
+        }
+        <!-- ITEM ROWS -->
+        <tbody>
+        ${pageItems
+          .map((productItem, idx) => {
+            // Calculate correct item number across pages
+            let itemNumber = idx + 1;
+            for (let i = 0; i < pageIndex; i++) {
+              itemNumber += pages[i].items.length;
+            }
+            // Add border bottom to last item on first page when items > 18
+            const isLastItemOnFirstPageWithOverflow =
+              isFirstPage && !isLastPage && idx === pageItems.length - 1 && pageItems.length === 18;
+            const borderBottomStyle = isLastItemOnFirstPageWithOverflow
+              ? 'border-bottom: 1.5px solid #ccc;'
+              : '';
+            return `
+              <tr style="height: ${ITEM_ROW_HEIGHT_PX}px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; ${borderBottomStyle}">
+                <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${itemNumber}</td>
+                <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${productItem.product?.partNo || ''}</td>
+                <td colspan="20" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${productItem.product?.description || ''}</td>
+                <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">${productItem.item.quantity}</td>
+              </tr>
+            `;
+          })
+          .join('')}
+        <!-- FILLER ROWS -->
+        ${Array.from({ length: fillerRowCount })
+          .map((_, idx) => {
+            // Add border bottom only to the very last filler row on first page in multi-page PDF
+            const isLastFillerOnFirstPage =
+              isFirstPage && !isLastPage && idx === fillerRowCount - 1 && fillerRowCount > 0;
+            const borderBottomStyle = isLastFillerOnFirstPage
+              ? 'border-bottom: 1.5px solid #ccc;'
+              : '';
+            return `
+          <tr style="height: ${ITEM_ROW_HEIGHT_PX}px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; ${borderBottomStyle}">
+            <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="10" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="20" style="border-right: 1.5px solid #ccc; padding: 8px; text-align: center;">&nbsp;</td>
+            <td colspan="10" style="padding: 8px; text-align: center;">&nbsp;</td>
+          </tr>
+        `;
+          })
+          .join('')}
+        </tbody>
+        ${
+          isLastPage
+            ? `
+        <!-- FOOTER ROWS -->
+        <tbody>
+        <tr style="height: 32px; border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;border-top: 1px solid #ccc;">
+          <td colspan="25" style="text-align: center; font-size: 11px; vertical-align: bottom; border-right: 1px solid #ccc;padding-top:50px;">
+            <div style="border-top: 1px dotted #999; width: 90%; margin: 0 auto; padding-top: 5px; padding-bottom: 25px; font-size: 11px; color: #666; text-transform: uppercase;">Received By</div>
+          </td>
+          <td colspan="25" style="text-align: center; font-size: 11px; vertical-align: bottom;padding-top:50px;">
+            <div style="border-top: 1px dotted #999; width: 90%; margin: 0 auto; padding-top: 5px; padding-bottom: 25px; font-size: 11px; color: #666; text-transform: uppercase;">Authorized Signatory</div>
+          </td>
+        </tr>
+        <tr style="height: 28px; border-left: 1.5px solid #ccc; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc;">
+          <td colspan="50" style="text-align: center; font-size: 10px; padding: 8px;">
+            ${primaryAddress.street || ''}, ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''} ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''} ${primaryAddress.phone_no ? 'Tel: ' + primaryAddress.phone_no : ''}
+          </td>
+        </tr>
+        </tbody>
+        `
+            : ''
+        }
+      </table>
+    </div>
+    `;
+
+    // --- RENDER TO CANVAS ---
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'fixed';
     tempDiv.style.top = '0';
     tempDiv.style.left = '0';
-    tempDiv.style.width = '210mm'; // A4 width
-    tempDiv.style.height = isLastPage ? '297mm' : `${contentHeight}mm`; // A4 height or content height
+    tempDiv.style.width = '210mm';
+    tempDiv.style.height = '297mm';
     tempDiv.style.overflow = 'hidden';
-    tempDiv.style.zIndex = '-1000'; // Hide it but still render
+    tempDiv.style.zIndex = '-1000';
     tempDiv.style.backgroundColor = 'white';
-    tempDiv.style.position = 'relative'; // Position relative for absolute positioning inside
-    tempDiv.style.padding = '10mm'; // Add padding for border space
-    tempDiv.style.boxSizing = 'border-box'; // Include padding in dimensions
-
-    // Generate the HTML content with exact template structure
-    const htmlContent = `
-    <div style="width: 100%; height: 100%; border: 2px solid #ccc; box-sizing: border-box;">
-    <div style="font-family: Arial, sans-serif; color: #333; background-color: white; border-bottom:none;width:100%;">
-      ${
-        pageIndex === 0
-          ? `
-      <!-- Header Section - Only on first page -->
-      <div style="display: flex;gap:20px; justify-content: start; padding: 20px; border-bottom: 1px solid #ccc;">
-        <div style="display:flex;justify-content:center;align-items:center;">
-          <img src="/logo.png" alt="Logo" style="width: 100px; max-height: 80px; object-fit: contain" />
-        </div>
-        <div style="width: 100%; background-color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h3 style="margin: 0;font-weight:bold; font-size: 22px">Arabian Auto Equipments and Parts Trading (FZC)</h3>
-            <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold">
-              العربية لتجارة معدات وقطع غيار السيارات (ش.م.ح)
-            </p>
-          </div>
-          
-        </div>
-      </div>
-
-      <!-- Purchase Order Title -->
-      <div style="display:flex;justify-content:center;flex-direction:column;align-items:center; margin-bottom: 15px;">
-        <p style="font-weight: bold; font-size: 18px; margin-bottom: 0;">${documentTitle} ${totalPages > 1 ? `(Page ${pageIndex + 1} of ${totalPages})` : ''}</p>
-        <p style="font-size: 14px; margin-top: 0; margin-bottom: 0;">${primaryAddress.transaction_no ? `TRN NO: ${primaryAddress.transaction_no}` : ''}</p>
-      </div>
-
-      <!-- Supplier Info Section (only on first page) -->
-      <div style="display: flex; justify-content: space-between;margin-top:20px; margin-bottom: 20px;">
-        <!-- Left side - Supplier info -->
-        <div style="width: 50%; padding: 20px; border-top: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;">
-          <p style="margin: 0; font-weight: bold">Order To:<span style="margin: 5px 0">${supplier?.name || 'N/A'}</span></p>
-          <p style="margin: 10px 0">
-            <span style="font-weight: bold">TAX Reg No:</span> ${supplier?.tax_registration_number || 'N/A'}
-          </p>
-          <p style="margin: 5px 0">
-            <span style="font-weight: bold">Address:</span>
-            ${supplier?.address || 'N/A'}
-          </p>
-          <p style="margin: 5px 0">
-            <span style="font-weight: bold">Contact:</span>
-            ${supplier?.contact_number || 'N/A'}
-          </p>
-        </div>
-        
-        <!-- Right side - Purchase details -->
-        <div style="width: 50%;  padding: 20px; border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px">
-            <tr>
-              <td style="font-weight: bold; padding: 3px 0;">PO No:</td>
-              <td>${purchase.purchase_number || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: bold; padding: 3px 0;">PO date:</td>
-              <td>${formattedDate || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: bold; padding: 3px 0;">Ship From:</td>
-              <td>${purchase.ship_from || 'N/A'}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-      `
-          : `
-      <!-- Continued Page Header -->
-      <div style="font-weight: bold; font-size: 16px; padding: 10px 0;">
-        ${documentTitle} - Continued (Page ${pageIndex + 1} of ${totalPages})
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-        <div>PO No: ${purchase.purchase_number || 'N/A'}</div>
-        <div>Date: ${formattedDate || 'N/A'}</div>
-      </div>
-      `
-      }
-
-      <!-- Items Table -->
-      <div style="margin-bottom: 20px; overflow: hidden;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <thead>
-            <tr style="">
-              <th style="padding: 8px; text-align: left; border: 1px solid #ccc; border-left:none;">S.No</th>
-              <th style="padding: 8px; text-align: left; border: 1px solid #ccc;">Part No</th>
-              <th style="padding: 8px; text-align: left; border: 1px solid #ccc; width: 40%;">Description</th>
-              <th style="padding: 8px; text-align: center; border: 1px solid #ccc;border-right:none;">Qty</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${pageItems
-              .map((item, index) => {
-                const itemNumber = startIndex + index + 1;
-                return `
-              <tr>
-                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;border-left:none;">${itemNumber}</td>
-                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;">${
-                  item.product?.partNo || 'N/A'
-                }</td>
-                <td style="padding: 8px; text-align: left; border: 1px solid #ccc;">
-                  ${item.product?.name || 'N/A'}
-                  ${item.product?.brand ? `<br><small>Brand: ${item.product.brand}</small>` : ''}
-                </td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;border-right:none;">
-                  ${item.item.quantity || 0}
-                </td>
-              </tr>
-            `;
-              })
-              .join('')}
-          </tbody>
-        </table>
-      </div>
-
-      ${
-        isLastPage
-          ? `
-      <div style="position: absolute; bottom: 40px; left: 20px;right:20px;">
-      <div style="display: flex; justify-content: space-between; margin-top: 40px; padding: 10px 20px;">
-          <div>
-            <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
-              Received By
-            </div>
-          </div>
-          <div>
-            <div style="border-top: 1px dotted #999; width: 200px; text-align: center; padding-top: 5px; font-size: 12px; color: #666;">
-              Authorized Signatory
-            </div>
-          </div>
-        </div>
-        <div style="border-top: 1px solid #ccc;padding:0px 20px; padding-bottom:10px;font-size: 12px; color: #999; display:flex;justify-content:center;align-items:center; line-height: 1; margin: 10px 20px; text-align:center;">
-              
-              <div style="text-align: center;">
-                  <div style="text-align: center; font-size: 12px; padding:0px 20px;text-transform: capitalize;line-height: 1.5;">
-                    ${
-                      primaryAddress
-                        ? `
-                      ${primaryAddress.street || ''}, 
-                      ${primaryAddress.city || ''}${primaryAddress.state ? ', ' + primaryAddress.state : ''}
-                      ${primaryAddress.country || ''} ${primaryAddress.postal_code || ''}<br>
-                      ${primaryAddress.phone_no ? `Tel: ${primaryAddress.phone_no}` : ''}
-                    `
-                        : ''
-                    }
-                  </div>
-              </div>
-          
-        </div>
-      </div>
-      
-      `
-          : ''
-      }
-    </div>
-    </div>
-    `;
-
+    tempDiv.style.boxSizing = 'border-box';
     tempDiv.innerHTML = htmlContent;
     document.body.appendChild(tempDiv);
 
@@ -780,9 +724,6 @@ export async function generatePurchasePDF(purchaseData: PurchaseData): Promise<s
     });
 
     pagePromises.push(pagePromise);
-
-    // Update startIndex for next page
-    startIndex = endIndex;
   }
 
   // Process all pages

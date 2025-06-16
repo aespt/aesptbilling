@@ -115,7 +115,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     } else if (invoiceStage === 'PROFORMA' || invoice.invoice_stage === 'PROFORMA') {
       documentTitle = 'Proforma Invoice';
     } else if (invoiceStage === 'SALE' || invoice.invoice_stage === 'SALE') {
-      documentTitle = 'Sale Invoice';
+      documentTitle = 'Tax Invoice';
     }
 
     // Calculate totals

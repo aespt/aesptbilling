@@ -46,7 +46,7 @@ export function generatePasswordResetEmail(to: string, token: string): EmailOpti
     to,
     subject: 'AESPT - Reset Your Password',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="font-family: Helvetica, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(to right, #3b82f6, #4f46e5); padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0;">Reset Your Password</h1>
         </div>
