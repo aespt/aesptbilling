@@ -14,8 +14,8 @@ const productFormSchema = z.object({
     .string()
     .min(1, 'Part number is required')
     .refine(val => val.trim().length > 0, { message: 'Part number cannot be empty' }),
-  partName: z.string().min(2, 'Product name must be at least 2 characters'),
-  description: z.string().optional(),
+  partName: z.string().optional(),
+  description: z.string().min(1, 'Description is required'),
   price: z.preprocess(
     val => (val === '' ? 0 : Number(val)),
     z.number().min(0.01, 'Price must be greater than zero')
@@ -108,8 +108,8 @@ export default function AddProduct({
       // Convert form data to match the API expectations
       const productData = {
         part_no: data.partNo,
-        name: data.partName,
-        description: data.description || '',
+        name: data.description || '', // Use description as product name
+        description: data.description,
         price: data.price,
         mrp: data.mrp,
         count: data.count,
@@ -143,7 +143,7 @@ export default function AddProduct({
 
         // Call the callback if provided
         if (onProductUpdated) {
-          onProductUpdated(data.partName);
+          onProductUpdated(data.description || '');
         }
       } else {
         // Call the API to create a new product
@@ -177,7 +177,7 @@ export default function AddProduct({
 
         // Call the callback if provided
         if (onProductAdded) {
-          onProductAdded(data.partName);
+          onProductAdded(data.description || '');
         }
       }
     } catch (error: unknown) {
@@ -240,7 +240,7 @@ export default function AddProduct({
             <ErrorMessage message={errors.partNo?.message} />
           </div>
 
-          <div className="space-y-1">
+          <div className="hidden space-y-1">
             <label htmlFor="partName" className="text-sm font-medium text-gray-700">
               Product Name
             </label>

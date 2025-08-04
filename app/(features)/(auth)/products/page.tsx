@@ -323,7 +323,6 @@ export default function ProductsPage() {
                 <TableHead>
                   <TableRow className="bg-gray-100">
                     <TableCell className="font-semibold">Part No</TableCell>
-                    <TableCell className="font-semibold">Name</TableCell>
                     <TableCell className="font-semibold">Description</TableCell>
                     <TableCell className="font-semibold">Price</TableCell>
                     <TableCell className="font-semibold">Selling Price</TableCell>
@@ -343,7 +342,6 @@ export default function ProductsPage() {
                     products.map(product => (
                       <TableRow key={product.id} className="transition-colors hover:bg-gray-50/50">
                         <TableCell className="text-gray-700">{product.partNo}</TableCell>
-                        <TableCell className="text-gray-700">{product.name}</TableCell>
                         <TableCell className="text-gray-600">
                           {product.description || '-'}
                         </TableCell>

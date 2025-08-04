@@ -9,8 +9,8 @@ export const ProductSchema = BaseSchema.extend({
     .string()
     .min(1, { message: 'Part number is required' })
     .refine(val => val.trim().length > 0, { message: 'Part number cannot be empty' }),
-  name: z.string().min(2, { message: 'Product name must be at least 2 characters' }),
-  description: z.string().optional(),
+  name: z.string(),
+  description: z.string().min(2, { message: 'Product Description must be at least 2 characters' }),
   price: z.number().positive({ message: 'Price must be positive' }),
   brand: z.string().optional(),
   mrp: z.number().positive({ message: 'MRP must be positive' }),
