@@ -101,12 +101,10 @@ export default function CreatePurchaseEntryPage() {
     // Ensure discount doesn't exceed subtotal
     const discountAmount = Math.min(discountValue, subtotal);
 
-    // Calculate tax using tax_rate as a direct value (no longer percentage)
+    // Calculate tax using tax_rate as a percentage
     const taxableAmount = subtotal - discountAmount;
-    const taxValue = typeof formData.tax_rate === 'string' ? 0 : Number(formData.tax_rate) || 0;
-
-    // Apply tax as absolute value
-    const taxAmount = taxValue;
+    const taxRate = typeof formData.tax_rate === 'string' ? 0 : Number(formData.tax_rate) || 0;
+    const taxAmount = (taxableAmount * taxRate) / 100;
 
     const total = taxableAmount + taxAmount;
 

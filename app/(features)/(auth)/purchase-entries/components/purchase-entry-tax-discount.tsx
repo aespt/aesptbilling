@@ -25,7 +25,7 @@ export default function PurchaseEntryTaxDiscount({
   const [isDiscountFocused, setIsDiscountFocused] = useState(false);
 
   // Local state to track input values
-  const [taxValue, setTaxValue] = useState<string | number>(formData.tax_rate ?? 0);
+  const [taxValue, setTaxValue] = useState<string | number>(formData.tax_rate ?? 5);
   const [discountValue, setDiscountValue] = useState<string | number>(formData.discount_rate ?? 0);
 
   // Sync local state with formData when it changes
@@ -71,16 +71,12 @@ export default function PurchaseEntryTaxDiscount({
     // Update specific field
     if (name === 'tax_rate') {
       updatedFormData.tax_rate = numericValue;
+      updatedFormData.vat_percentage = numericValue;
     } else if (name === 'discount_rate') {
       updatedFormData.discount_rate = numericValue;
       // For discount_rate, also update discount_value to ensure consistency
       updatedFormData.discount_value = numericValue;
       updatedFormData.discount_type = 'FIXED';
-    }
-
-    // For tax_rate, ensure proper tax field is updated
-    if (name === 'tax_rate') {
-      updatedFormData.vat_percentage = 0; // We're using absolute values
     }
 
     // Update the form data
@@ -111,7 +107,7 @@ export default function PurchaseEntryTaxDiscount({
           <div className="mb-4 w-full px-2 sm:mb-0 sm:w-1/2">
             <div className="space-y-2">
               <Typography variant="subtitle2" className="font-medium text-gray-700">
-                Tax Amount
+                Tax Percentage
               </Typography>
               <div>
                 <TextField
@@ -121,7 +117,7 @@ export default function PurchaseEntryTaxDiscount({
                   type="number"
                   InputProps={{
                     inputProps: { min: 0, step: 0.01 },
-                    endAdornment: <div className="pr-2">AED</div>,
+                    endAdornment: <div className="pr-2">%</div>,
                   }}
                   placeholder="0"
                   variant="outlined"

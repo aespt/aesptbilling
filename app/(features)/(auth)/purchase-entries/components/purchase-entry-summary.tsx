@@ -41,10 +41,10 @@ export default function PurchaseEntrySummary({
     const discountAmount = Math.min(discountValue, itemsSubtotal);
     setDiscount(discountAmount);
 
-    // Calculate tax - directly use the tax_rate as an absolute value
+    // Calculate tax - use tax_rate as a percentage
     const taxableAmount = itemsSubtotal - discountAmount;
-    const taxValue = Number(formData.tax_rate || 0);
-    const taxAmount = taxValue;
+    const taxRate = Number(formData.tax_rate || 0);
+    const taxAmount = (taxableAmount * taxRate) / 100;
     setTax(taxAmount);
 
     // Calculate total
