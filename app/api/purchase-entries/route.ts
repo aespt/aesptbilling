@@ -103,7 +103,12 @@ export async function GET(request: NextRequest) {
         tax_type: PurchaseEntriesTable.tax_type,
         tax_rate: PurchaseEntriesTable.tax_rate,
         sub_total: PurchaseEntriesTable.sub_total,
+        discount: PurchaseEntriesTable.discount,
         total: PurchaseEntriesTable.total,
+        tax_amount:
+          sql<string>`(${PurchaseEntriesTable.total})::numeric - (${PurchaseEntriesTable.sub_total})::numeric + (${PurchaseEntriesTable.discount})::numeric`.as(
+            'tax_amount'
+          ),
         created_at: PurchaseEntriesTable.created_at,
         ship_from: PurchaseEntriesTable.ship_from,
         purchase_type: PurchaseEntriesTable.purchase_type,

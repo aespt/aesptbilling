@@ -1,4 +1,4 @@
-import { eq, and, gte, lt, like, type SQLWrapper } from 'drizzle-orm';
+import { eq, and, gte, lt, like, type SQLWrapper, sql } from 'drizzle-orm';
 import { Workbook } from 'exceljs';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -91,6 +91,12 @@ export async function GET(request: NextRequest) {
         purchaseentry_date: PurchaseEntriesTable.purchaseentry_date,
         ship_from: PurchaseEntriesTable.ship_from,
         purchase_type: PurchaseEntriesTable.purchase_type,
+        sub_total: PurchaseEntriesTable.sub_total,
+        discount: PurchaseEntriesTable.discount,
+        tax_amount:
+          sql<string>`(${PurchaseEntriesTable.total})::numeric - (${PurchaseEntriesTable.sub_total})::numeric + (${PurchaseEntriesTable.discount})::numeric`.as(
+            'tax_amount'
+          ),
         total: PurchaseEntriesTable.total,
         supplier_id: PurchaseEntriesTable.supplier_id,
         supplier_name: SuppliersTable.name,
@@ -116,6 +122,9 @@ export async function GET(request: NextRequest) {
       { header: 'Date', key: 'purchaseentry_date', width: 15 },
       { header: 'Supplier', key: 'supplier_name', width: 25 },
       { header: 'Ship From', key: 'ship_from', width: 20 },
+      { header: 'Subtotal', key: 'sub_total', width: 15 },
+      { header: 'Discount', key: 'discount', width: 15 },
+      { header: 'Tax Amount', key: 'tax_amount', width: 15 },
       { header: 'Total', key: 'total', width: 15 },
     ];
 
@@ -134,14 +143,20 @@ export async function GET(request: NextRequest) {
         purchaseentry_date: entry.purchaseentry_date,
         supplier_name: entry.supplier_name,
         ship_from: entry.ship_from,
-        total: entry.total,
+        sub_total: parseFloat(entry.sub_total),
+        discount: parseFloat(entry.discount),
+        tax_amount: parseFloat(entry.tax_amount),
+        total: parseFloat(entry.total),
       });
     });
 
     // Format the date column to show as date
     worksheet.getColumn('purchaseentry_date').numFmt = 'dd/mm/yyyy';
 
-    // Format the total column as currency
+    // Format the currency columns
+    worksheet.getColumn('sub_total').numFmt = '#,##0.00';
+    worksheet.getColumn('discount').numFmt = '#,##0.00';
+    worksheet.getColumn('tax_amount').numFmt = '#,##0.00';
     worksheet.getColumn('total').numFmt = '#,##0.00';
 
     // Generate Excel buffer

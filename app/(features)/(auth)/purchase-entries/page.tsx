@@ -54,6 +54,8 @@ interface PurchaseEntry {
     name: string;
     address: string;
   };
+  sub_total: string;
+  tax_amount: string;
   total: string;
 }
 
@@ -323,6 +325,16 @@ export default function PurchaseEntriesListPage() {
                 <TableCell>Purchase Type</TableCell>
                 <TableCell>
                   <TableSortLabel
+                    active={sort.field === 'sub_total'}
+                    direction={sort.field === 'sub_total' ? sort.direction : 'asc'}
+                    onClick={() => handleSortChange('sub_total')}
+                  >
+                    Subtotal
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Tax Amount</TableCell>
+                <TableCell>
+                  <TableSortLabel
                     active={sort.field === 'total'}
                     direction={sort.field === 'total' ? sort.direction : 'asc'}
                     onClick={() => handleSortChange('total')}
@@ -335,13 +347,13 @@ export default function PurchaseEntriesListPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={8} align="center">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : purchaseEntries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={8} align="center">
                     No purchase entries found
                   </TableCell>
                 </TableRow>
@@ -362,7 +374,9 @@ export default function PurchaseEntriesListPage() {
                     <TableCell>{purchaseEntry.supplier.name}</TableCell>
                     <TableCell>{purchaseEntry.ship_from}</TableCell>
                     <TableCell>{purchaseEntry.purchase_type}</TableCell>
-                    <TableCell>${parseFloat(purchaseEntry.total).toFixed(2)}</TableCell>
+                    <TableCell>{parseFloat(purchaseEntry.sub_total).toFixed(2)} AED</TableCell>
+                    <TableCell>{parseFloat(purchaseEntry.tax_amount).toFixed(2)} AED</TableCell>
+                    <TableCell>{parseFloat(purchaseEntry.total).toFixed(2)} AED</TableCell>
                   </TableRow>
                 ))
               )}
