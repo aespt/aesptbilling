@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
         supplier_name: entry.supplier_name,
         ship_from: entry.ship_from,
         sub_total: parseFloat(entry.sub_total),
-        discount: parseFloat(entry.discount),
+        discount: parseFloat(entry.discount || '0'),
         tax_amount: parseFloat(entry.tax_amount),
         total: parseFloat(entry.total),
       });
